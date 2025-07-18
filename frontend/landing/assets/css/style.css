@@ -224,6 +224,10 @@
     opacity: 1;
   }
 
+  section {
+    scroll-margin-top: 150px;
+  }
+
   :where(select:is([multiple], [size])) optgroup {
     font-weight: bolder;
   }
@@ -3494,6 +3498,12 @@
   .lg\:-mt-20 {
     @media (width >=1024px) {
       margin-top: calc(var(--spacing) * -20);
+    }
+  }
+
+  .lg\:-mt-30 {
+    @media (width >=1024px) {
+      margin-top: calc(var(--spacing) * -30);
     }
   }
 

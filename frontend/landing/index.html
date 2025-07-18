@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home | Kolabriq</title>
+    <title>Kolabriq</title>
     <meta name="description" content="Tailwind CSS Multipurpose Landing Templates" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://nobble-html.vercel.app/" />
@@ -90,26 +90,26 @@
                                 </svg>
                                 <span class="sr-only">Close</span>
                             </button>
-                            <ul
+                            <ul id="scrollspy-menu"
                                 class="group inline-flex h-full w-full flex-col items-center gap-8 gap-y-10 overflow-y-auto bg-secondary px-5 pb-10 pt-24 text-22 font-semibold text-white sm:text-3xl lg:w-auto lg:flex-row lg:overflow-y-visible lg:bg-transparent lg:p-0 lg:text-lg lg:text-purple-600 dark:lg:text-purple-500 xl:gap-10">
                                 <li>
-                                    <a href="index.html" class="nav-link active">Home</a>
+                                    <a href="#home" class="nav-link active">Home</a>
                                 </li>
                                 <li>
-                                    <a href="service-list.html" class="nav-link">Services</a>
-                                </li>
-                                <!-- <li>
-                                    <a href="blog-list.html" class="nav-link">Blogs</a>
+                                    <a href="#projects" class="nav-link">Projects</a>
                                 </li>
                                 <li>
-                                    <a href="portfolio-list.html" class="nav-link">Portfolio</a>
+                                    <a href="#expectations" class="nav-link">Expectations</a>
                                 </li>
                                 <li>
-                                    <a href="career.html" class="nav-link">Career</a>
+                                    <a href="#roles" class="nav-link">Roles</a>
                                 </li>
-                                <li class="inline-block lg:hidden">
-                                    <a href="contact-us.html" class="nav-link">Contact us</a>
-                                </li> -->
+                                <li>
+                                    <a href="#process" class="nav-link">Process</a>
+                                </li>
+                                <li>
+                                    <a href="#why-us" class="nav-link">Why Us</a>
+                                </li>
                             </ul>
                         </div>
                         <div class="inline-flex items-center gap-5 xl:gap-10">
@@ -156,814 +156,757 @@
 
         <!-- Inner Content -->
         <div class="pt-24 lg:pt-32">
-            <div class="overflow-x-hidden">
-                <div class="relative mx-auto max-w-[1142px] px-4">
-                    <img src="assets/images/hero-banner-users.svg" alt="Hero banner user"
-                        class="absolute -right-28 top-0 hidden w-52 lg:block xl:-right-96 xl:top-11 xl:w-96"
-                        data-aos="fade-left" data-aos-duration="2000" />
-                    <div class="absolute -left-10 top-36 hidden lg:block">
-                        <span
-                            class="absolute top-0 z-1 inline-flex rounded-2xl bg-secondary p-2 w-38 dark:bg-purple-700">
-                            <img loading="lazy" src="assets/images/project-management.png" alt="space-circle" />
-                        </span>
+            <section id="home">
+                <div class="overflow-x-hidden">
+                    <div class="relative mx-auto max-w-[1142px] px-4">
+                        <img src="assets/images/hero-banner-users.svg" alt="Hero banner user"
+                            class="absolute -right-28 top-0 hidden w-52 lg:block xl:-right-96 xl:top-11 xl:w-96"
+                            data-aos="fade-left" data-aos-duration="2000" />
+                        <div class="absolute -left-10 top-36 hidden lg:block">
+                            <span
+                                class="absolute top-0 z-1 inline-flex rounded-2xl bg-secondary p-2 w-38 dark:bg-purple-700">
+                                <img loading="lazy" src="assets/images/project-management.png" alt="space-circle" />
+                            </span>
+                        </div>
+                        <div class="absolute -left-50 top-80 hidden lg:block">
+                            <span
+                                class="absolute top-0 z-1 inline-flex rounded-2xl bg-secondary p-2 w-48 dark:bg-purple-700">
+                                <img loading="lazy" src="assets/images/project.png" alt="space-circle" />
+                            </span>
+                        </div>
+                        <div class="relative mx-auto pt-32 text-center md:pt-40 lg:max-w-[965px]">
+                            <img loading="lazy" src="assets/images/banner-bg-shape.png" alt="Banner bg shape"
+                                class="absolute bottom-14 left-1/2 -translate-x-1/2" />
+                            <div class="relative mb-8 md:mb-12">
+                                <button type="button"
+                                    class="absolute -top-20 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#806BFF26] px-4 py-3 font-semibold text-primary duration-300 hover:bg-primary hover:text-white md:-top-24 md:left-[9%] md:translate-x-0 lg:left-[15%]">
+                                    <span>Easy for collaboration and management</span>
+                                </button>
+                                <div class="text-4xl font-extrabold leading-tight! text-purple-700 dark:text-white md:text-7xl lg:px-24"
+                                    data-aos="zoom-in" data-aos-duration="1000">
+                                    <h1 class="relative inline-block">
+                                        Easy for project management with the help of AI
+                                        <img loading="lazy" src="assets/images/chat-app.png" alt="Girl"
+                                            class="absolute left-full top-0 pl-3 w-28" />
+                                    </h1>
+                                </div>
+                            </div>
+                            <p class="relative mb-10 dark:text-purple-300 md:text-22">
+                                “Create your project, get your team, execute the project, and track its progress
+                                efficiently.”
+                            </p>
+                            <a href="#" target="_blank" class="btn inline-flex">Get started</a>
+                        </div>
                     </div>
-                    <div class="absolute -left-50 top-80 hidden lg:block">
-                        <span
-                            class="absolute top-0 z-1 inline-flex rounded-2xl bg-secondary p-2 w-48 dark:bg-purple-700">
-                            <img loading="lazy" src="assets/images/project.png" alt="space-circle" />
-                        </span>
-                    </div>
-                    <div class="relative mx-auto pt-32 text-center md:pt-40 lg:max-w-[965px]">
-                        <img loading="lazy" src="assets/images/banner-bg-shape.png" alt="Banner bg shape"
-                            class="absolute bottom-14 left-1/2 -translate-x-1/2" />
-                        <div class="relative mb-8 md:mb-12">
-                            <button type="button"
-                                class="absolute -top-20 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#806BFF26] px-4 py-3 font-semibold text-primary duration-300 hover:bg-primary hover:text-white md:-top-24 md:left-[9%] md:translate-x-0 lg:left-[15%]">
-                                <span>Easy for collaboration and management</span>
-                            </button>
-                            <div class="text-4xl font-extrabold leading-tight! text-purple-700 dark:text-white md:text-7xl lg:px-24"
-                                data-aos="zoom-in" data-aos-duration="1000">
-                                <h1 class="relative inline-block">
-                                    Easy for project management with the help of AI
-                                    <img loading="lazy" src="assets/images/banner-lady.svg" alt="Girl"
-                                        class="absolute left-full top-0 pl-3" />
-                                </h1>
+                    <div class="py-16 lg:pb-44 lg:pt-40">
+                        <div
+                            class="relative mx-auto grid max-w-[1142px] grid-cols-2 gap-x-4 gap-y-10 px-4 text-center text-base font-medium md:grid-cols-4 lg:text-22">
+                            <span
+                                class="absolute left-0 top-1/2 hidden w-full -translate-y-1/2 text-purple-300 dark:text-purple-800 lg:block">
+                                <svg width="100%" height="256" viewBox="0 0 1108 256" fill="none">
+                                    <path
+                                        d="M2 85V134C2 200.274 55.7258 254 122 254H158C224.274 254 278 200.274 278 134V122C278 55.7258 331.726 2 398 2H434C500.274 2 554 55.7258 554 122V134C554 200.274 607.726 254 674 254H710C776.274 254 830 200.274 830 134V122C830 55.7258 883.726 2 950 2H986C1052.27 2 1106 55.7258 1106 122V173"
+                                        stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                                </svg>
+                            </span>
+                            <div class="space-y-3 md:space-y-5">
+                                <div class="inline-block ">
+                                    <img loading="lazy" src="assets/images/prototype.png"
+                                        class="items-center justify-center w-20" />
+                                </div>
+                                <div>Create a project</div>
+                            </div>
+                            <div class="space-y-3 md:space-y-5">
+                                <div class="inline-block ">
+                                    <img loading="lazy" src="assets/images/team.png"
+                                        class="items-center justify-center w-20" />
+                                </div>
+                                <div>Inviting Team</div>
+                            </div>
+                            <div class="space-y-3 md:space-y-5">
+                                <div class="inline-block ">
+                                    <img loading="lazy" src="assets/images/assigment.png"
+                                        class="items-center justify-center w-20" />
+                                </div>
+                                <div>Giving Assignments</div>
+                            </div>
+                            <div class="space-y-3 md:space-y-5">
+                                <div class="inline-block ">
+                                    <img loading="lazy" src="assets/images/checklist.png"
+                                        class="items-center justify-center w-20" />
+                                </div>
+                                <div>Completing the task</div>
                             </div>
                         </div>
-                        <p class="relative mb-10 dark:text-purple-300 md:text-22">
-                            “Create your project, get your team, execute the project, and track its progress
-                            efficiently.”
-                        </p>
-                        <a href="#" target="_blank" class="btn inline-flex">Get started</a>
                     </div>
                 </div>
-                <div class="py-16 lg:pb-44 lg:pt-40">
-                    <div
-                        class="relative mx-auto grid max-w-[1142px] grid-cols-2 gap-x-4 gap-y-10 px-4 text-center text-base font-medium md:grid-cols-4 lg:text-22">
-                        <span
-                            class="absolute left-0 top-1/2 hidden w-full -translate-y-1/2 text-purple-300 dark:text-purple-800 lg:block">
-                            <svg width="100%" height="256" viewBox="0 0 1108 256" fill="none">
-                                <path
-                                    d="M2 85V134C2 200.274 55.7258 254 122 254H158C224.274 254 278 200.274 278 134V122C278 55.7258 331.726 2 398 2H434C500.274 2 554 55.7258 554 122V134C554 200.274 607.726 254 674 254H710C776.274 254 830 200.274 830 134V122C830 55.7258 883.726 2 950 2H986C1052.27 2 1106 55.7258 1106 122V173"
-                                    stroke="currentColor" stroke-width="3" stroke-linecap="round" />
-                            </svg>
-                        </span>
-                        <div class="space-y-3 md:space-y-5">
-                            <div class="inline-block ">
-                                <img loading="lazy" src="assets/images/prototype.png"
-                                    class="items-center justify-center w-20" />
-                            </div>
-                            <div>Create a project</div>
-                        </div>
-                        <div class="space-y-3 md:space-y-5">
-                            <div class="inline-block ">
-                                <img loading="lazy" src="assets/images/team.png"
-                                    class="items-center justify-center w-20" />
-                            </div>
-                            <div>Inviting Team</div>
-                        </div>
-                        <div class="space-y-3 md:space-y-5">
-                            <div class="inline-block ">
-                                <img loading="lazy" src="assets/images/assigment.png"
-                                    class="items-center justify-center w-20" />
-                            </div>
-                            <div>Giving Assignments</div>
-                        </div>
-                        <div class="space-y-3 md:space-y-5">
-                            <div class="inline-block ">
-                                <img loading="lazy" src="assets/images/checklist.png"
-                                    class="items-center justify-center w-20" />
-                            </div>
-                            <div>Completing the task</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </section>
 
-            <div class="relative overflow-x-hidden py-7">
-                <div class="mx-auto pb-7 text-center lg:w-2/3 lg:pb-7">
-                    <h2 class="mb-3 text-[26px]/7 font-bold text-purple-700 dark:text-white">
-                        What projects would you like to manage?
-                    </h2>
-                </div>
-                <div class="absolute left-1/2 h-28 w-[110%] -translate-x-1/2 rotate-[-1.5deg] bg-primary"></div>
-                <div class="relative bg-secondary px-4 py-10 dark:bg-purple-900">
-                    <div class="container">
-                        <div class="swiper logo-slider">
-                            <div class="swiper-wrapper">
-                                <div class="swiper-slide">
-                                    <div class="inline-flex items-center justify-center">
-                                        <img class="w-9 me-2" loading="lazy" src="assets/images/illustration.png" />
-                                        <a href="javascript:" class="text-white text-lg">
-                                            <b>Design</b></a>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="inline-flex items-center justify-center">
-                                        <img class="w-9 me-2" loading="lazy" src="assets/images/bullhorn.png" />
-                                        <a href="javascript:" class="text-white text-lg">
-                                            <b>Marketing</b></a>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="inline-flex items-center justify-center">
-                                        <img class="w-9 me-2" loading="lazy" src="assets/images/app-development.png" />
-                                        <a href="javascript:" class="text-white text-lg">
-                                            <b>Application</b></a>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="inline-flex items-center justify-center">
-                                        <img class="w-9 me-2" loading="lazy" src="assets/images/web.png" />
-                                        <a href="javascript:" class="text-white text-lg">
-                                            <b>Website</b></a>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="inline-flex items-center justify-center">
-                                        <img class="w-9 me-2" loading="lazy" src="assets/images/party.png" />
-                                        <a href="javascript:" class="text-white text-lg">
-                                            <b>Event Organizer</b></a>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="inline-flex items-center justify-center">
-                                        <img class="w-9 me-2" loading="lazy" src="assets/images/graduation.png" />
-                                        <a href="javascript:" class="text-white text-lg">
-                                            <b>Thesis</b></a>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="inline-flex items-center justify-center">
-                                        <img class="w-9 me-2" loading="lazy" src="assets/images/asset-management.png" />
-                                        <a href="javascript:" class="text-white text-lg">
-                                            <b>Finance</b></a>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="inline-flex items-center justify-center">
-                                        <img class="w-9 me-2" loading="lazy" src="assets/images/fairytale.png" />
-                                        <a href="javascript:" class="text-white text-lg">
-                                            <b>Novel Writing</b></a>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="inline-flex items-center justify-center">
-                                        <img class="w-9 me-2" loading="lazy" src="assets/images/comic-book.png" />
-                                        <a href="javascript:" class="text-white text-lg">
-                                            <b>Comic</b></a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="relative overflow-x-hidden py-16 lg:pb-28 lg:pt-36">
-                <img src="assets/images/high-impact-bg.svg" alt="Impact image"
-                    class="absolute left-[5%] top-12 lg:left-1/4 lg:top-28" data-aos="fade-left"
-                    data-aos-duration="1000" />
-                <div class="mx-auto max-w-[1142px] px-4">
-                    <div class="mx-auto pb-10 text-center lg:w-2/3 lg:pb-16">
-                        <h2 class="mb-5 text-[26px]/7 font-bold text-purple-700 dark:text-white">What are your
-                            expectations for this platform?</h2>
-                        <p class="text-lg md:text-xl">
-                            Our platform provides a variety of the best services for project management assisted by AI
-                            to make projects efficient and optimal.
-                        </p>
-                    </div>
-                    <div
-                        class="relative grid items-start gap-4 text-center leading-6 sm:grid-cols-2 md:gap-x-[30px] md:gap-y-12 lg:grid-cols-3">
-                        <img loading="lazy" src="assets/images/high-impact-round.svg" alt="Impact round"
-                            class="absolute -right-24 top-0 animate-spin" />
-                        <span class="absolute -bottom-10 -left-1/2 md:-left-1/3 md:bottom-0" data-aos="fade-right"
-                            data-aos-duration="1000">
-                            <svg width="497" height="166" viewBox="0 0 497 166" fill="none">
-                                <path opacity="0.2" d="M0 164H464.69C481.259 164 494.69 150.569 494.69 134V2"
-                                    stroke="url(#paint0_radial_112_223)" stroke-width="3" stroke-linecap="round" />
-                                <defs>
-                                    <radialGradient id="paint0_radial_112_223" cx="0" cy="0" r="1"
-                                        gradientUnits="userSpaceOnUse"
-                                        gradientTransform="translate(485.5 164) rotate(180) scale(356.5 163.113)">
-                                        <stop stop-color="#806BFF" />
-                                        <stop offset="1" stop-color="#806BFF" stop-opacity="0" />
-                                    </radialGradient>
-                                </defs>
-                            </svg>
-                        </span>
-                        <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)]" data-aos="fade-up"
-                            data-aos-duration="1000">
-                            <div class="group relative overflow-hidden p-0.5">
-                                <div
-                                    class="bg-gradient green absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
-                                </div>
-                                <div class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
-                                    <div
-                                        class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-green/20">
-                                        <!-- <img loading="lazy" src="assets/images/website-optimization.svg"
-                                            alt="Simplify Project Workflow" /> -->
-                                    </div>
-                                    <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">
-                                        Simplify Project Workflow</h3>
-                                    <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
-                                        We help structure your entire project workflow — from planning to completion
-                                    </p>
-                                    <span class="mx-auto block h-[3px] w-28 rounded-full bg-green"></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)] md:mt-10" data-aos="fade-up"
-                            data-aos-duration="1000">
-                            <div class="group relative overflow-hidden p-0.5">
-                                <div
-                                    class="bg-gradient purple absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
-                                </div>
-                                <div class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
-                                    <div
-                                        class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-purple/20">
-                                        <!-- <img loading="lazy" src="assets/images/paid-media.svg"
-                                            alt="Let AI Handle the Repetitive Stuff" /> -->
-                                    </div>
-                                    <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">Let AI
-                                        Handle the Repetitive Stuff</h3>
-                                    <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
-                                        With AI support, we take the burden of task planning off your
-                                        shoulders
-                                    </p>
-                                    <span class="mx-auto block h-[3px] w-28 rounded-full bg-purple"></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)] md:-mt-10 lg:mt-20" data-aos="fade-up"
-                            data-aos-duration="1000">
-                            <div class="group relative overflow-hidden p-0.5">
-                                <div
-                                    class="bg-gradient red absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
-                                </div>
-                                <div class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
-                                    <div
-                                        class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-red/20">
-                                        <!-- <img loading="lazy" src="assets/images/email-sms-marketing.svg"
-                                            alt="Email marketing" /> -->
-                                    </div>
-                                    <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">
-                                        Collaborate Smoothly with Your Team</h3>
-                                    <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
-                                        We enable seamless communication and collaboration
-                                    </p>
-                                    <span class="mx-auto block h-[3px] w-28 rounded-full bg-red"></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)] md:mt-0 lg:-mt-20" data-aos="fade-up"
-                            data-aos-duration="1000">
-                            <div class="group relative overflow-hidden p-0.5">
-                                <div
-                                    class="bg-gradient pink absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
-                                </div>
-                                <div class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
-                                    <div
-                                        class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-pink/20">
-                                        <!-- <img loading="lazy" src="assets/images/funnel-optimization.svg"
-                                            alt="Funnel optimization" /> -->
-                                    </div>
-                                    <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">See
-                                        Clear Progress & Reports</h3>
-                                    <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
-                                        With clear visuals and automated reports, we keep you updated on your project's
-                                        progress
-                                    </p>
-                                    <span class="mx-auto block h-[3px] w-28 rounded-full bg-pink"></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)] md:-mt-10" data-aos="fade-up"
-                            data-aos-duration="1000">
-                            <div class="group relative overflow-hidden p-0.5">
-                                <div
-                                    class="bg-gradient yellow absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
-                                </div>
-                                <div class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
-                                    <div
-                                        class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-yellow/20">
-                                        <!-- <img loading="lazy" src="assets/images/advanced-analytics.svg"
-                                            alt="Advanced analytics" /> -->
-                                    </div>
-                                    <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">
-                                        Real-Time Feedback & Notifications</h3>
-                                    <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
-                                        We notify you in real time about task changes, new comments, and upcoming
-                                        deadlines
-                                    </p>
-                                    <span class="mx-auto block h-[3px] w-28 rounded-full bg-yellow"></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)] md:-mt-20" data-aos="fade-up"
-                            data-aos-duration="1000">
-                            <div class="group relative overflow-hidden p-0.5">
-                                <div
-                                    class="bg-gradient blue absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
-                                </div>
-                                <div class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
-                                    <div
-                                        class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-blue/20">
-                                        <!-- <img loading="lazy" src="assets/images/advanced-analytics.svg"
-                                            alt="Advanced analytics" /> -->
-                                    </div>
-                                    <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">
-                                        Start Fast, Without Tech Hassles
-                                    </h3>
-                                    <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
-                                        We’re ready to use instantly—no installation, no setup delays
-                                    </p>
-                                    <span class="mx-auto block h-[3px] w-28 rounded-full bg-blue"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="overflow-x-hidden">
-                <div
-                    class="space-y-6 py-14 text-base font-semibold leading-tight text-purple-600 dark:text-purple-500 lg:pb-24 lg:pt-10">
+            <section id="projects">
+                <div class="relative overflow-x-hidden py-7">
                     <div class="mx-auto pb-7 text-center lg:w-2/3 lg:pb-7">
+                        <h2 class="mb-3 text-[26px]/7 font-bold text-purple-700 dark:text-white">
+                            What projects would you like to manage?
+                        </h2>
+                    </div>
+                    <div class="absolute left-1/2 h-28 w-[110%] -translate-x-1/2 rotate-[-1.5deg] bg-primary"></div>
+                    <div class="relative bg-secondary px-4 py-10 dark:bg-purple-900">
+                        <div class="container">
+                            <div class="swiper logo-slider">
+                                <div class="swiper-wrapper">
+                                    <div class="swiper-slide">
+                                        <div class="inline-flex items-center justify-center">
+                                            <img class="w-9 me-2" loading="lazy" src="assets/images/illustration.png" />
+                                            <a href="javascript:" class="text-white text-lg">
+                                                <b>Design</b></a>
+                                        </div>
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <div class="inline-flex items-center justify-center">
+                                            <img class="w-9 me-2" loading="lazy" src="assets/images/bullhorn.png" />
+                                            <a href="javascript:" class="text-white text-lg">
+                                                <b>Marketing</b></a>
+                                        </div>
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <div class="inline-flex items-center justify-center">
+                                            <img class="w-9 me-2" loading="lazy"
+                                                src="assets/images/app-development.png" />
+                                            <a href="javascript:" class="text-white text-lg">
+                                                <b>Application</b></a>
+                                        </div>
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <div class="inline-flex items-center justify-center">
+                                            <img class="w-9 me-2" loading="lazy" src="assets/images/web.png" />
+                                            <a href="javascript:" class="text-white text-lg">
+                                                <b>Website</b></a>
+                                        </div>
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <div class="inline-flex items-center justify-center">
+                                            <img class="w-9 me-2" loading="lazy" src="assets/images/party.png" />
+                                            <a href="javascript:" class="text-white text-lg">
+                                                <b>Event Organizer</b></a>
+                                        </div>
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <div class="inline-flex items-center justify-center">
+                                            <img class="w-9 me-2" loading="lazy" src="assets/images/graduation.png" />
+                                            <a href="javascript:" class="text-white text-lg">
+                                                <b>Thesis</b></a>
+                                        </div>
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <div class="inline-flex items-center justify-center">
+                                            <img class="w-9 me-2" loading="lazy"
+                                                src="assets/images/asset-management.png" />
+                                            <a href="javascript:" class="text-white text-lg">
+                                                <b>Finance</b></a>
+                                        </div>
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <div class="inline-flex items-center justify-center">
+                                            <img class="w-9 me-2" loading="lazy" src="assets/images/fairytale.png" />
+                                            <a href="javascript:" class="text-white text-lg">
+                                                <b>Novel Writing</b></a>
+                                        </div>
+                                    </div>
+                                    <div class="swiper-slide">
+                                        <div class="inline-flex items-center justify-center">
+                                            <img class="w-9 me-2" loading="lazy" src="assets/images/comic-book.png" />
+                                            <a href="javascript:" class="text-white text-lg">
+                                                <b>Comic</b></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="expectations">
+                <div class="relative overflow-x-hidden py-16 lg:pb-28 lg:pt-36">
+                    <img src="assets/images/high-impact-bg.svg" alt="Impact image"
+                        class="absolute left-[5%] top-12 lg:left-1/4 lg:top-28" data-aos="fade-left"
+                        data-aos-duration="1000" />
+                    <div class="mx-auto max-w-[1142px] px-4">
+                        <div class="mx-auto pb-10 text-center lg:w-2/3 lg:pb-16">
+                            <h2 class="mb-5 text-[26px]/7 font-bold text-purple-700 dark:text-white">What are your
+                                expectations for this platform?</h2>
+                            <p class="text-lg md:text-xl">
+                                Our platform provides a variety of the best services for project management assisted by
+                                AI
+                                to make projects efficient and optimal.
+                            </p>
+                        </div>
+                        <div
+                            class="relative grid items-start gap-4 text-center leading-6 sm:grid-cols-2 md:gap-x-[30px] md:gap-y-12 lg:grid-cols-3">
+                            <img loading="lazy" src="assets/images/high-impact-round.svg" alt="Impact round"
+                                class="absolute -right-24 top-0 animate-spin" />
+                            <span class="absolute -bottom-10 -left-1/2 md:-left-1/3 md:bottom-0" data-aos="fade-right"
+                                data-aos-duration="1000">
+                                <svg width="497" height="166" viewBox="0 0 497 166" fill="none">
+                                    <path opacity="0.2" d="M0 164H464.69C481.259 164 494.69 150.569 494.69 134V2"
+                                        stroke="url(#paint0_radial_112_223)" stroke-width="3" stroke-linecap="round" />
+                                    <defs>
+                                        <radialGradient id="paint0_radial_112_223" cx="0" cy="0" r="1"
+                                            gradientUnits="userSpaceOnUse"
+                                            gradientTransform="translate(485.5 164) rotate(180) scale(356.5 163.113)">
+                                            <stop stop-color="#806BFF" />
+                                            <stop offset="1" stop-color="#806BFF" stop-opacity="0" />
+                                        </radialGradient>
+                                    </defs>
+                                </svg>
+                            </span>
+                            <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)]" data-aos="fade-up"
+                                data-aos-duration="1000">
+                                <div class="group relative overflow-hidden p-0.5">
+                                    <div
+                                        class="bg-gradient green absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
+                                    </div>
+                                    <div
+                                        class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
+                                        <div
+                                            class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-green/20">
+                                            <img loading="lazy" src="assets/images/workflow.png"
+                                                alt="Simplify Project Workflow" />
+                                        </div>
+                                        <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">
+                                            Simplify Project Workflow</h3>
+                                        <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
+                                            We help structure your entire project workflow — from planning to completion
+                                        </p>
+                                        <span class="mx-auto block h-[3px] w-28 rounded-full bg-green"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)] md:mt-10" data-aos="fade-up"
+                                data-aos-duration="1000">
+                                <div class="group relative overflow-hidden p-0.5">
+                                    <div
+                                        class="bg-gradient purple absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
+                                    </div>
+                                    <div
+                                        class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
+                                        <div
+                                            class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-purple/20">
+                                            <img loading="lazy" src="assets/images/artificial-intelligence.png"
+                                                alt="Let AI Handle the Repetitive Stuff" />
+                                        </div>
+                                        <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">Let
+                                            AI
+                                            Handle the Repetitive Stuff</h3>
+                                        <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
+                                            With AI support, we take the burden of task planning off your
+                                            shoulders
+                                        </p>
+                                        <span class="mx-auto block h-[3px] w-28 rounded-full bg-purple"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)] md:-mt-10 lg:mt-20"
+                                data-aos="fade-up" data-aos-duration="1000">
+                                <div class="group relative overflow-hidden p-0.5">
+                                    <div
+                                        class="bg-gradient red absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
+                                    </div>
+                                    <div
+                                        class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
+                                        <div
+                                            class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-red/20">
+                                            <img loading="lazy" src="assets/images/collaboration.png"
+                                                alt="Collaborate Smoothly with Your Team" />
+                                        </div>
+                                        <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">
+                                            Collaborate Smoothly with Your Team</h3>
+                                        <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
+                                            We enable seamless communication and collaboration
+                                        </p>
+                                        <span class="mx-auto block h-[3px] w-28 rounded-full bg-red"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)] md:mt-0 lg:-mt-20"
+                                data-aos="fade-up" data-aos-duration="1000">
+                                <div class="group relative overflow-hidden p-0.5">
+                                    <div
+                                        class="bg-gradient pink absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
+                                    </div>
+                                    <div
+                                        class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
+                                        <div
+                                            class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-pink/20">
+                                            <img loading="lazy" src="assets/images/reporting.png" alt="See
+                                        Clear Progress & Reports" />
+                                        </div>
+                                        <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">See
+                                            Clear Progress & Reports</h3>
+                                        <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
+                                            With clear visuals and automated reports, we keep you updated on your
+                                            project's
+                                            progress
+                                        </p>
+                                        <span class="mx-auto block h-[3px] w-28 rounded-full bg-pink"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)] md:-mt-10" data-aos="fade-up"
+                                data-aos-duration="1000">
+                                <div class="group relative overflow-hidden p-0.5">
+                                    <div
+                                        class="bg-gradient yellow absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
+                                    </div>
+                                    <div
+                                        class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
+                                        <div
+                                            class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-yellow/20">
+                                            <img loading="lazy" src="assets/images/real-time.png"
+                                                alt="Real-Time Feedback & Notifications" />
+                                        </div>
+                                        <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">
+                                            Real-Time Feedback & Notifications</h3>
+                                        <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
+                                            We notify you in real time about task changes, new comments, and upcoming
+                                            deadlines
+                                        </p>
+                                        <span class="mx-auto block h-[3px] w-28 rounded-full bg-yellow"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rounded-lg shadow-[0_0_8px_rgba(0,0,0,0.1)] md:-mt-20" data-aos="fade-up"
+                                data-aos-duration="1000">
+                                <div class="group relative overflow-hidden p-0.5">
+                                    <div
+                                        class="bg-gradient blue absolute inset-0 opacity-0 duration-500 group-hover:opacity-100">
+                                    </div>
+                                    <div
+                                        class="relative z-[1] rounded-lg bg-white px-4 py-10 dark:bg-purple-900 md:px-7">
+                                        <div
+                                            class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-blue/20">
+                                            <img loading="lazy" src="assets/images/lightning.png"
+                                                alt="Start Fast, Without Tech Hassles" />
+                                        </div>
+                                        <h3 class="pb-6 pt-10 text-22 font-semibold text-purple-700 dark:text-white">
+                                            Start Fast, Without Tech Hassles
+                                        </h3>
+                                        <p class="mb-11 line-clamp-3 font-light text-purple-600 dark:text-purple-500">
+                                            We’re ready to use instantly—no installation, no setup delays
+                                        </p>
+                                        <span class="mx-auto block h-[3px] w-28 rounded-full bg-blue"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="roles">
+                <div class="overflow-x-hidden">
+                    <div class="mx-auto pb-7 text-center lg:w-2/3 lg:pb-7 lg:pt-10">
                         <h2 class="mb-3 text-[26px]/7 font-bold text-purple-700 dark:text-white">
                             Curious If Your Role Belongs Here? Find Out!
                         </h2>
                     </div>
-                    <div dir="ltr" class="swiper position-slider-one">
-                        <div class="swiper-wrapper">
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-pink bg-pink/10 px-8 py-3.5 text-pink dark:bg-[#FFE2F7]">
-                                    Full - stack developer
+                    <div
+                        class="space-y-6 pb-14 text-base font-semibold leading-tight text-purple-600 dark:text-purple-500 lg:pb-24">
+                        <div dir="ltr" class="swiper position-slider-one">
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-pink bg-pink/10 px-8 py-3.5 text-pink dark:bg-[#FFE2F7]">
+                                        Full-Stack Developer
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Technical SEO Expert
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Branding Designer
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    UI Designer
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        UI/UX Designer
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Senior accountant
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Mobile Developer
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple bg-purple/10 px-8 py-3.5 text-purple dark:bg-[#F3E4FF]">
-                                    Video editor
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple bg-purple/10 px-8 py-3.5 text-purple dark:bg-[#F3E4FF]">
+                                        Video editor
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-yellow bg-yellow/10 px-8 py-3.5 text-yellow dark:bg-[#FFF8E0]">
-                                    Lead 2D game designer
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Novel Writer
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Lead Dev OPS engineer
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-pink bg-pink/10 px-8 py-3.5 text-pink dark:bg-[#FFE2F7]">
+                                        Animator
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-pink bg-pink/10 px-8 py-3.5 text-pink dark:bg-[#FFE2F7]">
-                                    Full - stack developer
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Backend developer
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Backend developer
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Data Analyst
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Senior accountant
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        QA Analyst
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Backend developer
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Software Test Engineer
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple bg-purple/10 px-8 py-3.5 text-purple dark:bg-[#F3E4FF]">
-                                    Video editor
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple bg-purple/10 px-8 py-3.5 text-purple dark:bg-[#F3E4FF]">
+                                        Technical Support
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    UI Designer
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        QA Tester
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Lead Dev OPS engineer
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Software Architect
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-yellow bg-yellow/10 px-8 py-3.5 text-yellow dark:bg-[#FFF8E0]">
-                                    Lead 2D game designer
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-yellow bg-yellow/10 px-8 py-3.5 text-yellow dark:bg-[#FFF8E0]">
+                                        DevOps Engineer
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Senior content manager
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div dir="rtl" class="swiper position-slider-two">
-                        <div class="swiper-wrapper">
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Backend developer
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Technical SEO Expert
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-blue bg-blue/10 px-8 py-3.5 text-blue dark:bg-[#E0FBFF]">
-                                    SEO Content Writer
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    UI Designer
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Technical SEO Expert
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    VFX editor
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Google Analytics Expert
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-green bg-green/10 px-8 py-3.5 text-green dark:bg-[#E0F8F3]">
-                                    Lead Dev OPS engineer
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Backend developer
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Senior content manager
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-primary bg-primary/10 px-8 py-3.5 text-primary">
-                                    Lead 2D game designer
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    UI Designer
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Google Analytics Expert
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    Technical SEO Expert
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-green bg-green/10 px-8 py-3.5 text-green dark:bg-[#E0F8F3]">
-                                    Lead Dev OPS engineer
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-blue bg-blue/10 px-8 py-3.5 text-blue dark:bg-[#E0FBFF]">
-                                    SEO Content Writer
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
-                                    VFX editor
-                                </div>
-                            </div>
-                            <div class="swiper-slide w-auto!">
-                                <div
-                                    class="inline-flex rounded-full border border-primary bg-primary/10 px-8 py-3.5 text-primary">
-                                    Lead 2D game designer
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Illustrator
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- <div class="overflow-x-hidden">
-                <div class="mx-auto max-w-[1142px] px-4">
-                    <div class="relative mx-auto pb-10 text-center lg:w-2/3 lg:pb-14">
-                        <img loading="lazy" src="assets/images/pink-star.svg" alt="Pink star"
-                            class="absolute -right-24 top-10" />
-                        <h2 class="mb-5 text-[26px]/7 font-bold text-purple-700 dark:text-white">Make your marketing
-                            more effective</h2>
-                        <p class="text-lg md:text-xl">
-                            E-commerce brands can acquire and retain new customers using solutions that span the entire
-                            customer journey.
-                        </p>
-                    </div>
-                    <div class="relative flex grid-cols-3 flex-col gap-[30px] lg:grid">
-                        <span class="absolute -top-14 right-full" data-aos="fade-up-left" data-aos-duration="1000">
-                            <svg width="144" height="61" viewBox="0 0 144 61" fill="none">
-                                <path opacity="0.3" fill-rule="evenodd" clip-rule="evenodd"
-                                    d="M143.669 56.7802C143.517 56.096 142.839 55.6647 142.154 55.8167C102.832 64.555 73.5893 49.184 66.834 27.4292C70.9798 26.3058 74.8366 24.5663 77.8865 22.0012C81.8467 18.6706 84.3828 13.9965 84.454 7.70868C84.495 4.08308 81.2848 1.03613 77.5491 1.90523C67.4494 4.25488 61.2828 15.2435 63.6806 25.5707C63.3903 25.6305 63.0984 25.6876 62.8051 25.742C49.374 27.7196 38.5879 25.7366 29.0415 21.1425C20.2651 16.919 12.4823 10.4634 4.62742 2.70948L12.957 2.76647C13.6578 2.77126 14.2299 2.20699 14.2347 1.50612C14.2395 0.805266 13.6752 0.23321 12.9743 0.228414L1.55308 0.150267C0.852227 0.145482 0.280179 0.709761 0.275378 1.41062L0.197236 12.8319C0.192435 13.5327 0.756717 14.1048 1.45758 14.1096C2.15845 14.1144 2.73049 13.5501 2.7353 12.8492L2.79265 4.46481C10.7456 12.3215 18.7798 19.0209 27.9409 23.4296C37.964 28.2531 49.271 30.3045 63.1986 28.2496L63.2216 28.2462L63.2445 28.2419C63.6177 28.1728 63.9898 28.0995 64.3604 28.0217C71.5632 51.6528 102.637 67.1985 142.705 58.2944C143.389 58.1423 143.821 57.4644 143.669 56.7802ZM66.1499 24.985C64.0406 15.8938 69.5314 6.3764 78.1242 4.37732C80.0557 3.92797 81.9408 5.48736 81.916 7.67994C81.8534 13.2063 79.6646 17.1893 76.2529 20.0587C73.5538 22.3287 70.0515 23.9301 66.1499 24.985Z"
-                                    fill="url(#paint0_linear_121_108)" />
-                                <defs>
-                                    <linearGradient id="paint0_linear_121_108" x1="136.201" y1="59.8017" x2="1.58355"
-                                        y2="8.50293" gradientUnits="userSpaceOnUse">
-                                        <stop stop-color="#7780A1" stop-opacity="0" />
-                                        <stop offset="0.0001" stop-color="#1A1036" stop-opacity="0" />
-                                        <stop offset="1" stop-color="#1A1036" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
-                        </span>
-                        <span class="absolute bottom-0 left-[85%]" data-aos="fade-left" data-aos-duration="1000">
-                            <svg width="572" height="583" viewBox="0 0 572 583" fill="none">
-                                <path opacity="0.2"
-                                    d="M2 150H323.69C340.259 150 353.69 136.569 353.69 120V32C353.69 15.4315 367.122 2 383.69 2H570"
-                                    stroke="url(#paint0_radial_67_199)" stroke-width="3" stroke-linecap="round" />
-                                <path opacity="0.2"
-                                    d="M2 433H323.69C340.259 433 353.69 446.431 353.69 463V551C353.69 567.569 367.122 581 383.69 581H570"
-                                    stroke="url(#paint1_radial_67_199)" stroke-width="3" stroke-linecap="round" />
-                                <defs>
-                                    <radialGradient id="paint0_radial_67_199" cx="0" cy="0" r="1"
-                                        gradientUnits="userSpaceOnUse"
-                                        gradientTransform="translate(339.5 150) rotate(-180) scale(337.5 189.41)">
-                                        <stop stop-color="#806BFF" />
-                                        <stop offset="1" stop-color="#806BFF" stop-opacity="0" />
-                                    </radialGradient>
-                                    <radialGradient id="paint1_radial_67_199" cx="0" cy="0" r="1"
-                                        gradientUnits="userSpaceOnUse"
-                                        gradientTransform="translate(339.5 433) rotate(180) scale(337.5 189.41)">
-                                        <stop stop-color="#806BFF" />
-                                        <stop offset="1" stop-color="#806BFF" stop-opacity="0" />
-                                    </radialGradient>
-                                </defs>
-                            </svg>
-                        </span>
-                        <div
-                            class="relative inline-flex flex-col justify-between gap-10 rounded-lg bg-green px-4 pt-10 leading-6 text-white sm:px-7">
-                            <div>
-                                <h3 class="mb-6 text-22 font-semibold">Marketing Automation</h3>
-                                <p>Our team has a successful track record of helping brands.</p>
-                                <a href="javascript:"
-                                    class="group mt-10 inline-flex items-center gap-2.5 font-semibold">
-                                    <span>Learn more</span>
-                                    <span
-                                        class="relative start-0 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-transparent from-50% to-white/40 to-50% duration-300 group-hover:start-1 rtl:rotate-180">
-                                        <svg width="14" height="8" viewBox="0 0 14 8" fill="none">
-                                            <path
-                                                d="M12.9 3.53991L10.06 0.689912C9.77 0.399912 9.29 0.399912 9 0.689912C8.71 0.979912 8.71 1.45991 9 1.74991L10.56 3.30991H0.989998C0.579998 3.30991 0.239998 3.64991 0.239998 4.05991C0.239998 4.46991 0.579998 4.80991 0.989998 4.80991H10.56L9 6.37991C8.71 6.66991 8.71 7.14991 9 7.43991C9.15 7.58991 9.34 7.65991 9.53 7.65991C9.72 7.65991 9.91 7.58991 10.06 7.43991L12.9 4.58991C13.2 4.29991 13.2 3.82991 12.9 3.53991Z"
-                                                fill="currentColor" />
-                                        </svg>
-                                    </span>
-                                </a>
-                            </div>
-                            <div class="overflow-hidden rounded-t-lg lg:h-48">
-                                <img loading="lazy" src="assets/images/marketing-automation.jpg"
-                                    alt="Marketing automation" class="h-full w-full object-cover" />
-                            </div>
-                        </div>
-                        <div
-                            class="relative col-span-2 inline-flex flex-col justify-between gap-10 rounded-lg bg-primary px-4 pt-10 leading-6 text-white sm:px-7">
-                            <div>
-                                <h3 class="mb-6 text-22 font-semibold">Content Marketing</h3>
-                                <p>
-                                    Our team has a successful track record of helping brands scale profitably based on
-                                    high-performing strategies.
-                                    E-commerce brands can acquire and retain new customers using solutions that span the
-                                    entire customer journey.
-                                </p>
-                                <a href="javascript:"
-                                    class="group mt-10 inline-flex items-center gap-2.5 font-semibold">
-                                    <span>Learn more</span>
-                                    <span
-                                        class="relative start-0 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-transparent from-50% to-white/40 to-50% duration-300 group-hover:start-1 rtl:rotate-180">
-                                        <svg width="14" height="8" viewBox="0 0 14 8" fill="none">
-                                            <path
-                                                d="M12.9 3.53991L10.06 0.689912C9.77 0.399912 9.29 0.399912 9 0.689912C8.71 0.979912 8.71 1.45991 9 1.74991L10.56 3.30991H0.989998C0.579998 3.30991 0.239998 3.64991 0.239998 4.05991C0.239998 4.46991 0.579998 4.80991 0.989998 4.80991H10.56L9 6.37991C8.71 6.66991 8.71 7.14991 9 7.43991C9.15 7.58991 9.34 7.65991 9.53 7.65991C9.72 7.65991 9.91 7.58991 10.06 7.43991L12.9 4.58991C13.2 4.29991 13.2 3.82991 12.9 3.53991Z"
-                                                fill="currentColor" />
-                                        </svg>
-                                    </span>
-                                </a>
-                            </div>
-                            <div class="overflow-hidden rounded-t-lg lg:h-40">
-                                <img loading="lazy" src="assets/images/content-marketing.jpg" alt="Content marketing"
-                                    class="h-full w-full object-cover" />
-                            </div>
-                        </div>
-                        <div
-                            class="relative col-span-3 inline-flex flex-col justify-between gap-10 rounded-lg bg-yellow px-4 pt-10 leading-6 text-secondary sm:px-7 lg:flex-row lg:gap-7">
-                            <div>
-                                <h3 class="mb-6 text-22 font-semibold">Social Media Marketing</h3>
-                                <p>Leads are nurtured through our email, SMS, and automation services, resulting in
-                                    customer acquisition and retention.</p>
-                                <a href="javascript:"
-                                    class="group mt-10 inline-flex items-center gap-2.5 font-semibold">
-                                    <span>Learn more</span>
-                                    <span
-                                        class="relative start-0 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-linear-to-r from-transparent from-50% to-secondary/40 to-50% duration-300 group-hover:start-1 rtl:rotate-180">
-                                        <svg width="14" height="8" viewBox="0 0 14 8" fill="none">
-                                            <path
-                                                d="M12.9 3.53991L10.06 0.689912C9.77 0.399912 9.29 0.399912 9 0.689912C8.71 0.979912 8.71 1.45991 9 1.74991L10.56 3.30991H0.989998C0.579998 3.30991 0.239998 3.64991 0.239998 4.05991C0.239998 4.46991 0.579998 4.80991 0.989998 4.80991H10.56L9 6.37991C8.71 6.66991 8.71 7.14991 9 7.43991C9.15 7.58991 9.34 7.65991 9.53 7.65991C9.72 7.65991 9.91 7.58991 10.06 7.43991L12.9 4.58991C13.2 4.29991 13.2 3.82991 12.9 3.53991Z"
-                                                fill="currentColor" />
-                                        </svg>
-                                    </span>
-                                </a>
-                            </div>
-                            <div class="w-full overflow-hidden rounded-t-lg lg:h-56 lg:max-w-lg">
-                                <img loading="lazy" src="assets/images/social-media-marketing.jpg" alt="Media marketing"
-                                    class="h-full w-full object-cover" />
+                        <div dir="rtl" class="swiper position-slider-two">
+                            <div class="swiper-wrapper">
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Software Architect
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Frontend developer
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-yellow bg-yellow/10 px-8 py-3.5 text-yellow dark:bg-[#FFF8E0]">
+                                        Lead 2D game designer
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-blue bg-blue/10 px-8 py-3.5 text-blue dark:bg-[#E0FBFF]">
+                                        Manuscript Editor
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Financial Analyst
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        VFX editor
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Google Analytics Expert
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-green bg-green/10 px-8 py-3.5 text-green dark:bg-[#E0F8F3]">
+                                        Market Researcher
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Game Tester
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Music Composer
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-primary bg-primary/10 px-8 py-3.5 text-primary">
+                                        Scriptwriter
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Comic Artist
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Audio Director
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        E-Commerce Specialist
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-green bg-green/10 px-8 py-3.5 text-green dark:bg-[#E0F8F3]">
+                                        Product Researcher
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-blue bg-blue/10 px-8 py-3.5 text-blue dark:bg-[#E0FBFF]">
+                                        Content Creator
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-purple-400 bg-purple-400/10 px-8 py-3.5 dark:border-purple-700">
+                                        Blockchain Developer
+                                    </div>
+                                </div>
+                                <div class="swiper-slide w-auto!">
+                                    <div
+                                        class="inline-flex rounded-full border border-primary bg-primary/10 px-8 py-3.5 text-primary">
+                                        AI/ML Engineer
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div> -->
+            </section>
 
-            <!-- <div class="overflow-x-hidden pt-16 lg:pt-36">
-                <div class="mx-auto flex max-w-[1142px] flex-col items-center gap-5 px-4 md:flex-row">
-                    <div class="shrink-0 md:w-3/5">
-                        <div class="pb-10 text-center md:ltr:text-left md:rtl:text-right lg:w-2/3 lg:pb-14">
-                            <h2 class="mb-5 text-[26px]/7 font-bold text-purple-700 dark:text-white">Our process</h2>
-                            <p class="text-lg md:text-xl">A simple, yet powerful and efficient process</p>
-                        </div>
-                        <div class="space-y-6 leading-6 md:space-y-10">
-                            <div class="group rounded-lg bg-linear-to-b to-transparent p-4 hover:from-primary/[0.16]">
-                                <h3
-                                    class="pb-4 text-22 font-semibold text-purple-700 duration-300 group-hover:text-primary dark:text-white">
-                                    1. Marketing Plan
-                                </h3>
-                                <p>Strategies include SEO optimization, social media campaigns, and email marketing.
-                                    Tactics include content creation.</p>
+            <section id="process">
+                <div class="overflow-x-hidden pt-16 lg:pt-36">
+                    <div class="mx-auto flex max-w-[1142px] flex-col items-center gap-5 px-4 md:flex-row">
+                        <div class="shrink-0 md:w-3/5">
+                            <div class="pb-10 text-center md:ltr:text-left md:rtl:text-right lg:w-2/3 lg:pb-14">
+                                <h2 class="mb-5 text-[26px]/7 font-bold text-purple-700 dark:text-white">Our process
+                                </h2>
+                                <p class="text-lg md:text-xl">From Idea to Execution — Organized, Collaborative,
+                                    Rewarding.</p>
                             </div>
-                            <div class="group rounded-lg bg-linear-to-b to-transparent p-4 hover:from-primary/[0.16]">
-                                <h3
-                                    class="pb-4 text-22 font-semibold text-purple-700 duration-300 group-hover:text-primary dark:text-white">
-                                    2. Execution
-                                </h3>
-                                <p>
-                                    execution involves implementing and managing marketing strategies and tactics, such
-                                    as advertising campaigns, content
-                                    creation.
-                                </p>
-                            </div>
-                            <div class="group rounded-lg bg-linear-to-b to-transparent p-4 hover:from-primary/[0.16]">
-                                <h3
-                                    class="pb-4 text-22 font-semibold text-purple-700 duration-300 group-hover:text-primary dark:text-white">
-                                    3. Growth & Scale
-                                </h3>
-                                <p>
-                                    This involves leveraging various digital marketing strategies, such as SEO, PPC
-                                    advertising, content marketing, and
-                                    email marketing.
-                                </p>
+                            <div class="space-y-6 leading-6 md:space-y-10">
+                                <div
+                                    class="group rounded-lg bg-linear-to-b to-transparent p-4 hover:from-primary/[0.16]">
+                                    <h3
+                                        class="pb-4 text-22 font-semibold text-purple-700 duration-300 group-hover:text-primary dark:text-white">
+                                        1. Create a Project
+                                    </h3>
+                                    <p>
+                                        <i>Everything starts with the Owner.</i>
+                                        Launch a new project and assign a Project
+                                        Manager to lead the team and set the vision.
+                                    </p>
+                                </div>
+                                <div
+                                    class="group rounded-lg bg-linear-to-b to-transparent p-4 hover:from-primary/[0.16]">
+                                    <h3
+                                        class="pb-4 text-22 font-semibold text-purple-700 duration-300 group-hover:text-primary dark:text-white">
+                                        2. Invite the Team
+                                    </h3>
+                                    <p>
+                                        <i>The PM selects the right people.</i>
+                                        The Project Manager builds the team by inviting members based on skills and
+                                        roles needed.
+                                    </p>
+                                </div>
+                                <div
+                                    class="group rounded-lg bg-linear-to-b to-transparent p-4 hover:from-primary/[0.16]">
+                                    <h3
+                                        class="pb-4 text-22 font-semibold text-purple-700 duration-300 group-hover:text-primary dark:text-white">
+                                        3. Assign Tasks
+                                    </h3>
+                                    <p>
+                                        <i>Clear delegation, better execution.</i>
+                                        The PM distributes tasks to team members based on priorities and capabilities.
+                                    </p>
+                                </div>
+                                <div
+                                    class="group rounded-lg bg-linear-to-b to-transparent p-4 hover:from-primary/[0.16]">
+                                    <h3
+                                        class="pb-4 text-22 font-semibold text-purple-700 duration-300 group-hover:text-primary dark:text-white">
+                                        4. Execute Tasks
+                                    </h3>
+                                    <p>
+                                        <i>The team gets to work.</i>
+                                        Team members complete their assigned tasks using guided workflows, AI support,
+                                        and real-time notifications.
+                                    </p>
+                                </div>
+                                <div
+                                    class="group rounded-lg bg-linear-to-b to-transparent p-4 hover:from-primary/[0.16]">
+                                    <h3
+                                        class="pb-4 text-22 font-semibold text-purple-700 duration-300 group-hover:text-primary dark:text-white">
+                                        5. Earn Rewards
+                                    </h3>
+                                    <p>
+                                        <i>Recognition for great work.</i>
+                                        The Owner can reward team members who deliver exceptional results with tokens or
+                                        other forms of appreciation.
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="md:-me-[19%] xl:ms-14" data-aos="fade-left" data-aos-duration="1000">
-                        <img loading="lazy" src="assets/images/our-process.png" alt="Our process"
-                            class="h-full w-full object-cover" />
-                    </div>
-                </div>
-            </div> -->
-
-            <!-- <div class="overflow-x-hidden py-16 lg:pb-44 lg:pt-32">
-                <div class="relative mx-auto max-w-[1142px] gap-5 px-4 lg:flex">
-                    <img loading="lazy" src="assets/images/why-choose-bg.svg" alt="Why choose bg"
-                        class="absolute right-0 top-0 xl:-right-44 xl:-top-12" />
-                    <div class="relative mx-auto shrink-0 sm:w-1/2 lg:mx-0">
-                        <span class="absolute end-1/3 top-1/4 hidden lg:block" data-aos="fade-right"
-                            data-aos-duration="2000">
-                            <svg width="811" height="441" viewBox="0 0 811 441" fill="none">
-                                <path opacity="0.2"
-                                    d="M2 150H323.69C340.259 150 353.69 136.569 353.69 120V32C353.69 15.4315 367.122 2 383.69 2H808.5"
-                                    stroke="url(#paint0_radial_69_208)" stroke-width="3" stroke-linecap="round" />
-                                <path opacity="0.2"
-                                    d="M135 439L545.5 439L676 439L779 439C795.569 439 809 425.569 809 409L809 2.50003"
-                                    stroke="url(#paint1_radial_69_208)" stroke-width="3" stroke-linecap="round" />
-                                <defs>
-                                    <radialGradient id="paint0_radial_69_208" cx="0" cy="0" r="1"
-                                        gradientUnits="userSpaceOnUse"
-                                        gradientTransform="translate(429.5 -10.5) rotate(159.422) scale(456.636 382.773)">
-                                        <stop stop-color="#806BFF" />
-                                        <stop offset="1" stop-color="#806BFF" stop-opacity="0" />
-                                    </radialGradient>
-                                    <radialGradient id="paint1_radial_69_208" cx="0" cy="0" r="1"
-                                        gradientUnits="userSpaceOnUse"
-                                        gradientTransform="translate(749 355.5) rotate(170.679) scale(414.979 404.919)">
-                                        <stop stop-color="#806BFF" />
-                                        <stop offset="1" stop-color="#806BFF" stop-opacity="0" />
-                                    </radialGradient>
-                                </defs>
-                            </svg>
-                        </span>
-                        <div class="relative w-1/2 overflow-hidden rounded-lg" data-aos="fade-right"
-                            data-aos-duration="1000">
-                            <img loading="lazy" src="assets/images/advance-tracking.jpg" alt="Advance tracking"
-                                class="h-full w-full object-cover" />
-                        </div>
-                        <div class="relative ms-auto w-1/2 overflow-hidden rounded-lg lg:-mt-10 lg:me-10"
-                            data-aos="fade-right" data-aos-duration="1000">
-                            <img loading="lazy" src="assets/images/depth-monitoring.jpg" alt="Depth monitoring"
+                        <div class="md:-me-[19%] xl:ms-14" data-aos="fade-left" data-aos-duration="1000">
+                            <img loading="lazy" src="assets/images/data-analysis.png" alt="Our process"
                                 class="h-full w-full object-cover" />
                         </div>
                     </div>
-                    <div class="relative mt-8">
-                        <div class="pb-10 text-center lg:pb-14 lg:ltr:text-left lg:rtl:text-right">
-                            <h2 class="mb-5 text-[26px]/7 font-bold text-purple-700 dark:text-white">Why choose us</h2>
-                            <p class="text-lg md:text-xl">We help great brands scale with content marketing.</p>
+                </div>
+            </section>
+
+            <section id="why-us">
+                <div class="overflow-x-hidden py-16 lg:pb-44 lg:pt-32">
+                    <div class="relative mx-auto max-w-[1142px] gap-5 px-4 lg:flex">
+                        <img loading="lazy" src="assets/images/why-choose-bg.svg" alt="Why choose bg"
+                            class="absolute right-0 top-0 xl:-right-44 xl:-top-12" />
+                        <div class="relative mx-auto shrink-0 sm:w-1/2 lg:mx-0">
+                            <span class="absolute end-1/3 top-1/4 hidden lg:block" data-aos="fade-right"
+                                data-aos-duration="2000">
+                                <svg width="811" height="441" viewBox="0 0 811 441" fill="none">
+                                    <path opacity="0.2"
+                                        d="M2 150H323.69C340.259 150 353.69 136.569 353.69 120V32C353.69 15.4315 367.122 2 383.69 2H808.5"
+                                        stroke="url(#paint0_radial_69_208)" stroke-width="3" stroke-linecap="round" />
+                                    <path opacity="0.2"
+                                        d="M135 439L545.5 439L676 439L779 439C795.569 439 809 425.569 809 409L809 2.50003"
+                                        stroke="url(#paint1_radial_69_208)" stroke-width="3" stroke-linecap="round" />
+                                    <defs>
+                                        <radialGradient id="paint0_radial_69_208" cx="0" cy="0" r="1"
+                                            gradientUnits="userSpaceOnUse"
+                                            gradientTransform="translate(429.5 -10.5) rotate(159.422) scale(456.636 382.773)">
+                                            <stop stop-color="#806BFF" />
+                                            <stop offset="1" stop-color="#806BFF" stop-opacity="0" />
+                                        </radialGradient>
+                                        <radialGradient id="paint1_radial_69_208" cx="0" cy="0" r="1"
+                                            gradientUnits="userSpaceOnUse"
+                                            gradientTransform="translate(749 355.5) rotate(170.679) scale(414.979 404.919)">
+                                            <stop stop-color="#806BFF" />
+                                            <stop offset="1" stop-color="#806BFF" stop-opacity="0" />
+                                        </radialGradient>
+                                    </defs>
+                                </svg>
+                            </span>
+                            <div class="relative w-1/2 overflow-hidden rounded-lg" data-aos="fade-right"
+                                data-aos-duration="1000">
+                                <img loading="lazy" src="assets/images/pexels-pavel-danilyuk-8438979.jpg"
+                                    alt="Advance tracking" class="h-full w-full object-cover" />
+                            </div>
+                            <div class="relative ms-auto w-1/2 overflow-hidden rounded-lg lg:-mt-30 lg:me-10"
+                                data-aos="fade-right" data-aos-duration="1000">
+                                <img loading="lazy" src="assets/images/pexels-fauxels-3184423.jpg"
+                                    alt="Depth monitoring" class="h-full w-full object-cover" />
+                            </div>
                         </div>
-                        <div class="space-y-12 pb-10 lg:pb-16">
-                            <div class="flex gap-4 leading-6 md:gap-8">
-                                <span class="shrink-0">
-                                    <img loading="lazy" src="assets/images/advance-tracking-icon.svg"
-                                        alt="Advance tracking icon" />
-                                </span>
-                                <div>
-                                    <h3 class="pb-4 text-xl font-semibold text-purple-700 dark:text-white md:text-22">
-                                        Advanced tracking</h3>
-                                    <p>Use our analytics, reporting, and AI-assisted optimization tools to monitor
-                                        trends, track.</p>
+                        <div class="relative mt-8">
+                            <div class="pb-10 text-center lg:pb-14 lg:ltr:text-left lg:rtl:text-right">
+                                <h2 class="mb-5 text-[26px]/7 font-bold text-purple-700 dark:text-white">Why choose us
+                                </h2>
+                                <p class="text-lg md:text-xl">Smart, simple, and scalable—everything your project needs
+                                    in one place.
+
+                                </p>
+                            </div>
+                            <div class="space-y-12 pb-10 lg:pb-16">
+                                <div class="flex gap-4 leading-6 md:gap-8">
+                                    <span class="shrink-0">
+                                        <img loading="lazy" src="assets/images/project-management2.png" class="w-14"
+                                            alt="Depth monitoring icon" />
+                                    </span>
+                                    <div>
+                                        <h3
+                                            class="pb-4 text-xl font-semibold text-purple-700 dark:text-white md:text-22">
+                                            A Workflow That Just Makes Sense</h3>
+                                        <p>Every step—from creating a project to completing it—is designed to be clear,
+                                            efficient, and intuitive.</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-4 leading-6 md:gap-8">
+                                    <span class="shrink-0">
+                                        <img loading="lazy" src="assets/images/robotic.png" class="w-14"
+                                            alt="Advance tracking icon" />
+                                    </span>
+                                    <div>
+                                        <h3
+                                            class="pb-4 text-xl font-semibold text-purple-700 dark:text-white md:text-22">
+                                            AI That Works With You, Not Instead of You</h3>
+                                        <p>We don’t just automate—we collaborate. Our AI organizes tasks, recommends
+                                            what’s next, and keeps your team in sync.</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-4 leading-6 md:gap-8">
+                                    <span class="shrink-0">
+                                        <img loading="lazy" src="assets/images/gift.png" class="w-14"
+                                            alt="Depth monitoring icon" />
+                                    </span>
+                                    <div>
+                                        <h3
+                                            class="pb-4 text-xl font-semibold text-purple-700 dark:text-white md:text-22">
+                                            Reward Excellence, Instantly</h3>
+                                        <p>Recognize great work with our built-in reward system—motivate your team with
+                                            more than just words.</p>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="flex gap-4 leading-6 md:gap-8">
-                                <span class="shrink-0">
-                                    <img loading="lazy" src="assets/images/depth-monitoring-icon.svg"
-                                        alt="Depth monitoring icon" />
-                                </span>
-                                <div>
-                                    <h3 class="pb-4 text-xl font-semibold text-purple-700 dark:text-white md:text-22">In
-                                        - depth monitoring</h3>
-                                    <p>Time Tracking is never been easier. Just let the stopwatch run.</p>
-                                </div>
+                            <div class="inline-flex text-center lg:ltr:text-left lg:rtl:text-right">
+                                <a href="#" class="btn">Get Started</a>
                             </div>
-                        </div>
-                        <div class="inline-flex text-center lg:ltr:text-left lg:rtl:text-right">
-                            <a href="about-us.html" class="btn">About us</a>
                         </div>
                     </div>
                 </div>
-            </div> -->
+            </section>
 
             <!-- <div class="overflow-x-hidden pb-16 lg:pb-36">
                 <div class="relative mx-auto max-w-[1142px] grid-cols-3 gap-4 px-4 lg:grid">
@@ -1193,7 +1136,7 @@
                             <b>Kolabriq</b>
                         </a>
                     </div>
-                    <!-- <ul class="inline-flex items-center gap-8 text-purple-400">
+                    <ul class="inline-flex items-center gap-8 text-purple-400">
                         <li>
                             <a href="javascript:" class="inline-flex duration-300 hover:scale-125 hover:text-primary">
                                 <svg width="26" height="27" viewBox="0 0 26 27" fill="none">
@@ -1240,7 +1183,7 @@
                                 <span class="sr-only">Linkedin</span>
                             </a>
                         </li>
-                    </ul> -->
+                    </ul>
                 </div>
                 <div class="border-y-2 border-purple-200 px-4 py-10 dark:border-purple-900">
                     <div
@@ -1414,8 +1357,8 @@
         });
 
         // Accordion
-        const acc = new Accordion('.accordion-container');
-        acc.open(0);
+        // const acc = new Accordion('.accordion-container');
+        // acc.open(0);
 
         // Counter Js
         VanillaCounter();
@@ -1478,6 +1421,53 @@
             },
         });
     </script>
+
+    <script>
+        const sections = document.querySelectorAll("section");
+        const navLinks = document.querySelectorAll(".nav-link");
+
+        // Saat klik
+        navLinks.forEach(link => {
+            link.addEventListener('click', function () {
+                navLinks.forEach(l => l.classList.remove('active', 'text-purple-700', 'font-bold', 'underline'));
+                this.classList.add('active', 'text-purple-700', 'font-bold', 'underline');
+            });
+        });
+
+        // Saat scroll
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    const id = entry.target.getAttribute("id");
+                    const link = document.querySelector(`.nav-link[href="#${id}"]`);
+                    if (entry.isIntersecting) {
+                        navLinks.forEach((l) => l.classList.remove("active"));
+                        if (link) link.classList.add("active");
+                    }
+                });
+            },
+            { threshold: 0.7 }
+        );
+
+        // Amati semua section
+        sections.forEach((section) => observer.observe(section));
+
+        // 👇 Tambahan: jika user langsung buka link #id
+        window.addEventListener('load', () => {
+            const hash = window.location.hash;
+            if (hash) {
+                const targetSection = document.querySelector(hash);
+                if (targetSection) {
+                    const link = document.querySelector(`.nav-link[href="${hash}"]`);
+                    if (link) {
+                        navLinks.forEach((l) => l.classList.remove("active"));
+                        link.classList.add("active");
+                    }
+                }
+            }
+        });
+    </script>
+
 
     <script type="application/ld+json">
             {
