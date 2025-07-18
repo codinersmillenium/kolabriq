@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+
+Sitemap: https://nobble-html.vercel.app/sitemap.xml

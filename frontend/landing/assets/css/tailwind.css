@@ -1,0 +1,156 @@
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+@import 'tailwindcss';
+@tailwindcss /forms;
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-*: initial;
+    --font-jakarta: Plus Jakarta Sans, sans-serif;
+
+    --color-*: initial;
+    --color-transparent: transparent;
+    --color-current: currentColor;
+    --color-white: #ffffff;
+    --color-black: #000000;
+    --color-primary: #6c54ff;
+    --color-secondary: #1a1036;
+    --color-purple: #b04aff;
+    --color-purple-100: #f9f9f9;
+    --color-purple-200: #f4f4f4;
+    --color-purple-300: #e8e7eb;
+    --color-purple-400: #bab7c2;
+    --color-purple-500: #8c879a;
+    --color-purple-600: #5e5772;
+    --color-purple-700: #3c3454;
+    --color-purple-800: #30274a;
+    --color-purple-900: #261c40;
+    --color-green: #31d2ac;
+    --color-red: #ff3a3a;
+    --color-pink: #ff3ac8;
+    --color-yellow: #ffd02c;
+    --color-blue: #3fcffd;
+
+    --text-22: 22px;
+    --text-22--line-height: 1.26;
+
+    --breakpoint-*: initial;
+    --breakpoint-2xl: 1568px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-md: 768px;
+    --breakpoint-sm: 640px;
+
+    --rotate-y-180: rotateY(180deg);
+}
+
+@utility container {
+    margin-inline: auto;
+    padding-inline: 1rem;
+}
+@layer base {
+    button:not(:disabled),
+    [role='button']:not(:disabled) {
+        cursor: pointer;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        color: #9ca3af;
+    }
+}
+
+@layer components {
+    html {
+        @apply scroll-smooth;
+    }
+    .btn {
+        @apply rounded-lg bg-primary px-6 py-4 text-center font-semibold leading-6 text-white duration-500 hover:bg-secondary dark:hover:bg-purple-700;
+    }
+    .navbar a.nav-link {
+        @apply relative inline-flex py-1 duration-300 before:absolute before:bottom-0 before:left-0 before:h-0.5 before:w-0 before:bg-primary before:duration-300 hover:text-primary hover:before:w-full lg:py-8;
+    }
+    .navbar a.nav-link.active {
+        @apply text-primary before:w-full;
+    }
+    .form-input,
+    .form-textarea {
+        @apply w-full rounded-2xl border-2 border-[#9199B51F] bg-transparent p-4 text-base font-semibold outline-none focus:border-primary;
+    }
+}
+
+.navbar.open {
+    @apply end-0;
+}
+
+/* testimonial slider */
+.testimonial-thumb {
+    @apply py-10;
+}
+.testimonial-thumb .swiper-slide-active > div {
+    @apply scale-125 grayscale-0 duration-300;
+}
+
+/* accordion */
+.ac.is-active .ac-trigger .trigger-icon {
+    @apply !border-secondary !text-secondary dark:!border-white dark:!text-white;
+}
+.ac.is-active .ac-trigger .trigger-icon svg path {
+    @apply first:hidden;
+}
+
+/* Header - Switch button */
+.mode-input:checked ~ .mode-btn span:first-child {
+    @apply text-primary/50;
+}
+.mode-input:checked ~ .mode-btn span:last-child {
+    @apply text-white;
+}
+
+@layer utilities {
+    /* Home Page - Background gradiant linear */
+    .bg-gradient {
+        animation: bg-gradient 6s linear 0s infinite reverse;
+    }
+    .bg-gradient.green {
+        background: linear-gradient(0deg, rgba(255, 255, 255, 0) 0%, rgba(49, 210, 172, 1) 30%, rgba(49, 210, 172, 0.5) 80%, rgba(255, 255, 255, 0) 100%);
+    }
+    .bg-gradient.purple {
+        background: linear-gradient(0deg, rgba(255, 255, 255, 0) 0%, rgba(176, 74, 255, 1) 30%, rgba(176, 74, 255, 0.5) 80%, rgba(255, 255, 255, 0) 100%);
+    }
+    .bg-gradient.red {
+        background: linear-gradient(0deg, rgba(255, 255, 255, 0) 0%, rgba(255, 58, 58, 1) 30%, rgba(255, 58, 58, 0.5) 80%, rgba(255, 255, 255, 0) 100%);
+    }
+    .bg-gradient.pink {
+        background: linear-gradient(0deg, rgba(255, 255, 255, 0) 0%, rgba(255, 58, 200, 1) 30%, rgba(255, 58, 200, 0.5) 80%, rgba(255, 255, 255, 0) 100%);
+    }
+    .bg-gradient.yellow {
+        background: linear-gradient(0deg, rgba(255, 255, 255, 0) 0%, rgba(255, 208, 44, 1) 30%, rgba(255, 208, 44, 0.5) 80%, rgba(255, 255, 255, 0) 100%);
+    }
+    .bg-gradient.blue {
+        background: linear-gradient(0deg, rgba(255, 255, 255, 0) 0%, rgba(63, 207, 253, 1) 30%, rgba(63, 207, 253, 0.5) 80%, rgba(255, 255, 255, 0) 100%);
+    }
+    @keyframes bg-gradient {
+        0% {
+            transform: rotate(360deg);
+        }
+        to {
+            transform: rotate(0deg);
+        }
+    }
+}
+
+/* Sticky Header */
+header.sticky-header {
+    @apply top-0 bg-[#F8F7FF] shadow-[6px_6px_50px_rgba(17,24,39,0.1)] dark:bg-purple-800;
+}
+header.sticky-header .header-main {
+    @apply rounded-none bg-[#F8F7FF] dark:bg-purple-800;
+}
+
+/* Tabs */
+.filters .active button {
+    @apply border-primary bg-primary/5 text-primary shadow-[inset_0_-4px_0_#6C54FF];
+}
