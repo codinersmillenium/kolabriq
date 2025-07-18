@@ -1429,8 +1429,8 @@
         // Saat klik
         navLinks.forEach(link => {
             link.addEventListener('click', function () {
-                navLinks.forEach(l => l.classList.remove('active', 'text-purple-700', 'font-bold', 'underline'));
-                this.classList.add('active', 'text-purple-700', 'font-bold', 'underline');
+                navLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
             });
         });
 
