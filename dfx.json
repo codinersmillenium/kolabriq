@@ -11,13 +11,21 @@
 			"type": "custom",
 			"wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
 		},
-		"user": {
+		"project": {
 			"type": "motoko",
-			"main": "backend/user/main.mo"
+			"main": "backend/project/main.mo"
+		},
+		"task": {
+			"type": "motoko",
+			"main": "backend/task/main.mo"
 		},
 		"token": {
 			"type": "motoko",
 			"main": "backend/token/erc20.mo"
+		},
+		"user": {
+			"type": "motoko",
+			"main": "backend/user/main.mo"
 		}
 	},
 	"defaults": {
