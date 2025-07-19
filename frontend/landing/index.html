@@ -262,7 +262,7 @@
             </section>
 
             <section id="projects">
-                <div class="relative overflow-x-hidden py-7">
+                <div class="relative overflow-x-hidden py-7 lg:pt-10">
                     <div class="mx-auto pb-7 text-center lg:w-2/3 lg:pb-7">
                         <h2 class="mb-3 text-[26px]/7 font-bold text-purple-700 dark:text-white">
                             What projects would you like to manage?
@@ -1232,7 +1232,7 @@
         });
 
         // Saat scroll
-        const observer = new IntersectionObserver(
+        const observerReguler = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
                     const id = entry.target.getAttribute("id");
@@ -1243,11 +1243,31 @@
                     }
                 });
             },
-            { threshold: 0.7 }
+            { threshold: 0.6 }
+        );
+
+        const observerSmall = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    const id = entry.target.getAttribute("id");
+                    const link = document.querySelector(`.nav-link[href="#${id}"]`);
+                    if (entry.isIntersecting) {
+                        navLinks.forEach((l) => l.classList.remove("active"));
+                        if (link) link.classList.add("active");
+                    }
+                });
+            },
+            { threshold: 1 }
         );
 
         // Amati semua section
-        sections.forEach((section) => observer.observe(section));
+        sections.forEach((section) => {
+            if (section.id === 'projects') {
+                observerSmall.observe(section);
+            } else {
+                observerReguler.observe(section);
+            }
+        });
 
         // 👇 Tambahan: jika user langsung buka link #id
         window.addEventListener('load', () => {

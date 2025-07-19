@@ -228,6 +228,14 @@
     scroll-margin-top: 150px;
   }
 
+  section#expectations {
+    scroll-margin-top: 70px;
+  }
+
+  section#why-us {
+    scroll-margin-top: 70px;
+  }
+
   :where(select:is([multiple], [size])) optgroup {
     font-weight: bolder;
   }
