@@ -33,7 +33,7 @@ actor {
 		tokens.balances.put(owner, value);
         let currBalance = tokens.balanceOf(owner);
 
-        Debug.print("updated token [ " # Principal.toText owner # " ]: " # Nat.toText balance # " => " # Nat.toText currBalance);
+        Debug.print("updated token [ " # Principal.toText owner # " ] f: " # Nat.toText balance # " => t: " # Nat.toText currBalance);
     };
 
     system func preupgrade() {
