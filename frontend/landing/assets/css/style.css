@@ -3405,6 +3405,12 @@
     }
   }
 
+  .custom\:static {
+    @media (width >=1566px) {
+      position: static;
+    }
+  }
+
   .lg\:-start-20 {
     @media (width >=1024px) {
       inset-inline-start: calc(var(--spacing) * -20);
@@ -3561,6 +3567,12 @@
     }
   }
 
+  .custom\:hidden {
+    @media (width >=1566px) {
+      display: none;
+    }
+  }
+
   .lg\:inline-block {
     @media (width >=1024px) {
       display: inline-block;
@@ -3603,6 +3615,12 @@
     }
   }
 
+  .custom\:h-auto {
+    @media (width >=1566px) {
+      height: auto;
+    }
+  }
+
   .lg\:w-2\/3 {
     @media (width >=1024px) {
       width: calc(2/3 * 100%);
@@ -3629,6 +3647,12 @@
 
   .lg\:w-auto {
     @media (width >=1024px) {
+      width: auto;
+    }
+  }
+
+  .custom\:w-auto {
+    @media (width >=1566px) {
       width: auto;
     }
   }
@@ -3681,6 +3705,12 @@
     }
   }
 
+  .custom\:flex-row {
+    @media (width >=1566px) {
+      flex-direction: row;
+    }
+  }
+
   .lg\:justify-start {
     @media (width >=1024px) {
       justify-content: flex-start;
@@ -3727,9 +3757,27 @@
     }
   }
 
+  .custom\:overflow-y-visible {
+    @media (width >=1566px) {
+      overflow-y: visible;
+    }
+  }
+
+  .custom\:bg-transparent {
+    @media (width >=1566px) {
+      background-color: transparent;
+    }
+  }
+
   .lg\:bg-transparent {
     @media (width >=1024px) {
       background-color: transparent;
+    }
+  }
+
+  .custom\:p-0 {
+    @media (width >=1566px) {
+      padding: calc(var(--spacing) * 0);
     }
   }
 
@@ -3742,6 +3790,12 @@
   .lg\:px-0 {
     @media (width >=1024px) {
       padding-inline: calc(var(--spacing) * 0);
+    }
+  }
+
+  .custom\:px-6 {
+    @media (width >=1566px) {
+      padding-inline: calc(var(--spacing) * 6);
     }
   }
 
@@ -3778,6 +3832,12 @@
   .lg\:px-48 {
     @media (width >=1024px) {
       padding-inline: calc(var(--spacing) * 48);
+    }
+  }
+
+  .custom\:py-0 {
+    @media (width >=1566px) {
+      padding-block: calc(var(--spacing) * 0);
     }
   }
 
@@ -3951,6 +4011,13 @@
     }
   }
 
+  .custom\:text-lg {
+    @media (width >=1566px) {
+      font-size: var(--text-lg);
+      line-height: var(--tw-leading, var(--text-lg--line-height));
+    }
+  }
+
   .lg\:text-lg {
     @media (width >=1024px) {
       font-size: var(--text-lg);
@@ -3961,6 +4028,12 @@
   .lg\:text-\[56px\] {
     @media (width >=1024px) {
       font-size: 56px;
+    }
+  }
+
+  .custom\:text-purple-600 {
+    @media (width >=1566px) {
+      color: var(--color-purple-600);
     }
   }
 
@@ -4707,6 +4780,14 @@
         @media (hover: hover) {
           color: var(--color-white);
         }
+      }
+    }
+  }
+
+  .dark\:custom\:text-purple-500 {
+    &:where(.dark, .dark *) {
+      @media (width >=1566px) {
+        color: var(--color-purple-500);
       }
     }
   }
