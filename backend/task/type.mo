@@ -10,7 +10,7 @@ module {
 
     public type Task = {
 		id          : TypCommon.TaskId;
-        idProject   : TypCommon.ProjectId;
+        projectId   : TypCommon.ProjectId;
         title       : Text;
         description : Text;
         taskTag     : TypCommon.Tags;
@@ -19,6 +19,7 @@ module {
         priority    : Bool; 
         assignees   : [TypCommon.UserId];
         doneAt      : ?Int;
+        doneById    : ?TypCommon.UserId;
         createdAt   : Int;
         createdById : TypCommon.UserId;
         updatedAt   : ?Int;
@@ -32,7 +33,7 @@ module {
 	};
 
     public type TaskRequest = {
-        idProject   : TypCommon.ProjectId;
+        projectId   : TypCommon.ProjectId;
 		title       : Text;
 		description : Text;
         taskTag     : TypCommon.Tags;
@@ -42,7 +43,7 @@ module {
 
     public type TaskResponse = {
 		id          : TypCommon.TaskId;
-        idProject   : TypCommon.ProjectId;
+        projectId   : TypCommon.ProjectId;
         title       : Text;
         description : Text;
         taskTag     : TypCommon.Tags;
@@ -52,5 +53,31 @@ module {
         isOverdue   : Bool;
         assignees   : [TypUser.UserResponse];
         doneAt      : ?Int;
+        review      : ?TaskReview;
+    };
+
+    public type TaskReview = {
+        id          : TypCommon.TaskId;
+		taskId      : TypCommon.TaskId;
+        review      : Text;
+        fixedAt     : ?Int;
+        fixedById   : ?TypCommon.UserId;
+        createdAt   : Int;
+        createdById : TypCommon.UserId;
+        updatedAt   : ?Int;
+        updatedById : ?TypCommon.UserId;
+    };
+
+    public type TaskReviewRequest = {
+		taskId : TypCommon.TaskId;
+        review : Text;
+    };
+
+    public type UserOverview = {
+        userId            : TypCommon.UserId;
+        totalTask         : Nat;
+		totalDone         : Nat;
+        totalOverdue      : Nat;
+        avgCompletingTime : Int;
     };
 };

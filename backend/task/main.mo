@@ -1,7 +1,7 @@
 import Result "mo:base/Result";
 import Iter "mo:base/Iter";
 import Array "mo:base/Array";
-import Principal "mo:base/Principal";
+import Buffer "mo:base/Buffer";
 
 import TypCommon "../common/type";
 import TypUser "../user/type";
@@ -14,31 +14,38 @@ import Utl "../utils/helper";
 import CanUser "canister:user";
 
 actor {
-    private stable var nextTaskId         : TypCommon.TaskId             = 0;
+    private stable var nextTaskId   : TypCommon.TaskId       = 0;
+    private stable var nextReviewId : TypCommon.TaskReviewId = 0;
+
     private stable var stableTasks        : [SvcTask.StableTasks]        = [];
     private stable var stableProjectTasks : [SvcTask.StableProjectTasks] = [];
     private stable var stableMemberTasks  : [SvcTask.StableMemberTasks]  = [];
+    private stable var stableReviews      : [SvcTask.StableReviews]      = [];
+    private stable var stableTaskReview   : [SvcTask.StableTaskReview]   = [];
 
-    private let tasks = SvcTask.Tasks(
-        nextTaskId, 
+    private let task = SvcTask.Task(
+        nextTaskId,
+        nextReviewId,
         stableTasks, 
         stableProjectTasks, 
         stableMemberTasks,
+        stableReviews,
+        stableTaskReview,
     );
 
-// Last here
+    // MARK: Mapped arr to response
     private func mappedArrToResponse(arrTasks: [TypTask.Task]) : async [TypTask.TaskResponse] {
         let size = arrTasks.size();
         let data = Array.init<TypTask.TaskResponse>(
             size, 
-            tasks.mappedToResponse(arrTasks[0], [])
+            task.mappedToResponse(arrTasks[0], [])
         );
         
         for (i in Iter.range(0, size - 1)) {
-            let task  = arrTasks[i];
-            let users = await CanUser.getUsersByIds(task.assignees);
+            let currtask = arrTasks[i];
+            let users    = await CanUser.getUsersByIds(currtask.assignees);
             switch(users) {
-                case(#ok(dataUsers: [TypUser.UserResponse])) { data[i] := tasks.mappedToResponse(task, dataUsers); };
+                case(#ok(dataUsers)) { data[i] := task.mappedToResponse(currtask, dataUsers); };
                 case(_) {};
             };
         };
@@ -46,22 +53,25 @@ actor {
         return Array.freeze(data);
     };
 
+    // MARK: Get filtered tasks
     public func getFilteredTasks(
-        filter : TypTask.TaskFilter
+        projectId : TypCommon.ProjectId,
+        filter    : TypTask.TaskFilter,
     ) : async Result.Result<[TypTask.TaskResponse], ()> {
-        let arrTasks = tasks.getFilteredTasks(filter);
+        let arrTasks = task.getFilteredTasks(projectId, filter);
         let result   = await mappedArrToResponse(arrTasks);
 
         return #ok(result);
 	};
 
-    public func getTasksBaseProjectId(
-        idProject : TypCommon.ProjectId,
+    // MARK: Get project tasks
+    public shared func getProjectTasks(
+        projectId : TypCommon.ProjectId,
     ) : async Result.Result<[TypTask.TaskResponse], ()>  {
-        switch (tasks.projectTasks.get(Utl.natToBlob(idProject))) {
+        switch (task.projectTasks.get(Utl.natToBlob(projectId))) {
             case (null)     { return #ok([]) };
             case (?taskIds) {
-                let arrTasks = tasks.getTasksByIds(taskIds);
+                let arrTasks = task.getTasksByIds(taskIds);
                 let result   = await mappedArrToResponse(arrTasks);
 
                 return #ok(result);
@@ -69,100 +79,114 @@ actor {
         };
     };
 
-    // public shared func getProjectMembers(
-    //     idProject : TypCommon.ProjectId
-    // ) : async Result.Result<[TypUser.UserResponse], ()>  {
-    //     switch (tasks.projectTasks.get(Utl.natToBlob(idProject))) {
-    //         case (null)     { return #ok([]) };
-    //         case (?taskIds) {
-    //             let arrTasks = tasks.getTasksByIds(taskIds);
-    //             // filteredUser = filter user id loop arr task ambil task asigness, trus masukkin array tapi harus unique idnya
-
-    //             let size = arrTasks.size();
-    //             let data = Array.init<TypUser.UserResponse>(
-    //                 size, 
-    //                 {
-    //                     id        = Principal.fromText("aaaaa-aa");
-    //                     userName  = "";
-    //                     firstName = "";
-    //                     lastName  = "";
-    //                     role      = #developer;
-    //                     tags      = [];
-    //                     createdAt = 0;
-    //                 }
-    //             );
-                
-    //             for (i in Iter.range(0, size - 1)) {
-    //                 let users = await CanUser.getUsersByIds(filteredUser);
-    //                 switch(users) {
-    //                     case(#ok(dataUsers)) { data[i] := dataUsers; };
-    //                     case(_) {};
-    //                 };
-    //             };
-
-    //             return #ok(Array.freeze(data));
-    //         };
-    //     };
-    // };
-
-    public shared ({caller}) func getMemberTaskList() : async Result.Result<[TypTask.TaskResponse], ()>  {
-        switch (tasks.memberTasks.get(caller)) {
+    // MARK: Get task assignees
+    public shared func getTaskAssignees(
+        projectId : TypCommon.ProjectId
+    ) : async Result.Result<[TypUser.UserResponse], ()>  {
+        switch (task.projectTasks.get(Utl.natToBlob(projectId))) {
             case (null)     { return #ok([]) };
             case (?taskIds) {
-                let arrTasks = tasks.getTasksByIds(taskIds);
-                let result   = await mappedArrToResponse(arrTasks);
+                let arrTasks = task.getTasksByIds(taskIds);
+                let userIds = Buffer.Buffer<TypCommon.UserId>(0);
+                for(task in arrTasks.vals()) {
+                    for(assignedUserId in task.assignees.vals()) {
+                        let hasBeenAdded = Buffer.forSome<TypCommon.UserId>(
+                            userIds, 
+                            func userId { userId == assignedUserId }
+                        );
 
-                return #ok(result);
+                        if (not hasBeenAdded) userIds.add(assignedUserId);
+                    };
+                };
+
+                return await CanUser.getUsersByIds(Buffer.toArray(userIds));
             };
         };
     };
 
+    // MARK: Get total project tasks
+    public query func getTotalTasksProject(projectId : TypCommon.ProjectId) : async Nat  {
+        switch (task.projectTasks.get(Utl.natToBlob(projectId))) {
+            case (null)     { return 0 };
+            case (?taskIds) { return taskIds.size() };
+        };
+    };
+
+    // MARK: Create task
     public shared ({caller}) func createTask(
         req : TypTask.TaskRequest,
     ) : async Result.Result<TypTask.TaskResponse, Text> {
-        let task = tasks.createTask(caller, req);
-        #ok(tasks.mappedToResponse(task, []));
+        let result = task.createTask(caller, req);
+        return #ok(task.mappedToResponse(result, []));
 	};
 
+    // MARK: Update status
     public shared ({caller}) func updateStatus(
         taskId    : TypCommon.TaskId,
         reqStatus : TypTask.TaskStatus,
     ) : async Result.Result<TypTask.TaskResponse, Text> {
-        let task = tasks.findById(taskId);
-        switch(task) {
+        switch(task.findById(taskId)) {
             case(null)  { return #err("Task tidak ditemukan"); };
-            case(?task) {
-                ignore tasks.updateStatus(caller, task, reqStatus);
-                let users = await CanUser.getUsersByIds(task.assignees);
+            case(?t) {
+                ignore task.updateStatus(caller, t, reqStatus);
+                let users = await CanUser.getUsersByIds(t.assignees);
                 return switch(users) {
-                    case(#ok(dataUsers)) { #ok(tasks.mappedToResponse(task, dataUsers)); };
-                    case(_) { #ok(tasks.mappedToResponse(task, [])); };
+                    case(#ok(dataUsers)) { return #ok(task.mappedToResponse(t, dataUsers)); };
+                    case(_)              { return #ok(task.mappedToResponse(t, [])); };
                 };
             };
         };
 	};
 
+    // MARK: Update status
+    public query func isAllTaskAreComplete(projectId : TypCommon.ProjectId) : async Result.Result<Bool, ()> {
+        return #ok(task.isTasksAreCompleted(projectId));
+	};
+
+    // MARK: Assign responsible user
+    // TODO: ASSING USER BISA BANYAK JADI NTI DI LOOP
     public shared ({caller}) func assignResponsibleUser(
-        taskId : TypCommon.TaskId, 
-        userId : TypCommon.UserId,
+        taskId       : TypCommon.TaskId, 
+        assignUserId : TypCommon.UserId,
     ) : async Result.Result<Text, Text> {
-        let task = tasks.findById(taskId);
-        switch(task) {
+        switch(task.findById(taskId)) {
             case(null)  { return #err("Task tidak ditemukan"); };
-            case(?task) {
-                let isUserAssigned = tasks.assignUser(caller, task, userId);
+            case(?t) {
+                let isUserAssigned = task.assignUser(caller, t, assignUserId);
                 return switch(isUserAssigned) {
-                    case(false) { #err("Terjadi kesalahan, mohon coba beberapa waktu lagi") };
-                    case(true)  { #ok("Berhasil perbarui data") };
+                    case(false) { return #err("Terjadi kesalahan, mohon coba beberapa waktu lagi") };
+                    case(true)  { return #ok("Berhasil perbarui data") };
                 };
             };
         };
     };
 
+    // MARK: Get user overview
+    public query func getUserOverview(
+        projectId : TypCommon.ProjectId, 
+    ) : async Result.Result<[TypTask.UserOverview], Text> {
+        let result  = task.userOverview(projectId);
+        let isEmpty = result.size() == 0;
+
+        if (not isEmpty) {
+            return #ok(result);
+        } else {
+            return #err("Terjadi kesalah, mohon coba beberapa waktu kembali.");
+        };
+    };
+
+    // MARK: Set review
+    public shared ({caller}) func setReview(req : TypTask.TaskReviewRequest) : async Result.Result<Text, ()> {
+        task.saveReview(caller, req, false);
+        return #ok("Berhasil menambahkan review");
+    };
+
+    // MARK: System
+
     system func preupgrade() {
-        stableTasks        := Iter.toArray(tasks.tasks.entries());
-        stableProjectTasks := Iter.toArray(tasks.projectTasks.entries());
-        stableMemberTasks  := Iter.toArray(tasks.memberTasks.entries());
+        stableTasks        := Iter.toArray(task.tasks.entries());
+        stableProjectTasks := Iter.toArray(task.projectTasks.entries());
+        stableMemberTasks  := Iter.toArray(task.memberTasks.entries());
     };
 
     system func postupgrade() {
