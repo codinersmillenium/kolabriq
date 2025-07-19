@@ -11,21 +11,13 @@
 			"type": "custom",
 			"wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
 		},
-		"contest": {
-			"type": "motoko", 
-			"main": "src/backend/contest/main.mo"
-		},
-		"contestant": {
-			"type": "motoko",
-			"main": "src/backend/contestant/main.mo"
-		},
 		"user": {
 			"type": "motoko",
-			"main": "src/backend/user/main.mo"
+			"main": "backend/user/main.mo"
 		},
 		"token": {
 			"type": "motoko",
-			"main": "src/backend/token/erc20.mo"
+			"main": "backend/token/erc20.mo"
 		}
 	},
 	"defaults": {
