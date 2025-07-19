@@ -55,61 +55,8 @@ const Sidebar = () => {
     }
 
     const isOpen = () => {
-        if (['/blog-list', '/blog-details', '/add-blog'].includes(pathName)) {
-            return 'item-2'
-        } else if (
-            [
-                '/',
-                '/crypto-dashboard',
-                '/product-card',
-                '/add-product',
-                '/product-details',
-                '/product-checkout',
-            ].includes(pathName)
-        ) {
-            return 'item-1'
-        } else if (
-            ['/invoice', '/invoice-details', '/create-invoice'].includes(
-                pathName,
-            )
-        ) {
-            return 'item-3'
-        } else if (
-            [
-                '/accordion-page',
-                '/alert',
-                '/alert-dialog',
-                '/avatar',
-                '/breadcrumbs',
-                '/buttons',
-                '/card-page',
-                '/carousel',
-                '/dropdown',
-                '/empty-stats',
-                '/hover-card',
-                '/modal',
-                '/popover',
-                '/scroll-area',
-                '/sonner',
-                '/tabs',
-                '/tag',
-                '/toasts',
-                '/toggle-group',
-                '/tooltip',
-            ].includes(pathName)
-        ) {
+        if (['/board-task', '/board-calendar', '/board-report', '/task-detail'].includes(pathName)) {
             return 'item-4'
-        } else if (
-            [
-                '/checkbox',
-                '/combobox',
-                '/command',
-                '/form',
-                '/inputs',
-                '/input-otp',
-            ].includes(pathName)
-        ) {
-            return 'item-5'
         } else {
             return ''
         }
@@ -187,9 +134,8 @@ const Sidebar = () => {
                     </NavLink>
 
                     <NavLink
-                        href="/scrumboard"
-                        target="_blank"
-                        className={`nav-link ${pathName === '/scrumboard' && 'text-black!'}`}
+                        href="/projects"
+                        className={`nav-link ${pathName === '/projects' && 'text-black!'}`}
                     >
                         <FolderKanban className="size-[18px] shrink-0" />
                         <span>Projects</span>
@@ -209,9 +155,9 @@ const Sidebar = () => {
                             <ul className="submenu space-y-2 pl-12 pr-5">
                                 <li>
                                     <NavLink
-                                        href="/accordion-page"
-                                        target="_blank"
+                                        href="/board-task"
                                         isAccordion={true}
+                                        className={`${pathName === '/task-detail' && 'sub-menu-active'}`}
                                     >
                                         Task & Progress
                                     </NavLink>
@@ -219,7 +165,6 @@ const Sidebar = () => {
                                 <li>
                                     <NavLink
                                         href="/alert"
-                                        target="_blank"
                                         isAccordion={true}
                                     >
                                         Calendar
@@ -228,7 +173,6 @@ const Sidebar = () => {
                                 <li>
                                     <NavLink
                                         href="/alert-dialog"
-                                        target="_blank"
                                         isAccordion={true}
                                     >
                                         Reports

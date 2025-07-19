@@ -18,7 +18,7 @@ export default async function RootLayout({
     children: React.ReactNode
 }>) {
     return (
-        <html lang="en" className="scroll-smooth dark">
+        <html lang="en" className="scroll-smooth light">
             <body
                 className={cn(
                     'text-gray bg-gray-400 text-sm/[22px] font-normal antialiased',

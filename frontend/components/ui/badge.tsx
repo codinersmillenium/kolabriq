@@ -33,6 +33,9 @@ const badgeVariants = cva(
                 small: 'px-1.5 py-[3px] leading-[12px] rounded-full',
                 number: 'text-[10px]/[8px] px-1.5 py-1 font-semibold',
             },
+            radius: {
+                full: 'rounded-full'
+            }
         },
         defaultVariants: {
             variant: 'default',

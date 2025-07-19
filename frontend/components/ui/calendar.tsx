@@ -19,7 +19,7 @@ function Calendar({
         <DayPicker
             showOutsideDays={showOutsideDays}
             className={cn(
-                'dark:bg-black-dark rounded-lg bg-white p-1.5',
+                'bg-black rounded-lg p-1.5',
                 className,
             )}
             classNames={{
@@ -43,7 +43,7 @@ function Calendar({
                     'size-[22px] bg-transparent p-0 rounded-full text-black dark:text-white hover:opacity-70 hover:bg-white bg-white shadow-none ring-0',
                 ),
                 chevron:
-                    'h-3.5! w-3.5! text-black! dark:text-white! fill-black! dark:fill-white!',
+                    'h-3.5 w-3.5 text-black',
                 table: 'w-full border-collapse space-y-1',
                 month_grid: 'w-full border-collapse space-y-1',
                 weekdays: 'flex gap-3 px-3',

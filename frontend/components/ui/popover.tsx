@@ -14,16 +14,18 @@ const PopoverContent = React.forwardRef<
     React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
 >(({ className, align = 'center', sideOffset = 6, ...props }, ref) => (
     <PopoverPrimitive.Portal>
-        <PopoverPrimitive.Content
-            ref={ref}
-            align={align}
-            sideOffset={sideOffset}
-            className={cn(
-                'text-popover-foreground z-50 w-[250px] rounded-lg bg-white p-4 text-left font-medium shadow-3xl outline-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-                className,
-            )}
-            {...props}
-        />
+        <div className='relative z-100'>
+            <PopoverPrimitive.Content
+                ref={ref}
+                align={align}
+                sideOffset={sideOffset}
+                className={cn(
+                    'rounded-md shadow-xl p-4 bg-white',
+                    className,
+                )}
+                {...props}
+            />
+        </div>
     </PopoverPrimitive.Portal>
 ))
 PopoverContent.displayName = PopoverPrimitive.Content.displayName

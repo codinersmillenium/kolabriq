@@ -30,7 +30,7 @@ const DialogUi: React.FC<DialogProps> = ({ open, onOpenChange, title, content })
             left: '50%',
             transform: 'translate(-50%, -50%)',
             width: '90vw',
-            maxWidth: '500px',            
+            maxWidth: '500px',           
             padding: '25px',
             animation: 'contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
             borderRadius: '10px',
@@ -39,7 +39,7 @@ const DialogUi: React.FC<DialogProps> = ({ open, onOpenChange, title, content })
         >
           <Dialog.Title style={{ marginBottom: '10px', fontWeight: 'bold'}}>{ title }</Dialog.Title>
           <Dialog.Description>
-            { content }
+            { content }            
           </Dialog.Description>
         </Dialog.Content>
       </Dialog.Portal>

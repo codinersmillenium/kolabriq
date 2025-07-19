@@ -17,6 +17,7 @@ const buttonVariants = cva(
                     'ring-1 ring-inset ring-black bg-white shadow-sm text-black hover:bg-gray-200',
                 'outline-general':
                     'ring-1 ring-inset ring-gray-300 bg-white shadow-sm text-black hover:bg-gray-200',
+                ghost: 'bg-none',
             },
             size: {
                 default: '',
