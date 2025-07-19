@@ -4,6 +4,8 @@ import Buffer "mo:base/Buffer";
 import Nat8 "mo:base/Nat8";
 import Array "mo:base/Array";
 import Blob "mo:base/Blob";
+import Random "mo:base/Random";
+import Text "mo:base/Text";
 
 import TypCommon "../common/type";
 
@@ -35,4 +37,20 @@ module {
 
         return Blob.fromArray(arr)
     };
+
+    public func generateReferralCode() : async Text {
+        let charsetText  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let charset      = Iter.toArray(Text.toIter(charsetText));
+        let charsetSize  = charset.size();
+        let randomBlob   = await Random.blob();
+        var code         = "";
+
+        for (byte in randomBlob.vals()) {
+            let idx = Nat8.toNat(byte) % charsetSize;
+            code   #= Text.fromChar(charset[idx]);
+        };
+
+        return "REF-#" # code;
+    };
+
 }
