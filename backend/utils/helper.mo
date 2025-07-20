@@ -6,6 +6,9 @@ import Array "mo:base/Array";
 import Blob "mo:base/Blob";
 import Random "mo:base/Random";
 import Text "mo:base/Text";
+import Char "mo:base/Char";
+import Nat32 "mo:base/Nat32";
+import Int32 "mo:base/Int32";
 
 import TypCommon "../common/type";
 
@@ -53,4 +56,17 @@ module {
         return "REF-#" # code;
     };
 
+    public func textToNat(t : Text) : Int {
+        var n : Nat32 = 0;
+        for (c in t.chars()) {
+            if (Char.isDigit(c)) {
+                let digit : Nat32 = Char.toNat32(c) - 48;
+                n := n * 10 + digit;
+            } else {
+                return 0;
+            };
+        };
+        
+        return Int32.toInt(Int32.fromNat32(n));
+    };
 }
