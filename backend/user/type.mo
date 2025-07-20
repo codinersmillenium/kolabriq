@@ -7,6 +7,17 @@ module {
         #developer;
     };
 
+    public type PLan = {
+        #basic;
+        #pro;
+    };
+
+    public type PLanRequest = {
+        #basic;
+        #monthly;
+        #yearly;
+    };
+
     public type User = {
 		id              : TypCommon.UserId;
         userName        : Text;
@@ -16,6 +27,8 @@ module {
 		tags            : [TypCommon.Tags];
 		referrerCode    : ?Text;
 		personalRefCode : ?Text;
+		plan_type       : PLan;
+		plan_expired_at : ?Int;
 		createdAt       : Int;
 		createdById     : TypCommon.UserId;
 		updatedAt       : ?Int;
@@ -38,13 +51,17 @@ module {
 	};
 
     public type UserResponse = {
-		id          : TypCommon.UserId;
-        userName    : Text;
-		firstName   : Text;
-		lastName    : Text;
-		role        : Role;
-		tags        : [TypCommon.Tags];
-		createdAt   : Int;
+		id              : TypCommon.UserId;
+        userName        : Text;
+		firstName       : Text;
+		lastName        : Text;
+		role            : Role;
+		tags            : [TypCommon.Tags];
+		referrerCode    : ?Text;
+		personalRefCode : ?Text;
+		plan_type       : PLan;
+		plan_expired_at : ?Int;
+		createdAt       : Int;
 		// TODO: Profile image
     };
 };

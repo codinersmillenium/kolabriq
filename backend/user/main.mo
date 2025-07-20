@@ -9,12 +9,44 @@ import TypUser "type";
 import SvcUser "service";
 
 import Utl "../utils/helper";
+import UtlUser "util";
+
+import CanToken "canister:token";
 
 actor {
     private stable var stableUser         : [SvcUser.StableUsers]         = [];
     private stable var stableReferrerUser : [SvcUser.StableReferrerUsers] = [];
 
     private let user = SvcUser.User(stableUser, stableReferrerUser);
+
+    // MARK: Login
+    public shared ({caller}) func loginUser() : async Result.Result<TypUser.UserResponse, Text> {
+        switch(user.users.get(caller)) {
+            case(null) { return #err("Akun tidak ditemukan."); };
+            case(?u)   { 
+                let result = user.updateUserPlan(u);
+                return #ok(user.mappedToResponse(result)); 
+            };
+        };
+    };
+
+    // MARK: Register
+    public shared ({caller}) func registerUser(
+        req : TypUser.UserRequest
+    ) : async Result.Result<TypUser.UserResponse, Text> {
+        switch(user.users.get(caller)) {
+            case(?_) { return #err("Akun [" # req.firstName # " ] sudah terdaftar."); };
+            case(null) { 
+                let personalCode : ?Text = if (req.role == #admin) {
+                    let code = await Utl.generateReferralCode();
+                    ?code;
+                 } else null;
+
+                let result = user.createUser(caller, req, personalCode);
+                return #ok(user.mappedToResponse(result)); 
+            };
+        };
+    };
 
     // MARK: Get list of user
     // 
@@ -54,24 +86,6 @@ actor {
         return #ok(data);
     };
 
-    // MARK: Register
-    public shared ({caller}) func registerUser(
-        req : TypUser.UserRequest
-    ) : async Result.Result<TypUser.UserResponse, Text> {
-        switch(user.users.get(caller)) {
-            case(?user) { return #err("Akun [" # req.firstName # " ] sudah terdaftar."); };
-            case(null)  { 
-                let personalCode : ?Text = if (req.role == #admin) {
-                    let code = await Utl.generateReferralCode();
-                    ?code;
-                 } else null;
-
-                let result = user.createUser(caller, req, personalCode);
-                return #ok(user.mappedToResponse(result)); 
-            };
-        };
-    };
-
     // MARK: Find user by id
     public shared func findUserById(
         userId : TypCommon.UserId
@@ -84,13 +98,30 @@ actor {
 
     // MARK: Update user
     public shared ({caller}) func updateUser(
-        userId : TypCommon.UserId, 
         req    : TypUser.UserRequest,
     ) : async Result.Result<TypUser.UserResponse, Text> {
-        return switch(user.findUserById(userId)) {
+        return switch(user.findUserById(caller)) {
             case(null) { #err("Akun tidak ditemukan."); };
             case(?u)   { 
                 let data = user.updateUser(caller, u, req);
+                #ok(user.mappedToResponse(data)); 
+            };
+        };
+    };
+
+    // MARK: Update user plan
+    public shared ({caller}) func updateUserPlan(
+        req : TypUser.PLanRequest,
+    ) : async Result.Result<TypUser.UserResponse, Text> {
+        return switch(user.findUserById(caller)) {
+            case(null) { #err("Akun tidak ditemukan."); };
+            case(?u)   { 
+                let balance = await CanToken.balanceOf(caller);
+                if (req != #basic and balance < UtlUser.getPlanPrice(req)) {
+                    return #err("Token tidak mencukupi.")
+                };
+
+                let data = user.renewUserPlan(caller, u, req);
                 #ok(user.mappedToResponse(data)); 
             };
         };

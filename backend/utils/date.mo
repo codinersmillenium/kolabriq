@@ -12,4 +12,11 @@ module {
         return dayStart;
     };
 
+    public func oneMonth() : Int {
+        return addDate(30);
+    };
+
+    public func oneYear() : Int {
+        return addDate(365);
+    };
 };

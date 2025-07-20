@@ -119,6 +119,8 @@ module {
                 tags            = req.tags;
                 referrerCode    = req.referrerCode;
                 personalRefCode = personalCode;
+                plan_type       = #basic;
+                plan_expired_at = null;
                 createdAt       = UtlDate.now();
                 createdById     = userId;
                 updatedAt       = null;
@@ -160,6 +162,8 @@ module {
                         tags 	        = user.tags;
                         referrerCode    = user.referrerCode;
                         personalRefCode = user.personalRefCode;
+                        plan_type       = user.plan_type;
+                        plan_expired_at = user.plan_expired_at;
                         createdAt       = user.createdAt;
                         createdById     = user.createdById;
                         updatedAt       = user.updatedAt;
@@ -186,6 +190,8 @@ module {
                 tags 	        = req.tags;
                 referrerCode    = user.referrerCode;
                 personalRefCode = user.personalRefCode;
+                plan_type       = user.plan_type;
+                plan_expired_at = user.plan_expired_at;
                 createdAt       = user.createdAt;
                 createdById     = user.createdById;
                 updatedAt       = ?UtlDate.now();
@@ -200,14 +206,86 @@ module {
         // MARK: Mapped to data response
         public func mappedToResponse(user  : TypUser.User) : TypUser.UserResponse {
             let data : TypUser.UserResponse = {
-                id        = user.id;
-                userName  = user.userName;
-                firstName = user.firstName;
-                lastName  = user.lastName;
-                role      = user.role;
-                tags      = user.tags;
-                createdAt = user.createdAt;
+                id              = user.id;
+                userName        = user.userName;
+                firstName       = user.firstName;
+                lastName        = user.lastName;
+                role            = user.role;
+                tags            = user.tags;
+                referrerCode    = user.referrerCode;
+                personalRefCode = user.personalRefCode;
+                plan_type       = user.plan_type;
+                plan_expired_at = user.plan_expired_at;
+                createdAt       = user.createdAt;
             };
+
+            return data;
+        };
+
+        // MARK: Update user plan
+        public func updateUserPlan(user : TypUser.User) : TypUser.User {
+            if (user.plan_type == #basic) return user;
+
+            let isPlanExpired = Option.get<Int>(user.plan_expired_at, 0) < UtlDate.now();
+            let (updatedPlan : TypUser.PLan, updatedExpired : ?Int) = if (isPlanExpired) {
+                (#basic, null)
+            } else {
+                (user.plan_type, user.plan_expired_at)
+            };
+
+            let data : TypUser.User = {
+                id 		        = user.id;
+                userName        = user.userName;
+                firstName       = user.firstName;
+                lastName        = user.lastName;
+                role 	        = user.role;
+                tags 	        = user.tags;
+                referrerCode    = user.referrerCode;
+                personalRefCode = user.personalRefCode;
+                plan_type       = updatedPlan;
+                plan_expired_at = updatedExpired;
+                createdAt       = user.createdAt;
+                createdById     = user.createdById;
+                updatedAt       = user.updatedAt;
+                updatedById     = user.updatedById;
+            };
+
+            users.put(data.id, data);
+
+            return data;
+        };
+
+        // MARK: Renew user plan
+        public func renewUserPlan(
+            userId : TypCommon.UserId,
+            user   : TypUser.User, 
+            req    : TypUser.PLanRequest,
+        ) : TypUser.User {
+            let curr_expired_at = Option.get<Int>(user.plan_expired_at, 0);
+            let (plan : TypUser.PLan, expired : ?Int) = switch(req) {
+                case(#basic)   { (#basic, null); };
+                case(#monthly) { (#pro, ?(curr_expired_at + UtlDate.oneMonth())); };
+                case(#yearly)  { (#pro, ?(curr_expired_at + UtlDate.oneYear())); };
+            };
+
+            let data : TypUser.User = {
+                id 		        = user.id;
+                userName        = user.userName;
+                firstName       = user.firstName;
+                lastName        = user.lastName;
+                role 	        = user.role;
+                tags 	        = user.tags;
+                referrerCode    = user.referrerCode;
+                personalRefCode = user.personalRefCode;
+                plan_type       = plan;
+                plan_expired_at = expired;
+                createdAt       = user.createdAt;
+                createdById     = user.createdById;
+                updatedAt       = ?UtlDate.now();
+                updatedById     = ?userId;
+            };
+
+            users.put(data.id, data);
 
             return data;
         };
