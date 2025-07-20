@@ -23,13 +23,9 @@ module {
 
         public func balanceOf(owner : Principal) : Nat {
             switch (balances.get(owner)) {
-                case (null)      { 10000; };
+                case (null)      { 500; };
                 case (? balance) { balance; };
             };
-        };
-
-        public func putBalance(principal : Principal, token : Nat) {
-            balances.put(principal, token);
         };
     }
 }

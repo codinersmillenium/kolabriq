@@ -5,39 +5,40 @@ import Debug "mo:base/Debug";
 import SvcToken "token";
 
 actor {
-    private stable let tokenName : Text   = "Heartbeat";
-    private stable let tokenSymbol : Text = "HRBT";
+    private stable let tokenName   : Text = "Tomato";
+    private stable let tokenSymbol : Text = "TOMA";
     
 	private stable var stableToken : [SvcToken.StableToken] = [];
-	private let tokens = SvcToken.Token(stableToken);
+
+	private let token = SvcToken.Token(stableToken);
 
     public query func name() : async Text { tokenName; };
     public query func symbol() : async Text { tokenSymbol; };
 
-
-    // Get caller current ballance
+    // MARK: Balance of
     public shared query func balanceOf(owner : Principal) : async Nat {
-        tokens.balanceOf(owner);
+        token.balanceOf(owner);
     };
 
-    // This function is for demo purposes. It generates and hands out $HRBT for free.
+    // MARK: Buy
 	public shared({caller}) func buyIn(amount : Nat) : async Nat {
-        let balance = tokens.balanceOf(caller);
-		tokens.balances.put(caller, balance + amount);
+        let balance = token.balanceOf(caller);
+		token.balances.put(caller, balance + amount);
 
-        return tokens.balanceOf(caller);
+        return token.balanceOf(caller);
 	};
 
+    // MARK: Update balance
     public shared func updateBalance(owner : Principal, value : Nat) : async() {
-        let balance = tokens.balanceOf(owner);
-		tokens.balances.put(owner, value);
-        let currBalance = tokens.balanceOf(owner);
+        let balance = token.balanceOf(owner);
+		token.balances.put(owner, value);
+        let currBalance = token.balanceOf(owner);
 
         Debug.print("updated token [ " # Principal.toText owner # " ] f: " # Nat.toText balance # " => t: " # Nat.toText currBalance);
     };
 
     system func preupgrade() {
-        stableToken := SvcToken.toStable(tokens);
+        stableToken := SvcToken.toStable(token);
     };
 
     system func postupgrade() {
