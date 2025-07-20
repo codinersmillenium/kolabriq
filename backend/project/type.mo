@@ -29,7 +29,6 @@ module {
         updatedAt   : ?Int;
         updatedById : ?TypCommon.UserId;
         // TODO : Image
-        // TODO : Timeline
     };
 
     public type ProjectFilter = {
@@ -59,6 +58,11 @@ module {
         reward      : Nat;
     };
 
+    public type ProjectResponseFromLLM = {
+        name : Text;
+        tags : [TypCommon.Tags];
+    };
+
     public type ProjectResponse = {
 		id          : TypCommon.ProjectId;
         ownerId     : TypCommon.UserId;
@@ -76,7 +80,6 @@ module {
         updatedAt   : ?Int;
         updatedById : ?TypCommon.UserId;
         // TODO : Image
-        // TODO : Timeline
     };
 
     public type PayoutRequest = {
@@ -92,6 +95,12 @@ module {
     };
 
     public type TimelineRequest = {
+        title      : Text;
+        start_date : Int;
+        end_date   : Int;
+    };
+
+    public type TimelineResponseFromLLM = {
         title      : Text;
         start_date : Int;
         end_date   : Int;

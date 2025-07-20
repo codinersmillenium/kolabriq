@@ -56,6 +56,14 @@ module {
         review      : ?TaskReview;
     };
 
+    public type TaskResponseFromLLM = {
+		title       : Text;
+		description : Text;
+        taskTag     : TypCommon.Tags;
+        dueDate     : Int;
+        priority    : Bool;
+	};
+
     public type TaskReview = {
         id          : TypCommon.TaskId;
 		taskId      : TypCommon.TaskId;
@@ -85,5 +93,19 @@ module {
 		totalDone         : Nat;
         totalOverdue      : Nat;
         avgCompletingTime : Int;
+    };
+
+    public type HistoryCategory = {
+        #in_progress;
+        #done;
+        #correction;
+    };
+
+    public type TaskHistory = {
+        id        : TypCommon.TaskHistoryId;
+		taskId    : TypCommon.TaskId;
+        category  : HistoryCategory;
+        timestamp : Int;
+        username  : Text;
     };
 };
