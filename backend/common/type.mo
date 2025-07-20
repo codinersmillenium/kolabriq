@@ -7,8 +7,9 @@ module {
         #BussinesAnalist;
     };
 
-    public type ProjectId    = Nat;
-    public type TaskId       = Nat;
-    public type TaskReviewId = Nat;
-    public type UserId       = Principal;
+    public type ProjectId     = Nat;
+    public type TimelineId    = Nat;
+    public type TaskId        = Nat;
+    public type TaskReviewId  = Nat;
+    public type UserId        = Principal;
 }

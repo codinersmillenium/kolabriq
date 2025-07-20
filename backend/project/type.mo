@@ -83,4 +83,17 @@ module {
         userId : TypCommon.UserId;
         reward : Nat;
     };
+
+    public type Timeline = {
+        id         : TypCommon.TimelineId;
+        title      : Text;
+        start_date : Int;
+        end_date   : Int;
+    };
+
+    public type TimelineRequest = {
+        title      : Text;
+        start_date : Int;
+        end_date   : Int;
+    };
 };

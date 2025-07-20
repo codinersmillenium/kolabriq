@@ -16,29 +16,44 @@ import Utl "../utils/helper";
 
 
 module {
-    private type ProjectHashKey       = Blob;
+    private type ProjectHashKey         = Blob;
+    private type ProjectTimeLineHashKey = Blob;
 
-    public type StableProjects        = (ProjectHashKey, TypProject.Project);
-    public type StableProjectBalances = (ProjectHashKey, Nat);
-    public type StableUserProjects    = (TypCommon.UserId, [TypCommon.ProjectId]);
-    public type StableProjectTeams    = (ProjectHashKey, [TypCommon.UserId]);
+    public type StableProjects         = (ProjectHashKey, TypProject.Project);
+    public type StableProjectBalances  = (ProjectHashKey, Nat);
+    public type StableUserProjects     = (TypCommon.UserId, [TypCommon.ProjectId]);
+    public type StableProjectTeams     = (ProjectHashKey, [TypCommon.UserId]);
+    public type StableTimelines        = (ProjectTimeLineHashKey, TypProject.Timeline);
+    public type StableProjectTimelines = (ProjectHashKey, [TypCommon.TimelineId]);
 
     public class Project(
-        projectId           : Nat,
-        dataProjects        : [StableProjects],
-        dataProjectBalances : [StableProjectBalances],
-        dataUserProjects    : [StableUserProjects],
-        dataProjectTeams    : [StableProjectTeams],
+        projectId            : Nat,
+        timelineId           : Nat,
+        dataProjects         : [StableProjects],
+        dataProjectBalances  : [StableProjectBalances],
+        dataUserProjects     : [StableUserProjects],
+        dataProjectTeams     : [StableProjectTeams],
+        dataTimelines        : [StableTimelines],
+        dataProjectTimelines : [StableProjectTimelines],
     ) {
-        public var nextProjectId   = projectId;
-        public let projects        = HashMap.HashMap<ProjectHashKey, TypProject.Project>(dataProjects.size(), Blob.equal, Blob.hash);
-        public let projectBalances = HashMap.HashMap<ProjectHashKey, Nat>(dataProjectBalances.size(), Blob.equal, Blob.hash);
-        public let userProjects    = HashMap.HashMap<TypCommon.UserId, [TypCommon.ProjectId]>(dataUserProjects.size(), Principal.equal, Principal.hash);
-        public let projectTeams    = HashMap.HashMap<ProjectHashKey, [TypCommon.UserId]>(dataProjectTeams.size(), Blob.equal, Blob.hash);
+        public var nextProjectId    = projectId;
+        public var nextTimelineId   = timelineId;
+        public let projects         = HashMap.HashMap<ProjectHashKey, TypProject.Project>(dataProjects.size(), Blob.equal, Blob.hash);
+        public let projectBalances  = HashMap.HashMap<ProjectHashKey, Nat>(dataProjectBalances.size(), Blob.equal, Blob.hash);
+        public let userProjects     = HashMap.HashMap<TypCommon.UserId, [TypCommon.ProjectId]>(dataUserProjects.size(), Principal.equal, Principal.hash);
+        public let projectTeams     = HashMap.HashMap<ProjectHashKey, [TypCommon.UserId]>(dataProjectTeams.size(), Blob.equal, Blob.hash);
+        public let timelines        = HashMap.HashMap<ProjectHashKey, TypProject.Timeline>(dataTimelines.size(), Blob.equal, Blob.hash);
+        public let projectTimelines = HashMap.HashMap<ProjectHashKey, [TypCommon.TimelineId]>(dataProjectTimelines.size(), Blob.equal, Blob.hash);
 
-        public func getPrimaryId(): Nat {
+        public func getProjectPrimaryId(): Nat {
             let projectId = nextProjectId;
             nextProjectId += 1;
+            return projectId;
+        };
+
+        public func getTimelinePrimaryId(): Nat {
+            let projectId = nextTimelineId;
+            nextTimelineId += 1;
             return projectId;
         };
 
@@ -46,7 +61,7 @@ module {
         public func getProjectsByIds(ids: [TypCommon.ProjectId]) : [TypProject.Project] {
             let data = Buffer.Buffer<TypProject.Project>(ids.size());
             for (id in ids.vals()) {
-                switch (findById(id)) {
+                switch (findProjectById(id)) {
                     case (null) {};
                     case (?t)   { data.add(t) };
                 }
@@ -82,7 +97,7 @@ module {
             req     : TypProject.ProjectRequest,
         ) : TypProject.Project {
             let data : TypProject.Project = {
-                id          = getPrimaryId();
+                id          = getProjectPrimaryId();
                 ownerId     = ownerId;
                 name        = req.name;
                 tags        = req.tags;
@@ -105,27 +120,11 @@ module {
             return data;
         };
 
-        // MARK: Find by id
-        public func findById(projectId : TypCommon.ProjectId) : ?TypProject.Project {
+        // MARK: Find project by id
+        public func findProjectById(projectId : TypCommon.ProjectId) : ?TypProject.Project {
             return switch (projects.get(Utl.natToBlob(projectId))) {
-                case (null)  { return null; };
-                case (?project) {
-                    let data : TypProject.Project = {
-                        id          = project.id;
-                        ownerId     = project.ownerId;
-                        name        = project.name;
-                        tags        = project.tags;
-                        status      = project.status;
-                        projectType = project.projectType;
-                        reward      = project.reward;
-                        isCompleted = project.isCompleted;
-                        createdAt   = project.createdAt;
-                        createdById = project.createdById;
-                        updatedAt   = project.updatedAt;
-                        updatedById = project.updatedById;
-                    };
-                    return ?data;
-                };
+                case (null)    { return null; };
+                case (project) { return project; };
             };
         };
 
@@ -239,5 +238,44 @@ module {
                 );
             };
         };
+
+        // MARK: Create timeline
+        public func createTimeline(
+            projectId : TypCommon.ProjectId, 
+            req       : TypProject.TimelineRequest, 
+        ) : TypProject.Timeline {
+            let data : TypProject.Timeline = {
+                id         = getTimelinePrimaryId();
+                title      = req.title;
+                start_date = req.start_date;
+                end_date   = req.end_date;
+            };
+
+            timelines.put(Utl.natToBlob(data.id), data);
+            let encodedProjectId = Utl.natToBlob(projectId);
+            projectTimelines.put(
+                encodedProjectId,
+                switch(projectTimelines.get(encodedProjectId)) {
+                    case (null)         { [data.id]; };
+                    case (?timelinesId) { Array.append<TypCommon.TimelineId>(timelinesId, [data.id]); };
+                }
+            );
+
+            return data;
+        };
+
+        // MARK: Get timeline by ids
+        public func getTimelinesByIds(ids: [TypCommon.TimelineId]) : [TypProject.Timeline] {
+            let data = Buffer.Buffer<TypProject.Timeline>(ids.size());
+            for (id in ids.vals()) {
+                switch (timelines.get(Utl.natToBlob(id))) {
+                    case (null) {};
+                    case (?tl)  { data.add(tl) };
+                }
+            };
+            return Buffer.toArray(data);
+            
+        };
     }
+
 }

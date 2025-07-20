@@ -17,19 +17,25 @@ import CanUser "canister:user";
 import CanToken "canister:token";
 
 actor {
-    private stable var nextProjectId : TypCommon.ProjectId = 0;
+    private stable var nextProjectId   : TypCommon.ProjectId = 0;
+    private stable var nexttTimelineId : TypCommon.TimelineId = 0;
 
-    private stable var stableProjects        : [SvcProject.StableProjects]        = [];
-    private stable var stableProjectProjects : [SvcProject.StableProjectBalances] = [];
-    private stable var stableUserProjects    : [SvcProject.StableUserProjects]    = [];
-    private stable var stableProjectTeams    : [SvcProject.StableProjectTeams]    = [];
+    private stable var stableProjects         : [SvcProject.StableProjects]         = [];
+    private stable var stableProjectProjects  : [SvcProject.StableProjectBalances]  = [];
+    private stable var stableUserProjects     : [SvcProject.StableUserProjects]     = [];
+    private stable var stableProjectTeams     : [SvcProject.StableProjectTeams]     = [];
+    private stable var stableTimelines        : [SvcProject.StableTimelines]        = [];
+    private stable var stableProjectTimelines : [SvcProject.StableProjectTimelines] = [];
 
     private let project = SvcProject.Project(
         nextProjectId, 
+        nexttTimelineId, 
         stableProjects, 
         stableProjectProjects, 
         stableUserProjects,
         stableProjectTeams,
+        stableTimelines,
+        stableProjectTimelines,
     );
 
     // MARK: Get owned project list
@@ -74,7 +80,7 @@ actor {
     public shared func getProjectDetail(
         projectId : TypCommon.ProjectId,
     ) : async Result.Result<TypProject.ProjectResponse, Text>  {
-        switch(project.findById(projectId)) {
+        switch(project.findProjectById(projectId)) {
             case(null)  { return #err("Projek tidak ditemukan"); };
             case(?p) {
                 var totalTask : Nat = 0;
@@ -109,7 +115,7 @@ actor {
         projectId : TypCommon.ProjectId,
         reqStatus : TypProject.ProjectStatus,
     ) : async Result.Result<TypProject.ProjectResponse, Text> {
-        switch(project.findById(projectId)) {
+        switch(project.findProjectById(projectId)) {
             case(null) { return #err("Terjadi kesalahan, projek tidak ditemukan.") };
             case(?p)   { 
                 let dataProject = project.updateStatus(caller, p, reqStatus);
@@ -123,7 +129,7 @@ actor {
         projectId : TypCommon.ProjectId,
         reqPayout : [TypProject.PayoutRequest],
     ) : async Result.Result<Text, Text> {
-        switch(project.findById(projectId)) {
+        switch(project.findProjectById(projectId)) {
             case(null) { return #err("Terjadi kesalahan, projek tidak ditemukan.") };
             case(?p)   { 
                 if (p.ownerId != caller) return #err("Proses tidak diizinkan");
@@ -176,20 +182,42 @@ actor {
         return #ok(project.mappedToResponse(result, [], []));
 	};
 
+    // MARK: Create timeline
+    public shared func createTimeline(
+        projectId : TypCommon.ProjectId,
+        req       : TypProject.TimelineRequest,
+    ) : async Result.Result<TypProject.Timeline, ()> {
+        return #ok(project.createTimeline(projectId, req));
+	};
+
+    // MARK: Get timeline by ids
+    public shared func getTimelinesByIds(
+        projectId : TypCommon.ProjectId,
+    ) : async Result.Result<[TypProject.Timeline], Text> {
+        switch(project.projectTimelines.get(Utl.natToBlob(projectId))) {
+            case(null)         { return #err("Projek tidak ditemukan") };
+            case(?timelinesId) { return #ok(project.getTimelinesByIds(timelinesId)); };
+        };
+	};
+
     // MARK: System
 
     system func preupgrade() {
-        stableProjects        := Iter.toArray(project.projects.entries());
-        stableProjectProjects := Iter.toArray(project.projectBalances.entries());
-        stableUserProjects    := Iter.toArray(project.userProjects.entries());
-        stableProjectTeams    := Iter.toArray(project.projectTeams.entries());
+        stableProjects         := Iter.toArray(project.projects.entries());
+        stableProjectProjects  := Iter.toArray(project.projectBalances.entries());
+        stableUserProjects     := Iter.toArray(project.userProjects.entries());
+        stableProjectTeams     := Iter.toArray(project.projectTeams.entries());
+        stableTimelines        := Iter.toArray(project.timelines.entries());
+        stableProjectTimelines := Iter.toArray(project.projectTimelines.entries());
     };
 
     system func postupgrade() {
-        stableProjects        := [];
-        stableProjectProjects := [];
-        stableUserProjects    := [];
-        stableProjectTeams    := [];
+        stableProjects         := [];
+        stableProjectProjects  := [];
+        stableUserProjects     := [];
+        stableProjectTeams     := [];
+        stableTimelines        := [];
+        stableProjectTimelines := [];
     };
 
 }
