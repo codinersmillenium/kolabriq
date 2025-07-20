@@ -9,6 +9,7 @@ import TypTask "type";
 
 import SvcTask "service";
 
+import UtlTask "util";
 import Utl "../utils/helper";
 
 import CanUser "canister:user";
@@ -139,8 +140,11 @@ actor {
 	};
 
     // MARK: Update status
-    public query func isAllTaskAreComplete(projectId : TypCommon.ProjectId) : async Result.Result<Bool, ()> {
-        return #ok(task.isTasksAreCompleted(projectId));
+    public query func isAllTaskAreComplete(projectId : TypCommon.ProjectId) : async Bool {
+        switch(task.projectTasks.get(Utl.natToBlob(projectId))) {
+            case(null)     { return false };
+            case(?tasksId) { return task.isTasksAreCompleted(task.getTasksByIds(tasksId)) };
+        };
 	};
 
     // MARK: Assign responsible user
@@ -165,14 +169,9 @@ actor {
     public query func getUserOverview(
         projectId : TypCommon.ProjectId, 
     ) : async Result.Result<[TypTask.UserOverview], Text> {
-        let result  = task.userOverview(projectId);
-        let isEmpty = result.size() == 0;
-
-        if (not isEmpty) {
-            return #ok(result);
-        } else {
-            return #err("Terjadi kesalah, mohon coba beberapa waktu kembali.");
-        };
+        let (result, error) = task.userOverview(projectId);
+        if (error != #found) return #err(UtlTask.translateOverviewError(error));
+        return #ok(result);
     };
 
     // MARK: Set review

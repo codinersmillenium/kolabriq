@@ -73,6 +73,12 @@ module {
         review : Text;
     };
 
+    public type OverviewError = {
+        #notFound;
+        #notDone;
+        #found;
+    };
+
     public type UserOverview = {
         userId            : TypCommon.UserId;
         totalTask         : Nat;

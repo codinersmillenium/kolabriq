@@ -224,14 +224,9 @@ module {
         };
 
         // MARK: Check task are complete
-        public func isTasksAreCompleted(projectId : TypCommon.ProjectId) : Bool {
-            switch(projectTasks.get(Utl.natToBlob(projectId))) {
-                case(null) { return false };
-                case(?tasksId) {
-                    let buffTask = Buffer.fromArray<TypTask.Task>(getTasksByIds(tasksId));
-                    return not Buffer.forSome<TypTask.Task>(buffTask, func t { t.status != #done });
-                };
-            };
+        public func isTasksAreCompleted(tasks : [TypTask.Task]) : Bool {
+            let buffTask = Buffer.fromArray<TypTask.Task>(tasks);
+            return not Buffer.forSome<TypTask.Task>(buffTask, func t { t.status != #done });
         };
 
         // MARK: Assign user
@@ -303,17 +298,20 @@ module {
         // MARK: Get user overview
         public func userOverview(
             projectId : TypCommon.ProjectId,
-        ) : [TypTask.UserOverview] {
+        ) : ([TypTask.UserOverview], TypTask.OverviewError) {
             switch(projectTasks.get(Utl.natToBlob(projectId))) {
-                case(null)     { return [] };
+                case(null)     { return ([], #notFound) };
                 case(?tasksId) {
+                    let dataTask      = getTasksByIds(tasksId);
                     let dumpPrincipal = Principal.fromText("un4fu-tqaaa-aaaab-qadjq-cai");
                     let overviewMap   = HashMap.HashMap<
                         TypCommon.UserId, 
                         TypTask.UserOverview
                     >(0, Principal.equal, Principal.hash);
 
-                    label loopTask for(task in getTasksByIds(tasksId).vals()) {
+                    if (not isTasksAreCompleted(dataTask)) return ([], #notDone);
+
+                    label loopTask for(task in dataTask.vals()) {
                         if (task.status != #done) continue loopTask;
 
                         let userId       = Option.get(task.doneById, dumpPrincipal);
@@ -366,7 +364,7 @@ module {
                         result.add(newData);
                     };
 
-                    return Buffer.toArray(result);
+                    return (Buffer.toArray(result), #found);
                 };
             };
         };
