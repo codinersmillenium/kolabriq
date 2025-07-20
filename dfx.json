@@ -4,12 +4,16 @@
 			"candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
 			"frontend": {},
 			"remote": {
-			  "id": {
-				"ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
-			  }
+				"id": {
+					"ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+				}
 			},
 			"type": "custom",
 			"wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+		},
+		"llm": {
+			"type": "pull",
+			"id": "w36hm-eqaaa-aaaal-qr76a-cai"
 		},
 		"project": {
 			"type": "motoko",
@@ -26,12 +30,17 @@
 		"user": {
 			"type": "motoko",
 			"main": "backend/user/main.mo"
+		},
+		"ai": {
+			"dependencies": ["llm"],
+			"main": "backend/ai/main.mo",
+			"type": "motoko"
 		}
 	},
 	"defaults": {
 		"build": {
 			"args": "",
-			"packtool": ""
+			"packtool": "mops sources"
 		}
 	},
 	"output_env_file": ".env",
