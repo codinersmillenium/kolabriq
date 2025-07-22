@@ -17,87 +17,15 @@ import Image from 'next/image'
 
 export type ITable = {
     id: string
-    receptionist: {
-        image: string
-        name: string
-    }
-    sales_id: string
-    category: string
-    location: string
-    date: string
-    status: 'done' | 'pending' | 'cancelled'
+    role: string
+    fullName: string
+    tags: string
 }
 
 export const columns: ColumnDef<ITable>[] = [
     {
-        id: 'select',
-        header: ({ table }) => (
-            <Checkbox
-                checked={
-                    table.getIsAllPageRowsSelected() ||
-                    (table.getIsSomePageRowsSelected() && 'indeterminate')
-                }
-                onCheckedChange={(value) =>
-                    table.toggleAllPageRowsSelected(!!value)
-                }
-                aria-label="Select all"
-            />
-        ),
-        cell: ({ row }) => (
-            <Checkbox
-                checked={row.getIsSelected()}
-                onCheckedChange={(value) => row.toggleSelected(!!value)}
-                aria-label="Select row"
-            />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-    },
-    {
-        accessorKey: 'name',
-        accessorFn: (row) => row.receptionist.name,
-        header: ({ column }) => {
-            return (
-                <button
-                    type="button"
-                    className="flex items-center gap-1.5"
-                    onClick={() =>
-                        column.toggleSorting(column.getIsSorted() === 'asc')
-                    }
-                >
-                    <span className="inline-flex items-center -space-x-[5px]">
-                        <MoveDown
-                            className={`size-2.5 shrink-0 text-black ${column.getIsSorted() === 'asc' && 'text-gray-500'}`}
-                        />
-                        <MoveUp
-                            className={`size-2.5 shrink-0 text-gray-500 ${column.getIsSorted() === 'asc' && 'text-black!'}`}
-                        />
-                    </span>
-                    Sales Receptionist
-                </button>
-            )
-        },
-        cell: ({ row }) => {
-            const image = row.original.receptionist
-
-            return (
-                <div className="flex items-center gap-2">
-                    <div className="size-6 overflow-hidden">
-                        <Image
-                            src={image.image}
-                            alt={image.name}
-                            className="size-full object-cover"
-                            width={24}
-                            height={24}
-                        />
-                    </div>
-                    <span>{image.name}</span>
-                </div>
-            )
-        },
-    },
-    {
-        accessorKey: 'sales_id',
+        accessorKey: 'id',
+        // accessorFn: (row) => row.id,
         header: ({ column }) => {
             return (
                 <button
@@ -119,15 +47,42 @@ export const columns: ColumnDef<ITable>[] = [
                 </button>
             )
         },
-        cell: ({ row }) => (
-            <Badge className="bg-gray-400 text-black">
-                {row.getValue('sales_id')}
-            </Badge>
-        ),
+        cell: ({ row }) => {
+            return (
+                <Badge className="bg-gray-400 text-black">
+                    {row.getValue('id')}
+                </Badge>
+            )
+        },
+    },
+    {
+        accessorKey: 'fullName',
+        header: ({ column }) => {
+            return (
+                <button
+                    type="button"
+                    className="flex items-center gap-1.5"
+                    onClick={() =>
+                        column.toggleSorting(column.getIsSorted() === 'asc')
+                    }
+                >
+                    <span className="inline-flex items-center -space-x-[5px]">
+                        <MoveDown
+                            className={`size-2.5 shrink-0 text-black ${column.getIsSorted() === 'asc' && 'text-gray-500'}`}
+                        />
+                        <MoveUp
+                            className={`size-2.5 shrink-0 text-gray-500 ${column.getIsSorted() === 'asc' && 'text-black!'}`}
+                        />
+                    </span>
+                    Name
+                </button>
+            )
+        },
+        cell: ({ row }) => <div>{row.getValue('fullName')}</div>,
     },
 
     {
-        accessorKey: 'category',
+        accessorKey: 'role',
         header: ({ column }) => {
             return (
                 <button
@@ -145,14 +100,14 @@ export const columns: ColumnDef<ITable>[] = [
                             className={`size-2.5 shrink-0 text-gray-500 ${column.getIsSorted() === 'asc' && 'text-black!'}`}
                         />
                     </span>
-                    Category
+                    Role
                 </button>
             )
         },
-        cell: ({ row }) => <div>{row.getValue('category')}</div>,
+        cell: ({ row }) => <div>{row.getValue('role')}</div>,
     },
     {
-        accessorKey: 'location',
+        accessorKey: 'tags',
         header: ({ column }) => {
             return (
                 <button
@@ -170,73 +125,16 @@ export const columns: ColumnDef<ITable>[] = [
                             className={`size-2.5 shrink-0 text-gray-500 ${column.getIsSorted() === 'asc' && 'text-black!'}`}
                         />
                     </span>
-                    Location
+                    Tags
                 </button>
             )
         },
-        cell: ({ row }) => <div>{row.getValue('location')}</div>,
-    },
-    {
-        accessorKey: 'date',
-        header: ({ column }) => {
+        cell: ({ row }) => {
             return (
-                <button
-                    type="button"
-                    className="flex items-center gap-1.5"
-                    onClick={() =>
-                        column.toggleSorting(column.getIsSorted() === 'asc')
-                    }
-                >
-                    <span className="inline-flex items-center -space-x-[5px]">
-                        <MoveDown
-                            className={`size-2.5 shrink-0 text-black ${column.getIsSorted() === 'asc' && 'text-gray-500'}`}
-                        />
-                        <MoveUp
-                            className={`size-2.5 shrink-0 text-gray-500 ${column.getIsSorted() === 'asc' && 'text-black!'}`}
-                        />
-                    </span>
-                    Date
-                </button>
+                <Badge className="bg-gray-400 text-black">
+                    {row.getValue('tags')}
+                </Badge>
             )
         },
-        cell: ({ row }) => <div>{row.getValue('date')}</div>,
-    },
-    {
-        accessorKey: 'status',
-        header: ({ column }) => {
-            return (
-                <button
-                    type="button"
-                    className="flex items-center gap-1.5"
-                    onClick={() =>
-                        column.toggleSorting(column.getIsSorted() === 'asc')
-                    }
-                >
-                    <span className="inline-flex items-center -space-x-[5px]">
-                        <MoveDown
-                            className={`size-2.5 shrink-0 text-black ${column.getIsSorted() === 'asc' && 'text-gray-500'}`}
-                        />
-                        <MoveUp
-                            className={`size-2.5 shrink-0 text-gray-500 ${column.getIsSorted() === 'asc' && 'text-black!'}`}
-                        />
-                    </span>
-                    Status
-                </button>
-            )
-        },
-        cell: ({ row }) => (
-            <Badge
-                variant={
-                    row.getValue('status') === 'done'
-                        ? 'green'
-                        : row.getValue('status') === 'pending'
-                          ? 'orange'
-                          : 'red'
-                }
-                className="capitalize"
-            >
-                {row.getValue('status')}
-            </Badge>
-        ),
     },
 ]

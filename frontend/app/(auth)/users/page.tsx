@@ -20,152 +20,48 @@ import {
 } from '@/components/ui/select'
 import { format } from 'date-fns'
 import { CalendarCheck, Divide, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import DialogUI from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Search } from 'lucide-react'
+import { getPrincipal, initActor } from '@/lib/canisters'
+import { Principal } from '@dfinity/principal'
+import { Badge } from '@/components/ui/badge'
 
 const Table = () => {
     const [date, setDate] = useState<Date>()
     const [mainDate, setMainDate] = useState<Date>()
-
-    const data: ITable[] = [
-        {
-            id: '200257',
-            receptionist: {
-                image: '/images/avatar.svg',
-                name: 'Jerome Bell',
-            },
-            sales_id: '#200257',
-            category: 'Workforce Management',
-            location: 'Lafayette, California',
-            date: 'Mar 31, 2024',
-            status: 'done',
-        },
-        {
-            id: '#526587',
-            receptionist: {
-                image: '/images/avatar-two.svg',
-                name: 'Victoria Alonso',
-            },
-            sales_id: '#526587',
-            category: 'Quality Monitoring',
-            location: 'Kent, Utah',
-            date: 'Mar 29, 2024',
-            status: 'pending',
-        },
-        {
-            id: '#696589',
-            receptionist: {
-                image: '/images/avatar-three.svg',
-                name: 'Arlene McCoy',
-            },
-            sales_id: '#696589',
-            category: 'CTI and Screen Pop',
-            location: 'Corona, Michigan',
-            date: 'Mar 20, 2024',
-            status: 'cancelled',
-        },
-        {
-            id: '#256584',
-            receptionist: {
-                image: '/images/avatar-four.svg',
-                name: 'Grace Hopper',
-            },
-            sales_id: '#256584',
-            category: 'Queue Callback',
-            location: 'Corona, Michigan',
-            date: 'Feb 20, 2024',
-            status: 'pending',
-        },
-        {
-            id: '#105986',
-            receptionist: {
-                image: '/images/avatar-six.svg',
-                name: 'Darrell Steward',
-            },
-            sales_id: '#105986',
-            category: 'Mobile Customer Care',
-            location: 'Great Falls, Maryland',
-            date: 'Feb 16, 2024',
-            status: 'done',
-        },
-        {
-            id: '#526534',
-            receptionist: {
-                image: '/images/avatar-seven.svg',
-                name: 'Elizabeth Feinler',
-            },
-            sales_id: '#526534',
-            category: 'Sidekick',
-            location: 'Pasadena, Oklahoma',
-            date: 'Jan 28, 2024',
-            status: 'pending',
-        },
-        {
-            id: '#526584',
-            receptionist: {
-                image: '/images/avatar-eight.svg',
-                name: 'Courtney Henry',
-            },
-            sales_id: '#526584',
-            category: 'Web Callback',
-            location: 'Lafayette, California',
-            date: 'Jan 28, 2024',
-            status: 'pending',
-        },
-        {
-            id: '#526589',
-            receptionist: {
-                image: '/images/avatar-nine.svg',
-                name: 'Radia Perlman',
-            },
-            sales_id: '#526589',
-            category: 'Agent Scripting',
-            location: 'Stockton, New Hampshire',
-            date: 'Jan 22, 2024',
-            status: 'pending',
-        },
-        {
-            id: '#526587',
-            receptionist: {
-                image: '/images/avatar-ten.svg',
-                name: 'Jane Cooper',
-            },
-            sales_id: '#526587',
-            category: 'Skills-based Routing',
-            location: 'Portland, Illinois',
-            date: 'Jan 18, 2013',
-            status: 'done',
-        },
-        {
-            id: '#200257',
-            receptionist: {
-                image: '/images/avatar-eleven.svg',
-                name: 'Barbara Liskov',
-            },
-            sales_id: '#200257',
-            category: 'UC Integrations',
-            location: 'Syracuse, Connecticut',
-            date: 'Jan 7, 2024',
-            status: 'done',
-        },
-        {
-            id: '#200287',
-            receptionist: {
-                image: '/images/avatar-eleven.svg',
-                name: 'Barbara Liskov',
-            },
-            sales_id: '#200257',
-            category: 'UC Integrations',
-            location: 'Syracuse, Connecticut',
-            date: 'Jan 7, 2024',
-            status: 'done',
-        },
-    ]
-
     const [isDialogOpen, setDialogOpen] = useState(false);
+    const [data, setData] = useState<ITable[]>([])
+    const [code, setCode] = useState([''])
+    
+
+    const getUsers = async () => {
+        const actor_ = await initActor()
+        const { ok }: any = await actor_.getUsers()
+        var data = []
+        for(let obj in ok) {
+            var tags: string = ''
+            const role = Object.keys(ok[obj].role).toString()
+            for (let i = 0; ok[obj].tags.length; i++) {
+                tags += ok.tags[i] + '<br>'
+            }
+            data.push({
+                id: ok[obj].id.toString(),
+                role: role,
+                fullName: ok[obj].userName + ' ' + ok[obj].lastName,
+                tags: tags
+            })
+            if (role === 'admin') {
+                setCode(ok[obj].personalRefCode)
+            }
+        }
+        setData(data)
+    }
+    useEffect(() => {
+        getUsers()
+    }, [])
 
     return (
         <div className="space-y-4">
@@ -262,21 +158,21 @@ const Table = () => {
                             </SelectContent>
                         </Select>
                          <Select>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Singing, learning" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="Dancing">
-                                                            Dancing
-                                                        </SelectItem>
-                                                        <SelectItem value="Riding">
-                                                            Riding
-                                                        </SelectItem>
-                                                        <SelectItem value="Travelling">
-                                                            Travelling
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Singing, learning" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Dancing">
+                                    Dancing
+                                </SelectItem>
+                                <SelectItem value="Riding">
+                                    Riding
+                                </SelectItem>
+                                <SelectItem value="Travelling">
+                                    Travelling
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
                         <DialogUI open={isDialogOpen} onOpenChange={setDialogOpen} title='Users Setting'
                             content={
                                 <Card>
@@ -345,8 +241,15 @@ const Table = () => {
                         </Button>
                     </div>
                 </div>
-
-                <DataTable columns={columns} data={data} filterField="name" />
+                <div className='w-full flex justify-end bg-white px-2 py-2'>
+                    {code[0] && (
+                        <Badge variant={'primary'}>
+                            { code[0] }
+                        </Badge>
+                    )}
+                </div>
+                
+                <DataTable columns={columns} data={data} filterField="id" />
             </div>
         </div>
     )

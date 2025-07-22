@@ -1,23 +1,71 @@
+'use client'
+
+import DfinityLogo from '@/components/icons/dfinity-logo'
 import IconFacebook from '@/components/icons/icon-facebook'
 import IconGoogle from '@/components/icons/icon-google'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { AtSign, User } from 'lucide-react'
+import { initActor } from '@/lib/canisters'
+import { AtSign, Key, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 export default function Register() {
+    const router = useRouter()
+    const [tags, useTags] = useState(false)
+    const [formData, setFormData]: any = useState({
+        userName: '',
+        lastName: '',
+        firstName: '',
+        tags: [],
+        role_: null,
+        role: [],
+        referrerCode_: ''
+    })
+    const setTags = (e: any) => {
+        if (e.target.value === 'developer') {
+            useTags(true)
+        } else {
+            useTags(false)
+        }
+        handleChange(e)
+    }
+
+    const handleChange = (e: any) => {
+        const { name, value } = e.target
+        setFormData({
+            ...formData,
+            [name]: value
+        })
+    }
+
+    const handleSubmit = async (e: any) => {
+        e.preventDefault();
+        try {
+            const tag: any = document.querySelectorAll('[name="tags[]"]')
+            formData.tags = []
+            formData.referrerCode = [formData.referrerCode_]
+            formData.role = {[formData.role_]: null}
+            for (let i = 0; i < tag.length; i++) {
+                if (tag[i].checked) {
+                    formData.tags.push({[tag[i].value]: null})
+                }
+            }
+            const actor = await initActor()
+            await actor.registerUser(formData)
+            setTimeout(() => {
+                window.location.href = '/'
+            }, 1500);
+        } catch (error) {
+            alert('Failed Register User...');
+        }
+    };
     return (
         <div className="grid h-screen w-full gap-5 p-4 md:grid-cols-2">
             <div className="relative hidden overflow-hidden rounded-[20px] bg-[#3B06D2] p-4 md:block md:h-[calc(100vh-32px)]">
-                <Image
-                    src="/images/logo-white.svg"
-                    width={145}
-                    height={34}
-                    alt="Logo"
-                    className="absolute left-4 top-4 z-10 h-auto w-auto"
-                />
                 <Image
                     src="/images/login-cover-step.svg"
                     width={240}
@@ -49,91 +97,106 @@ export default function Register() {
                             Getting started
                         </h2>
                         <p className="font-medium leading-tight">
-                            Create an account to connect with people.
+                            Register an user to connect with people.
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-[30px]">
-                        <div className="grid grid-cols-2 gap-4">
-                            <Link href="#">
-                                <Button
-                                    variant={'outline-general'}
-                                    size={'large'}
-                                    className="w-full"
-                                >
-                                    <IconGoogle className="size-[18px]!" />
-                                    Google
-                                </Button>
-                            </Link>
-                            <Link href="#">
-                                <Button
-                                    variant={'outline-general'}
-                                    size={'large'}
-                                    className="w-full"
-                                >
-                                    <IconFacebook className="size-[18px]! text-[#0866FF]" />
-                                    Facebook
-                                </Button>
-                            </Link>
+                        <div className='flex justify-center'>
+                            <DfinityLogo />
                         </div>
                         <div className="flex items-center gap-2.5">
                             <span className="h-px w-full bg-[#E2E4E9]"></span>
-                            <p className="shrink-0 font-medium leading-tight">
-                                or register with email
-                            </p>
-                            <span className="h-px w-full bg-[#E2E4E9]"></span>
                         </div>
-                        <form className="space-y-[30px]">
+                        <form className="space-y-[30px]" onSubmit={handleSubmit}>
                             <div className="relative space-y-3">
                                 <label className="block font-semibold leading-none text-black">
-                                    Your name
+                                    Username
+                                </label>
+                                <Input
+                                    name='userName'
+                                    type="text"
+                                    variant={'input-form'}
+                                    placeholder="Username"
+                                    iconRight={<User className="size-[18px]" />}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div className="relative space-y-3">
+                                <label className="block font-semibold leading-none text-black">
+                                    First Name
                                 </label>
                                 <Input
                                     type="text"
                                     variant={'input-form'}
-                                    placeholder="Victoria Gillham"
+                                    placeholder="First Name"
                                     iconRight={<User className="size-[18px]" />}
+                                    name='firstName'
+                                    onChange={handleChange}
                                 />
                             </div>
                             <div className="relative space-y-3">
                                 <label className="block font-semibold leading-none text-black">
-                                    Email address
+                                    Last Name
                                 </label>
                                 <Input
-                                    type="email"
+                                    type="text"
                                     variant={'input-form'}
-                                    placeholder="username@domain.com"
-                                    iconRight={
-                                        <AtSign className="size-[18px]" />
-                                    }
+                                    placeholder="Last Name"
+                                    iconRight={<User className="size-[18px]" />}
+                                    name='lastName'
+                                    onChange={handleChange}
                                 />
                             </div>
-
-                            <div className="relative space-y-3">
-                                <label className="block font-semibold leading-none text-black">
-                                    Create password
-                                </label>
-                                <Input
-                                    type="password"
-                                    variant={'input-form'}
-                                    placeholder="Abc*********"
-                                />
-                            </div>
-                            <div className="mb-4! relative space-y-3">
-                                <label className="block font-semibold leading-none text-black">
-                                    Confirm password
-                                </label>
-                                <Input
-                                    type="password"
-                                    variant={'input-form'}
-                                    placeholder="Abc*********"
-                                />
-                            </div>
-                            <Link
-                                href="/forgot"
-                                className="mt-4! block text-right text-xs/4 font-semibold text-black underline underline-offset-[3px] hover:text-[#3C3C3D]"
-                            >
-                                Forgot password?
-                            </Link>
+                                <div className='relative space-y-3'>
+                                    <label className="block font-semibold leading-none text-black">
+                                        Regist As
+                                    </label>
+                                    <select name="role_" onChange={ setTags } required>
+                                        <option value="">
+                                           Change Option
+                                        </option>
+                                        <option value="admin">Company</option>
+                                        <option value="developer">Developer</option>
+                                    </select>
+                                </div>
+                                { tags && (
+                                    <div className='relative space-y-3'>
+                                        <div className="relative space-y-3">
+                                            <label className="block font-semibold leading-none text-black">
+                                                Reference Code
+                                            </label>
+                                            <Input
+                                                type="text"
+                                                variant={'input-form'}
+                                                placeholder="The code is provided by the company..."
+                                                iconRight={<Key className="size-[18px]" />}
+                                                name='referrerCode_'
+                                                onChange={handleChange}
+                                            />
+                                        </div>
+                                        <fieldset className="border border-gray-300 p-4 rounded-md">
+                                            <legend className="text-sm font-medium text-gray-700 mb-2">Tags</legend>
+                                            <div className="space-y-2">
+                                                <label className="flex items-center space-x-2">
+                                                    <input type="checkbox" name="tags[]" value="frontend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                                                    <span className="text-sm text-gray-700">Frontend Developer</span>
+                                                </label>
+                                                <label className="flex items-center space-x-2">
+                                                    <input type="checkbox" name="tags[]" value="backend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                                                    <span className="text-sm text-gray-700">Backend Developer</span>
+                                                </label>
+                                                <label className="flex items-center space-x-2">
+                                                    <input type="checkbox" name="tags[]" value="ui" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange}/>
+                                                    <span className="text-sm text-gray-700">UI/UX Design</span>
+                                                </label>
+                                                <label className="flex items-center space-x-2">
+                                                    <input type="checkbox" name="tags[]" value="bussines_analist" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange}/>
+                                                    <span className="text-sm text-gray-700">Bussiness Analyst</span>
+                                                </label>
+                                            </div>
+                                        </fieldset>
+                                    </div>
+                                )}
                             <Button
                                 type="submit"
                                 variant={'black'}
@@ -142,15 +205,6 @@ export default function Register() {
                             >
                                 Register
                             </Button>
-                            <div className="text-center text-xs/4 font-semibold text-black">
-                                Already have an account?
-                                <Link
-                                    href="/login"
-                                    className="pl-1.5 text-sm/tight underline underline-offset-4 hover:text-[#3C3C3D]"
-                                >
-                                    Login
-                                </Link>
-                            </div>
                         </form>
                     </CardContent>
                 </Card>

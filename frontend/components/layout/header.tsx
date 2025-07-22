@@ -30,6 +30,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { usePathname } from 'next/navigation'
+import { signOut } from '@/lib/canisters'
+import { useAuth } from '@/context/auth-context'
 
 const Header = () => {
     const [date, setDate] = useState<Date>()
@@ -76,6 +78,7 @@ const Header = () => {
             prevNotifications.filter((notification) => notification.id !== id),
         )
     }
+    const { logout } = useAuth()
 
     return (
         <header className="fixed inset-x-0 top-0 z-30 bg-white px-4 py-[15px] shadow-sm lg:px-5">
@@ -280,8 +283,9 @@ const Header = () => {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="p-0">
                                     <Link
-                                        href="/login"
+                                        href="#"
                                         className={`flex items-center gap-1.5 text-danger rounded-lg px-3 py-2 ${pathName === '/login' && 'bg-gray-400! text-danger! dark:bg-white/5! '}`}
+                                        onClick={logout}
                                     >
                                         <LogOut className="size-[18px] shrink-0" />
                                         Sign out
