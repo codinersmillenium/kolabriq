@@ -9,32 +9,60 @@
 				}
 			},
 			"type": "custom",
-			"wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+			"wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz",
+			"declarations": {
+				"node_compatibility": true,
+				"output": "frontend/declarations/internet_identity"
+			}
 		},
 		"llm": {
 			"type": "pull",
-			"id": "w36hm-eqaaa-aaaal-qr76a-cai"
+			"id": "w36hm-eqaaa-aaaal-qr76a-cai",
+			"declarations": {
+				"node_compatibility": true,
+				"output": "frontend/declarations/llm"
+			}
 		},
 		"project": {
 			"type": "motoko",
-			"main": "backend/project/main.mo"
+			"main": "backend/project/main.mo",
+			"declarations": {
+				"node_compatibility": true,
+				"output": "frontend/declarations/project"
+			}
 		},
 		"task": {
 			"type": "motoko",
-			"main": "backend/task/main.mo"
+			"main": "backend/task/main.mo",
+			"declarations": {
+				"node_compatibility": true,
+				"output": "frontend/declarations/task"
+			}
 		},
 		"token": {
 			"type": "motoko",
-			"main": "backend/token/erc20.mo"
+			"main": "backend/token/erc20.mo",
+			"declarations": {
+				"node_compatibility": true,
+				"output": "frontend/declarations/token"
+			}
 		},
 		"user": {
 			"type": "motoko",
-			"main": "backend/user/main.mo"
+			"main": "backend/user/main.mo",
+			"declarations": {
+				"node_compatibility": true,
+				"output": "frontend/declarations/user"
+			}
 		},
 		"ai": {
 			"dependencies": ["llm"],
 			"main": "backend/ai/main.mo",
-			"type": "motoko"
+			"type": "motoko",
+			"declarations": {
+				"node_compatibility": true,
+				"output": "frontend/declarations/ai"
+			}
 		}
 	},
 	"defaults": {
@@ -43,6 +71,6 @@
 			"packtool": "mops sources"
 		}
 	},
-	"output_env_file": ".env",
+	"output_env_file": "frontend/.env",
 	"version": 1
 }
