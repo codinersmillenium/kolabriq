@@ -1,9 +1,19 @@
 import Text "mo:base/Text";
 module {
-    public let PROJECT_PLANNER = "You are an intelligent project planner. Use the 'project_planner' to generate a project and initial tasks based on the parameters below:\n\n1. Use the 'project_name' to define the theme and context of the project.\n2. Use the 'project_tags' to represent the user role needs, inferred from the project_name. Multiple tags should be separated by a |. These tags also determine the domain, language style, and tone of the project.\n3. Each task must include a title, description, due date, and priority flag.\n4. All task-related parameters (task_title, task_description, task_due_date, task_priority) are provided as strings separated by |. Ensure:\n - They contain the same number of entries\n - There are minimum 2 and maximum 4 tasks\n - task_due_date must be a valid Unix epoch timestamp (in seconds).\n 5. Use task_tag to guide the task domain (e.g., if it's 'frontend', generate frontend-relevant tasks).\n6. Match the language and tone of each task to the task_tag.\n7. Avoid generating duplicate or generic tasks. Make them practical and useful.\n8. Use 'timeline_title', 'timeline_start', and 'timeline_end' to define high-level project phases.\n - All three must be lists separated by |, and must contain the same number of entries.\n - 'timeline_start' and 'timeline_end' must also be in Unix epoch timestamp format (in seconds).\n - Each timeline entry should correspond to a significant phase of the project (e.g., Planning, Development, Launch).\n\nPlease ensure:\n - All tasks and timelines are relevant to the project_tags.\n - The project tags are well-matched to the project_name.\n - All output, including task and timeline title, should follow the same language used in the input parameters. For example, if the input user mssage are in Indonesian, your output should also be in Indonesian.\n - Return only structured data without explanation. Do not include any extra commentary.\n";
-    public let TASK_ASSISTANT = "You are a pragmatic and collaborative project assistant.\nYour role is to interpret highly ambitious or metaphorical requests and convert them into actionable, realistic work plans.\n\nA user has submitted the following request:\n[task_replace]\n\nPlease help by 'reframing or breaking down' this request as follows:\n- Identify the 'core goal' or 'metaphorical meaning' behind the request (e.g., a large project with an urgent deadline).\n- Generate 'realistic steps or tasks' based on standard project planning stages (e.g., planning, initial design, framework building).\n- Maintain the 'language style, tone, and context' used by the user.\n- Ensure the response 'does not reject' the user's idea outright, but instead helps guide them toward a feasible approach.\n\nOutput should be a structured task list that is immediately usable.\nDo not include any extra commentary or explanation.";
+    /**
+    * list short and light prompt. Can be enhance in next future with adequate resources 🙉 
+    */
+    public let TASK_ASSISTANT = "Break down this ambitious request into clear, doable tasks without rejecting the tone or idea: [task_name]";
+    public let GAMIFIED_COACH   = "Task '[task_name]' completed! Give a short RPG-style message with XP gained and stat boost.";
+    public let PROJECT_ANALYZER = "review tasks and timeline below. Who's overloaded? Any task outside phase? Suggest improvements.";
+    public let TASKS_COMPLETED = "all my tasks are done. Start with a congratulatory message, then give me a short funny poem about being gloriously lazy.";
+    public let TASKS_REMAINED = "here are my tasks in one line each. Which should I do first? Give a short reason.";
 
     public func getTaskAssistPrompt(task : Text) : Text {
-        return Text.replace(TASK_ASSISTANT, #text "[task_replace]", task);
+        return Text.replace(TASK_ASSISTANT, #text "[task_name]", task);
+    };
+
+    public func getGamifiedCoach(task : Text) : Text {
+        return Text.replace(GAMIFIED_COACH, #text "[task_name]", task);
     };
 }

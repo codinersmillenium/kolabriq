@@ -16,8 +16,15 @@
 			}
 		},
 		"llm": {
-			"type": "pull",
-			"id": "w36hm-eqaaa-aaaal-qr76a-cai",
+			"candid": "https://github.com/dfinity/llm/releases/latest/download/llm-canister-ollama.did",
+			"type": "custom",
+			"specified_id": "w36hm-eqaaa-aaaal-qr76a-cai",
+			"remote": {
+				"id": {
+					"ic": "w36hm-eqaaa-aaaal-qr76a-cai"
+				}
+			},
+			"wasm": "https://github.com/dfinity/llm/releases/latest/download/llm-canister-ollama.wasm",
 			"declarations": {
 				"node_compatibility": true,
 				"output": "frontend/declarations/llm"

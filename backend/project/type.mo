@@ -90,19 +90,19 @@ module {
     public type Timeline = {
         id         : TypCommon.TimelineId;
         title      : Text;
-        start_date : Int;
-        end_date   : Int;
+        startDate : Int;
+        endDate   : Int;
     };
 
     public type TimelineRequest = {
         title      : Text;
-        start_date : Int;
-        end_date   : Int;
+        startDate : Int;
+        endDate   : Int;
     };
 
     public type TimelineResponseFromLLM = {
         title      : Text;
-        start_date : Int;
-        end_date   : Int;
+        startDate : Int;
+        endDate   : Int;
     };
 };

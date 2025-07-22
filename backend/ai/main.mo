@@ -3,104 +3,105 @@ import Array "mo:base/Array";
 import Iter "mo:base/Iter";
 import Text "mo:base/Text";
 import Debug "mo:base/Debug";
+import Int "mo:base/Int";
+import Rand "mo:random/Rand";
 
 import TypCommon "../common/type";
 import TypProject "../project/type";
 import TypTask "../task/type";
+import TypUser "../user/type";
 import TypAi "type";
 
 import UtlCommon "../common/util";
+import UtlDate "../utils/date";
 import Utl "../utils/helper";
+
+import CanTask "canister:task";
+import CanProject "canister:project";
 
 import Prompt "prompt";
 
 actor {
-	// MARK: Project planner
-	public func planProject(prompt : Text) : async ?TypAi.ResponseProjectLLM {
+	/**
+	* MARK: Project planner
+	* 
+	* Some parameter fill with dummy data, for effecienty resource run llm
+	*/ 
+
+	public func planProject(projectTheme : Text) : async ?TypAi.ResponseProjectLLM {
 		// Tags should be according TypCommon.Tags
 		let projectTags = ["backend", "bussines_analist", "frontend", "ui"];
 		let tools = [
-			LLM.tool("project_planner").withDescription("project planer, create project theme based on user prompt, you must and always create project name start with UHUY-").withParameter(
-				LLM.parameter("project_name", #String).withDescription("Project name. Simple and short but represents the entire description.").isRequired()
-			).withParameter(
-				LLM.parameter("project_tags", #String).withEnumValues(projectTags).withDescription("A tag that represents the project's needs, inferred from the project name. It is used to categorize and suggest relevant tasks or team members. Each tag separated by |.").isRequired()
-			).withParameter(
-				LLM.parameter("task_title", #String).withDescription("Titles of task. Infered from project name. Simple and short. must generate 2 data. Each title separated by |.").isRequired()
-			).withParameter(
-				LLM.parameter("task_description", #String).withDescription("Descriptions of task. Infered from task title. must generate 2 data. Each description separated by |.").isRequired()
-			).withParameter(
-				LLM.parameter("task_tag", #String).withDescription("A task tag used to match and assign the appropriate user. Infered from task title. must generate 2 data. Each tag separated by |").isRequired()
-			).withParameter(
-				LLM.parameter("task_due_date", #String).withDescription("Format epoch times in second. must generate 2 data. Each time separated by |. Date epoch start from now dont past").isRequired()
-			).withParameter(
-				LLM.parameter("task_priority", #String).withEnumValues(["true", "false"]).withDescription("Priority of task based on title. must generate 2 data. Each priority separated by |").isRequired()
-			).withParameter(
-				LLM.parameter("timeline_title", #String).withDescription("Multiple titles of timeline. must generate 2 data. Each title separated by |.").isRequired()
-			).withParameter(
-				LLM.parameter("timeline_start", #String).withDescription("Multiple Start time of timelines. must generate 2 data. Each time start separated by |.").isRequired()
-			).withParameter(
-				LLM.parameter("timeline_end", #String).withDescription("Multiple End time of timelines. must generate 2 data. Each time end separated by |.").isRequired()
-			).build(),
+			LLM.tool("project_planner")
+				.withDescription("Project planner: create a project theme, 2 tasks, and 2 timelines. Each task uses | as field separator.")
+				.withParameter(
+					LLM.parameter("project:name", #String)
+						.withDescription("Short project name that captures the idea.")
+						.isRequired()
+				)
+				.withParameter(
+					LLM.parameter("project:tags", #String)
+						.withEnumValues(projectTags)
+						.withDescription("Tag to describe project focus.")
+						.isRequired()
+				)
+				.withParameter(
+					LLM.parameter("task:title", #String)
+						.withDescription("Multiple task titles, simple and related to project.")
+						.isRequired()
+				)
+				.withParameter(
+					LLM.parameter("task:tag", #String)
+						.withDescription("Task tag for assigning users, based on title.")
+						.isRequired()
+				)
+				.withParameter(
+					LLM.parameter("timeline:title", #String)
+						.withDescription("Timeline phase title.")
+						.isRequired()
+				)
+				.build(),
 		];
 
-		// let promptTest = "kamu sebagai ai projek planner, gunakan tool 'project_planner', wajib buat jumlah setiap param tasknya minimal 5 dan setiap value dipisahkan dengan char '|'";
-
 		let response = await LLM.chat(#Llama3_1_8B).withMessages([
-			// #system_({ content = Prompt.PROJECT_PLANNER }),
-			// #system_({ content = promptTest }),
-			#user({ content = prompt }),
+			#user({ content = projectTheme }),
 		]).withTools(tools).send();
 
-		let tool_calls = response.message.tool_calls;
+		let toolCalls = response.message.tool_calls;
 
-		if (tool_calls.size() > 0) {
-			let tool_call = tool_calls[0];
-			let arguments = tool_call.function.arguments;
+		if (toolCalls.size() > 0) {
+			let toolCall  = toolCalls[0];
+			let arguments = toolCall.function.arguments;
 
 			// Find the account parameter
-			var project_name = "";
-			var project_tags = "";
-			var task_title = "";
-			var task_desc = "";
-			var task_tag = "";
-			var task_due = "";
-			var task_priority = "";
-			var timeline_title = "";
-			var timeline_start = "";
-			var timeline_end = "";
+			var projectName   = "";
+			var projectTags   = "";
+			var taskTitle     = "";
+			var taskTag       = "";
+			var timelineTitle = "";
 
 			for (arg in arguments.vals()) {
 				switch (arg.name) {
-					case ("project_name") { project_name := arg.value };
-					case ("project_tags") { project_tags := arg.value };
-					case ("task_title") { task_title := arg.value };
-					case ("task_description") { task_desc := arg.value };
-					case ("task_tag") { task_tag := arg.value };
-					case ("task_due_date") { task_due := arg.value };
-					case ("task_priority") { task_priority := arg.value };
-					case ("timeline_title") { timeline_title := arg.value };
-					case ("timeline_start") { timeline_start := arg.value };
-					case ("timeline_end") { timeline_end := arg.value };
+					case ("project:name")   { projectName := arg.value };
+					case ("project:tags")   { projectTags := arg.value };
+					case ("task:title")     { taskTitle := arg.value };
+					case ("task:tag")       { taskTag := arg.value };
+					case ("timeline:title") { timelineTitle := arg.value };
 					case (_) {};
 				};
 			};
 
-			Debug.print(project_name);
-			Debug.print(project_tags);
-			Debug.print(task_title);
-			Debug.print(task_desc);
-			Debug.print(task_tag);
-			Debug.print(task_due);
-			Debug.print(task_priority);
-			Debug.print(timeline_title);
-			Debug.print(timeline_start);
-			Debug.print(timeline_end);
+			Debug.print(projectName);
+			Debug.print(projectTags);
+			Debug.print(taskTitle);
+			Debug.print(taskTag);
+			Debug.print(timelineTitle);
 
 			let project : TypProject.ProjectResponseFromLLM = {
-				name = project_name;
+				name = projectName;
 				tags = Iter.toArray(
 					Iter.map(
-						Text.split(project_tags, #char '|'),
+						Text.split(projectTags, #char '|'),
 						func(tag : Text) : TypCommon.Tags {
 							UtlCommon.tagsFromString(tag);
 						},
@@ -109,50 +110,41 @@ actor {
 			};
 
 			var tasks : [TypTask.TaskResponseFromLLM] = [];
-			var split_title : [Text] = Iter.toArray(Text.split(task_title, #char '|'));
-			var split_description : [Text] = Iter.toArray(Text.split(task_desc, #char '|'));
-			var split_tag : [Text] = Iter.toArray(Text.split(task_tag, #char '|'));
-			var split_due : [Text] = Iter.toArray(Text.split(task_due, #char '|'));
-			var split_priority : [Text] = Iter.toArray(Text.split(task_priority, #char '|'));
-			let total_tasks : Int = split_title.size();
+			var splitTitle : [Text] = Iter.toArray(Text.split(taskTitle, #char '|'));
+			var splitTag   : [Text] = Iter.toArray(Text.split(taskTag, #char '|'));
+			let totalTasks : Int    = Int.min(Utl.natToInt(splitTitle.size()), Utl.natToInt(splitTag.size()));
 
-			// check highest size
-
-			for (i in Iter.range(0, total_tasks - 1)) {
+			for (i in Iter.range(1, totalTasks)) {
+				let rand : Int = await Rand.Rand().randRange(2, 5);
 				let data : TypTask.TaskResponseFromLLM = {
-					title = split_title[i];
-					description = split_description[i];
-					taskTag = UtlCommon.tagsFromString(split_tag[i]);
-					dueDate = Utl.textToNat(split_due[i]);
-					priority = split_priority[i] == "yes";
+					title       = splitTitle[i];
+					description = splitTitle[i]; // dummy purpose
+					taskTag     = UtlCommon.tagsFromString(splitTag[i]);
+					dueDate     = UtlDate.addDate(rand); // dummy purpose
+					priority    = rand % 2 == 0; // dummy purpose
 				};
 
 				tasks := Array.append<TypTask.TaskResponseFromLLM>(tasks, [data]);
 			};
 
-			// check highest size
-
 			var timelines : [TypProject.TimelineResponseFromLLM] = [];
-			var split_tl_title : [Text] = Iter.toArray(Text.split(timeline_title, #char '|'));
-			var split_tl_start : [Text] = Iter.toArray(Text.split(timeline_start, #char '|'));
-			var split_tl_end : [Text] = Iter.toArray(Text.split(timeline_end, #char '|'));
-			let total_timelines : Int = timeline_title.size();
+			var splitTimelineTitle : [Text] = Iter.toArray(Text.split(timelineTitle, #char '|'));
+			let totalTimelines : Int = splitTimelineTitle.size();
 
-			for (i in Iter.range(0, total_timelines - 1)) {
+			for (i in Iter.range(1, totalTimelines)) {
 				let data : TypProject.TimelineResponseFromLLM = {
-					title = split_tl_title[i];
-					start_date = Utl.textToNat(split_tl_start[i]);
-					end_date = Utl.textToNat(split_tl_end[i]);
+					title     = splitTimelineTitle[i];
+					startDate = UtlDate.addDate(await Rand.Rand().randRange(1, 3));
+					endDate   = UtlDate.addDate(await Rand.Rand().randRange(4, 6));
 				};
 
 				timelines := Array.append<TypProject.TimelineResponseFromLLM>(timelines, [data]);
 			};
 
 			let result : TypAi.ResponseProjectLLM = {
-				project = project;
+				project   = project;
+				tasks     = tasks;
 				timelines = timelines;
-				// timelines = [];
-				tasks = tasks;
 			};
 
 			return ?result;
@@ -163,13 +155,12 @@ actor {
 
 	public func chat(messages : [LLM.ChatMessage], task : ?Text) : async Text {
 		var allMessages = switch (task) {
-			case (null) { messages };
+			case (null)  { messages };
 			case (?task) {
 				let withTaskAssist : LLM.ChatMessage = #user({
-					content = task;
-					// content = Prompt.getTaskAssistPrompt(task);
+					content = Prompt.getTaskAssistPrompt(task);
 				});
-				let messageLength = messages.size();
+				let messageLength   = messages.size();
 				var copyAllMessages = Array.thaw<LLM.ChatMessage>(messages);
 				let lastUserMessage = messages[messageLength - 1];
 
@@ -182,6 +173,102 @@ actor {
 		};
 
 		let response = await LLM.chat(#Llama3_1_8B).withMessages(allMessages).send();
+
+		return switch (response.message.content) {
+			case (?text) text;
+			case (null) "";
+		};
+	};
+
+	/**
+	* AI yang akan menjadi pengingat berdasarkan deadline, progress sebelumnya dan blocking
+	*/
+	public shared ({caller}) func dailyStandUp(projectId : TypCommon.ProjectId) : async Text {
+		let tasks                = await CanTask.getUserProjectTasks(caller, projectId);
+		let isTasksAreComplete   = Array.find<TypTask.TaskResponse>(tasks, func t = t.status != #done) == null;
+		let promptSummarizeTasks = switch(isTasksAreComplete) {
+			case(true)  { Prompt.TASKS_COMPLETED };
+			case(false) {
+				var taskPrompt = Prompt.TASKS_REMAINED;
+				label checkTasks for(task in tasks.vals()) {
+					let doneTask = task.status == #done;
+					if (doneTask) continue checkTasks;
+
+					let priority   = if (task.priority) "yes" else "no";
+					let taskReview = if (task.status != #done) {
+						let review = switch(task.review) {
+							case(null)    { "" };
+							case(?review) { "|review:" # review.review };
+						};
+					} else "";
+
+					let taskSummarize = "task:" # task.title # "|due:" # Int.toText(task.dueDate) # "|priority:" # priority # taskReview # ";";
+					taskPrompt := taskPrompt # taskSummarize;
+				};
+
+				taskPrompt;
+			};
+		};
+
+		let response = await LLM.chat(#Llama3_1_8B).withMessages([
+			#user({ content = promptSummarizeTasks; })
+		]).send();
+
+		return switch (response.message.content) {
+			case (?text) text;
+			case (null) "";
+		};
+	};
+
+	/**
+	* AI menyemangati pengguna seperti game RPG (“XP bertambah +10 karena menyelesaikan task tepat waktu!”).
+	*/
+	public func gamifiedCoach(taskTitle : Text) : async Text {
+		let response = await LLM.chat(#Llama3_1_8B).withMessages([
+			#user({ content = Prompt.getGamifiedCoach(taskTitle) }),
+		]).send();
+
+		return switch (response.message.content) {
+			case (?text) text;
+			case (null) "";
+		};
+	};
+	
+	/**
+	* Nanti setiap projek bisa di analisi apakah ada yang bakal keteteran ato waktu timelinenya tidak sesuai atau ada saran gitu.
+	*/
+	public shared func projectAnalysis(projectId : TypCommon.ProjectId) : async Text {
+		let tasks = switch(await CanTask.getProjectTasks(projectId)) {
+			case(#ok(tasks)) { tasks; };
+			case(_)          { return "error: no project found" };
+		};
+
+		let timelines = switch(await CanProject.getTimelinesByIds(projectId)) {
+			case(#ok(timelines)) { timelines; };
+			case(_)              { return "error: no timeline found" };
+		};
+
+		var isTasksAreComplete = Array.find<TypTask.TaskResponse>(tasks, func t = t.status != #done) == null;
+		if (isTasksAreComplete) return "project has been completed";
+
+		var promptBase = Prompt.PROJECT_ANALYZER;
+
+		// Combine with data tasks
+		label checkTasks for(task in tasks.vals()) {
+			let taskAssigness = Array.map<TypUser.UserResponse, Text>(task.assignees, func user = user.firstName);
+			let taskSummarize = "task:" # task.title # "|due:" # Int.toText(task.dueDate) # "|user:" # Text.join(",", taskAssigness.vals()) # ";";
+			promptBase := promptBase # taskSummarize;
+		};
+
+		// Combine with data timelines
+		label checkTimelines for(timeline in timelines.vals()) {
+			let timelineSummarize = "timeline:" # timeline.title # "|start:" # Int.toText(timeline.startDate) # "|end:" # Int.toText(timeline.endDate) # ";";
+			promptBase := promptBase # timelineSummarize;
+		};
+
+		let response = await LLM.chat(#Llama3_1_8B).withMessages([
+			#user({ content = promptBase }),
+		]).send();
 
 		return switch (response.message.content) {
 			case (?text) text;

@@ -91,6 +91,33 @@ module {
             };
         };
 
+        // MARK: Get user tasks based on project id
+        public func getUserTasksBasedOnProjectId(
+            userId    : TypCommon.UserId,
+            projectId : TypCommon.ProjectId,
+        ) : [TypTask.Task] {
+            switch(projectTasks.get(Utl.natToBlob(projectId))) {
+                case(null)              { return [] };
+                case(?tasksIdByProject) {
+                    switch(memberTasks.get(userId)) {
+                        case(null)           { return [] };
+                        case(?tasksIdByUser) {
+                            let filteredUserProjectTask = Array.filter<TypCommon.TaskId>(
+                                tasksIdByUser,
+                                func (tUser) {
+                                    Array.find<TypCommon.TaskId>(
+                                        tasksIdByProject, 
+                                        func tProject = tProject == tUser,
+                                    ) != null
+                                }
+                            );
+                            return getTasksByIds(filteredUserProjectTask);
+                        };
+                    };
+                };
+            };
+        };
+
         // MARK: Create task
         public func createTask(
             owner : TypCommon.UserId, 
@@ -225,8 +252,7 @@ module {
 
         // MARK: Check task are complete
         public func isTasksAreCompleted(tasks : [TypTask.Task]) : Bool {
-            let buffTask = Buffer.fromArray<TypTask.Task>(tasks);
-            return not Buffer.forSome<TypTask.Task>(buffTask, func t { t.status != #done });
+            return not (Array.find<TypTask.Task>(tasks, func t = t.status != #done ) != null);
         };
 
         // MARK: Assign user

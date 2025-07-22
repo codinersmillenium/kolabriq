@@ -69,4 +69,8 @@ module {
         
         return Int32.toInt(Int32.fromNat32(n));
     };
+
+    public func natToInt(n : Nat) : Int {
+        return Int32.toInt(Int32.fromNat32(Nat32.fromNat(n)));
+    };
 }

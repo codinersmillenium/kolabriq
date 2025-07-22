@@ -80,6 +80,30 @@ actor {
         };
     };
 
+    /**
+    *  MARK: Get user tasks based on project id
+    *
+    *  For AI stand up source data purposes.
+    */
+    public shared func getUserProjectTasks(
+        userId    : TypCommon.UserId,
+        projectId : TypCommon.ProjectId,
+    ) : async [TypTask.TaskResponse]  {
+        let dataTasks = task.getUserTasksBasedOnProjectId(userId, projectId);
+        let size = dataTasks.size();
+        let data = Array.init<TypTask.TaskResponse>(
+            size, 
+            task.mappedToResponse(dataTasks[0], [])
+        );
+        
+        for (i in Iter.range(0, size - 1)) {
+            let currtask = dataTasks[i];
+            data[i] := task.mappedToResponse(currtask, []);
+        };
+
+        return Array.freeze(data);
+    };
+
     // MARK: Get task assignees
     public shared func getTaskAssignees(
         projectId : TypCommon.ProjectId

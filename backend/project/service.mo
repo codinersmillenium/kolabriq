@@ -245,10 +245,10 @@ module {
             req       : TypProject.TimelineRequest, 
         ) : TypProject.Timeline {
             let data : TypProject.Timeline = {
-                id         = getTimelinePrimaryId();
-                title      = req.title;
-                start_date = req.start_date;
-                end_date   = req.end_date;
+                id        = getTimelinePrimaryId();
+                title     = req.title;
+                startDate = req.startDate;
+                endDate   = req.endDate;
             };
 
             timelines.put(Utl.natToBlob(data.id), data);

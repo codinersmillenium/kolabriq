@@ -6,5 +6,5 @@ module {
         project   : TypProject.ProjectResponseFromLLM;
         timelines : [TypProject.TimelineResponseFromLLM];
         tasks     : [TypTask.TaskResponseFromLLM];
-    }
+    };
 }
