@@ -4,6 +4,7 @@ import Iter "mo:base/Iter";
 import Text "mo:base/Text";
 import Debug "mo:base/Debug";
 import Int "mo:base/Int";
+import Nat "mo:base/Nat";
 import Rand "mo:random/Rand";
 
 import TypCommon "../common/type";
@@ -14,7 +15,7 @@ import TypAi "type";
 
 import UtlCommon "../common/util";
 import UtlDate "../utils/date";
-import Utl "../utils/helper";
+import UtlAi "util";
 
 import CanTask "canister:task";
 import CanProject "canister:project";
@@ -27,13 +28,12 @@ actor {
 	* 
 	* Some parameter fill with dummy data, for effecienty resource run llm
 	*/ 
-
 	public func planProject(projectTheme : Text) : async ?TypAi.ResponseProjectLLM {
 		// Tags should be according TypCommon.Tags
 		let projectTags = ["backend", "bussines_analist", "frontend", "ui"];
 		let tools = [
 			LLM.tool("project_planner")
-				.withDescription("Project planner: create a project theme, 2 tasks, and 2 timelines. Each task uses | as field separator.")
+				.withDescription(Prompt.getPlannerPrompt(projectTheme))
 				.withParameter(
 					LLM.parameter("project:name", #String)
 						.withDescription("Short project name that captures the idea.")
@@ -99,47 +99,27 @@ actor {
 
 			let project : TypProject.ProjectResponseFromLLM = {
 				name = projectName;
-				tags = Iter.toArray(
-					Iter.map(
-						Text.split(projectTags, #char '|'),
-						func(tag : Text) : TypCommon.Tags {
-							UtlCommon.tagsFromString(tag);
-						},
-					)
-				);
+				tags = [UtlCommon.tagsFromString(projectTags)];
 			};
 
-			var tasks : [TypTask.TaskResponseFromLLM] = [];
-			var splitTitle : [Text] = Iter.toArray(Text.split(taskTitle, #char '|'));
-			var splitTag   : [Text] = Iter.toArray(Text.split(taskTag, #char '|'));
-			let totalTasks : Int    = Int.min(Utl.natToInt(splitTitle.size()), Utl.natToInt(splitTag.size()));
-
-			for (i in Iter.range(1, totalTasks)) {
-				let rand : Int = await Rand.Rand().randRange(2, 5);
-				let data : TypTask.TaskResponseFromLLM = {
-					title       = splitTitle[i];
-					description = splitTitle[i]; // dummy purpose
-					taskTag     = UtlCommon.tagsFromString(splitTag[i]);
+			let rand : Int = await Rand.Rand().randRange(2, 5);
+			var tasks : [TypTask.TaskResponseFromLLM] = [
+				{
+					title       = taskTitle;
+					description = taskTitle; // dummy purpose
+					taskTag     = UtlCommon.tagsFromString(taskTag);
 					dueDate     = UtlDate.addDate(rand); // dummy purpose
 					priority    = rand % 2 == 0; // dummy purpose
-				};
+				}
+			];
 
-				tasks := Array.append<TypTask.TaskResponseFromLLM>(tasks, [data]);
-			};
-
-			var timelines : [TypProject.TimelineResponseFromLLM] = [];
-			var splitTimelineTitle : [Text] = Iter.toArray(Text.split(timelineTitle, #char '|'));
-			let totalTimelines : Int = splitTimelineTitle.size();
-
-			for (i in Iter.range(1, totalTimelines)) {
-				let data : TypProject.TimelineResponseFromLLM = {
-					title     = splitTimelineTitle[i];
+			var timelines : [TypProject.TimelineResponseFromLLM] = [
+				{
+					title     = timelineTitle;
 					startDate = UtlDate.addDate(await Rand.Rand().randRange(1, 3));
 					endDate   = UtlDate.addDate(await Rand.Rand().randRange(4, 6));
-				};
-
-				timelines := Array.append<TypProject.TimelineResponseFromLLM>(timelines, [data]);
-			};
+				}
+			];
 
 			let result : TypAi.ResponseProjectLLM = {
 				project   = project;
@@ -153,6 +133,11 @@ actor {
 		};
 	};
 
+	/**
+	* MARK: Chat
+	* 
+	* Some parameter fill with dummy data, for effecienty resource run llm
+	*/ 
 	public func chat(messages : [LLM.ChatMessage], task : ?Text) : async Text {
 		var allMessages = switch (task) {
 			case (null)  { messages };
@@ -181,6 +166,8 @@ actor {
 	};
 
 	/**
+	* MARK: Daily stand up
+	*
 	* AI yang akan menjadi pengingat berdasarkan deadline, progress sebelumnya dan blocking
 	*/
 	public shared ({caller}) func dailyStandUp(projectId : TypCommon.ProjectId) : async Text {
@@ -221,6 +208,8 @@ actor {
 	};
 
 	/**
+	* MARK: Gamified coach
+	*
 	* AI menyemangati pengguna seperti game RPG (“XP bertambah +10 karena menyelesaikan task tepat waktu!”).
 	*/
 	public func gamifiedCoach(taskTitle : Text) : async Text {
@@ -235,6 +224,8 @@ actor {
 	};
 	
 	/**
+	* MARK: Project analyzer
+	*
 	* Nanti setiap projek bisa di analisi apakah ada yang bakal keteteran ato waktu timelinenya tidak sesuai atau ada saran gitu.
 	*/
 	public shared func projectAnalysis(projectId : TypCommon.ProjectId) : async Text {
@@ -243,13 +234,16 @@ actor {
 			case(_)          { return "error: no project found" };
 		};
 
-		let timelines = switch(await CanProject.getTimelinesByIds(projectId)) {
+		let timelines = switch(await CanProject.getProjectTimelines(projectId)) {
 			case(#ok(timelines)) { timelines; };
 			case(_)              { return "error: no timeline found" };
 		};
 
 		var isTasksAreComplete = Array.find<TypTask.TaskResponse>(tasks, func t = t.status != #done) == null;
 		if (isTasksAreComplete) return "project has been completed";
+
+		// For testing purpose
+		// let (tasks, timelines) = UtlAi.dummyProject();
 
 		var promptBase = Prompt.PROJECT_ANALYZER;
 

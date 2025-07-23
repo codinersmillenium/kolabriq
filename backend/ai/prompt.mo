@@ -3,11 +3,17 @@ module {
     /**
     * list short and light prompt. Can be enhance in next future with adequate resources 🙉 
     */
-    public let TASK_ASSISTANT = "Break down this ambitious request into clear, doable tasks without rejecting the tone or idea: [task_name]";
+    // TODO: FIX ADD SHORT
+    public let PROJECT_PLANNER  = "Project planner: create a project theme about this [theme].";
+    public let TASK_ASSISTANT   = "user dont understood this task, give a short description on this task: [task_name]";
     public let GAMIFIED_COACH   = "Task '[task_name]' completed! Give a short RPG-style message with XP gained and stat boost.";
-    public let PROJECT_ANALYZER = "review tasks and timeline below. Who's overloaded? Any task outside phase? Suggest improvements.";
-    public let TASKS_COMPLETED = "all my tasks are done. Start with a congratulatory message, then give me a short funny poem about being gloriously lazy.";
-    public let TASKS_REMAINED = "here are my tasks in one line each. Which should I do first? Give a short reason.";
+    public let PROJECT_ANALYZER = "review tasks and timeline below. give name who's overloaded? is has any task outside phase?. give a very short is project should be rearrange or not.";
+    public let TASKS_COMPLETED  = "all my tasks are done. Start with a congratulatory message, then give me a short funny poem about being gloriously lazy.";
+    public let TASKS_REMAINED   = "here are my tasks in one line each. Which should I do first? Give a short reason.";
+
+    public func getPlannerPrompt(theme : Text) : Text {
+        return Text.replace(PROJECT_PLANNER, #text "[theme]", theme);
+    };
 
     public func getTaskAssistPrompt(task : Text) : Text {
         return Text.replace(TASK_ASSISTANT, #text "[task_name]", task);
