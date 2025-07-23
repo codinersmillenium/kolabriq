@@ -116,6 +116,24 @@ module {
             if (req.projectType == #rewarded) {
                 projectBalances.put(Utl.natToBlob(data.id), data.reward);
             };
+            
+            userProjects.put(
+                ownerId,
+                switch(userProjects.get(ownerId)) {
+                    case (null)        { [data.id]; };
+                    case (?projectsId) { Array.append<TypCommon.ProjectId>(projectsId, [data.id]); };
+                }
+            );
+
+            
+            let encodedProjectId = Utl.natToBlob(data.id);
+            projectTeams.put(
+                encodedProjectId,
+                switch(projectTeams.get(encodedProjectId)) {
+                    case (null)     { [ownerId]; };
+                    case (?usersId) { Array.append<TypCommon.UserId>(usersId, [ownerId]); };
+                }
+            );
 
             return data;
         };
@@ -252,6 +270,7 @@ module {
             };
 
             timelines.put(Utl.natToBlob(data.id), data);
+
             let encodedProjectId = Utl.natToBlob(projectId);
             projectTimelines.put(
                 encodedProjectId,
@@ -274,7 +293,6 @@ module {
                 }
             };
             return Buffer.toArray(data);
-            
         };
     }
 
