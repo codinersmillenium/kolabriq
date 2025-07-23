@@ -212,12 +212,12 @@ actor {
     };
 
     system func postupgrade() {
-        for ((k, v) in stableProjects.vals()) project.projects.put(k, v);
-        for ((k, v) in stableProjectProjects.vals()) project.projectBalances.put(k, v);
-        for ((k, v) in stableUserProjects.vals()) project.userProjects.put(k, v);
-        for ((k, v) in stableProjectTeams.vals()) project.projectTeams.put(k, v);
-        for ((k, v) in stableTimelines.vals()) project.timelines.put(k, v);
-        for ((k, v) in stableProjectTimelines.vals())project.projectTimelines.put(k, v);
+        stableProjects         := [];
+        stableProjectProjects  := [];
+        stableUserProjects     := [];
+        stableProjectTeams     := [];
+        stableTimelines        := [];
+        stableProjectTimelines := [];
     };
 
 }
