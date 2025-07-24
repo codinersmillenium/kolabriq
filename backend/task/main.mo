@@ -204,6 +204,52 @@ actor {
         return #ok("Berhasil menambahkan review");
     };
 
+    // MARK: Save tasks from llm
+    public func saveLlmTasks(
+        ts : [TypTask.Task],
+    ) : async () {
+        for(t in ts.vals()) {
+            let data : TypTask.Task = {
+                id          = task.getTaskPrimaryId();
+                projectId   = t.projectId;
+                title       = t.title;
+                description = t.description;
+                taskTag     = t.taskTag;
+                status      = t.status;
+                dueDate     = t.dueDate;
+                priority    = t.priority;
+                assignees   = t.assignees;
+                doneAt      = t.doneAt;
+                doneById    = t.doneById;
+                createdAt   = t.createdAt;
+                createdById = t.createdById;
+                updatedAt   = t.updatedAt;
+                updatedById = t.updatedById;
+            };
+
+            task.tasks.put(Utl.natToBlob(data.id), data);
+
+            let encodedProjectId = Utl.natToBlob(data.projectId);
+            task.projectTasks.put(
+                encodedProjectId,
+                switch(task.projectTasks.get(encodedProjectId)) {
+                    case (null)     { [data.id]; };
+                    case (?tasksId) { Array.append<TypCommon.TaskId>(tasksId, [data.id]); };
+                }
+            );
+
+            for(userId in t.assignees.vals()) {
+                task.memberTasks.put(
+                    userId,
+                    switch(task.memberTasks.get(userId)) {
+                        case (null)     { [data.id]; };
+                        case (?tasksId) { Array.append<Nat>(tasksId, [data.id]); };
+                    }
+                );
+            };
+        };
+    };
+
     // MARK: System
 
     system func preupgrade() {

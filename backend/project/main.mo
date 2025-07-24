@@ -2,6 +2,7 @@ import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
+import Array "mo:base/Array";
 
 import TypCommon "../common/type";
 import TypUser "../user/type";
@@ -199,6 +200,68 @@ actor {
             case(null)         { return #err("Projek tidak ditemukan") };
             case(?timelinesId) { return #ok(project.getTimelinesByIds(timelinesId)); };
         };
+	};
+
+    // MARK: Save project, timelines from llm
+    public func saveLlmProjectTimelines(
+        p : TypProject.Project,
+        tls : [TypProject.Timeline],
+    ) : async TypCommon.ProjectId {
+        let dataProject : TypProject.Project = {
+            id          = project.getProjectPrimaryId();
+            ownerId     = p.ownerId;
+            name        = p.name;
+            desc        = p.desc;
+            tags        = p.tags;
+            status      = p.status;
+            projectType = p.projectType;
+            reward      = p.reward;
+            isCompleted = p.isCompleted;
+            createdAt   = p.createdAt;
+            createdById = p.ownerId;
+            updatedAt   = p.updatedAt;
+            updatedById = p.updatedById;
+        };
+
+        project.projects.put(Utl.natToBlob(dataProject.id), dataProject);
+        project.userProjects.put(
+            p.ownerId,
+            switch(project.userProjects.get(p.ownerId)) {
+                case (null)        { [dataProject.id]; };
+                case (?projectsId) { Array.append<TypCommon.ProjectId>(projectsId, [dataProject.id]); };
+            }
+        );
+
+        
+        let encodedProjectId = Utl.natToBlob(dataProject.id);
+        project.projectTeams.put(
+            encodedProjectId,
+            switch(project.projectTeams.get(encodedProjectId)) {
+                case (null)     { [p.ownerId]; };
+                case (?usersId) { Array.append<TypCommon.UserId>(usersId, [p.ownerId]); };
+            }
+        );
+
+        for(tl in tls.vals()) {
+            let dataTimeline : TypProject.Timeline = {
+                id        = project.getTimelinePrimaryId();
+                title     = tl.title;
+                startDate = tl.startDate;
+                endDate   = tl.endDate;
+            };
+
+            project.timelines.put(Utl.natToBlob(dataTimeline.id), dataTimeline);
+            project.projectTimelines.put(
+                encodedProjectId,
+                switch(project.projectTimelines.get(encodedProjectId)) {
+                    case (null)         { [dataTimeline.id]; };
+                    case (?timelinesId) { Array.append<TypCommon.TimelineId>(timelinesId, [dataTimeline.id]); };
+                }
+            );
+        };
+
+
+        return dataProject.id;
 	};
 
     // MARK: System
