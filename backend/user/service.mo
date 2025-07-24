@@ -27,10 +27,13 @@ module {
             switch(users.get(userId)) {
                 case(null)  { return ""; };
                 case(?user) {
-                    return if (user.referrerCode != null) {
-                        Option.get<Text>(user.referrerCode, "");
-                    } else if (user.personalRefCode != null) {
-                        Option.get<Text>(user.personalRefCode, "");
+                    let refCode      = Option.get<Text>(user.referrerCode, "");
+                    let personalCode = Option.get<Text>(user.personalRefCode, "");
+
+                    return if (personalCode != "") {
+                        personalCode;
+                    } else if (refCode != "") {
+                        refCode;
                     } else {
                         "";
                     };
