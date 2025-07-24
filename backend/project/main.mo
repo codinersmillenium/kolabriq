@@ -61,6 +61,7 @@ actor {
                 id          = p.id;
                 ownerId     = p.ownerId;
                 name        = p.name;
+                desc        = p.desc;
                 projectType = p.projectType;
                 reward      = p.reward;
                 isCompleted = p.isCompleted;

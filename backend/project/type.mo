@@ -19,6 +19,7 @@ module {
 		id          : TypCommon.ProjectId;
         ownerId     : TypCommon.UserId;
         name        : Text;
+        desc        : Text;
         tags        : [TypCommon.Tags];
 		status      : ProjectStatus;
         projectType : ProjectType;
@@ -42,6 +43,7 @@ module {
 		id          : TypCommon.ProjectId;
         ownerId     : TypCommon.UserId;
         name        : Text;
+        desc        : Text;
         projectType : ProjectType;
 		reward      : Nat;
         isCompleted : Bool;
@@ -53,6 +55,7 @@ module {
 
     public type ProjectRequest = {
         name        : Text;
+        desc        : Text;
         tags        : [TypCommon.Tags];
         projectType : ProjectType;
         reward      : Nat;

@@ -100,6 +100,7 @@ module {
                 id          = getProjectPrimaryId();
                 ownerId     = ownerId;
                 name        = req.name;
+                desc        = req.desc;
                 tags        = req.tags;
                 status      = #new;
                 projectType = req.projectType;
@@ -164,6 +165,7 @@ module {
                 id          = project.id;
                 ownerId     = project.ownerId;
                 name        = project.name;
+                desc        = project.desc;
                 tags        = project.tags;
                 status      = reqStatus;
                 projectType = project.projectType;
@@ -189,6 +191,7 @@ module {
                 id          = project.id;
                 ownerId     = project.ownerId;
                 name        = project.name;
+                desc        = project.desc;
                 tags        = project.tags;
                 status      = project.status;
                 projectType = project.projectType;
