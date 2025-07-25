@@ -8,7 +8,9 @@ import {
     BotMessageSquare,
     ChevronRight,
     SendHorizonal,
-    X
+    X,
+    ChartNoAxesCombined,
+    WandSparkles,
 } from 'lucide-react'
 import Image from 'next/image';
 
@@ -16,21 +18,44 @@ type LlmChat =
   | { system: { content: string }; user?: never }
   | { user: { content: string, task: string }; system?: never };
 
-type ChatProps = {
-  taskTitle?: string;
-  taskCompleted?: string;
-  projectAnalysisId?: number;
-  dailyStandUpId?: number;
+type TriggerButtonProps = {
+    onTrigger: () => void;
+};
+
+export const AskButton = ({ onTrigger }: TriggerButtonProps) => {
+    return (
+        <button
+            onClick={onTrigger}
+            className="text-xs p-2 py-1 bg-linear-to-r from-danger/80 to-warning/50 text-white rounded flex items-center gap-1"
+        >
+            Ask
+            <WandSparkles size={16}/>
+        </button>
+    );
+};
+
+export const AnalysisButton = ({ onTrigger }: TriggerButtonProps) => {
+    return (
+        <button
+            onClick={onTrigger}
+            className="text-xs p-2 py-2 bg-linear-to-r from-success/80 to-primary/50 text-white rounded-lg flex items-center gap-1 font-bold"
+        >
+            <ChartNoAxesCombined size={18}/>
+            Analysis
+        </button>
+    );
 };
 
 export type AIProjectGeneratorRef = {
-  triggerContext: (ctx: string) => void;
+  triggerContext: (task: string) => void;
+  triggerAnalysis: (projectId: number) => void;
+  triggerGamified: (task: string) => void;
+  triggerDailyStandUp: (projectId: number) => void;
 };
 
 const AIProjectGenerator = forwardRef<AIProjectGeneratorRef>((_, ref) => {
-// export function Chatbot({ taskTitle, taskCompleted, dailyStandUpId, projectAnalysisId }: ChatProps) {
     const [taskContext, setTaskContext] = useState<string | null>(null);
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     const [chat, setChat] = useState<LlmChat[]>([
         {
             system: { 
@@ -44,35 +69,16 @@ const AIProjectGenerator = forwardRef<AIProjectGeneratorRef>((_, ref) => {
     const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
     useImperativeHandle(ref, () => ({
-        triggerContext: (ctx: string) => {
-            setTaskContext(ctx);
+        triggerContext: (task: string) => {
+            console.log("ASdasd");
+            
+            setTaskContext(task);
+            addUnread();
         },
+        triggerAnalysis: (projectId: number) => projectAnalysis(projectId),
+        triggerGamified: (task: string) => gamifiedAi(task),
+        triggerDailyStandUp: (projectId: number) => dailyStandUp(projectId),
     }));
-
-    // useEffect(() => {
-    //     if (taskTitle) {
-    //         setTaskContext(taskTitle);
-    //         setIsOpen(true);
-    //     };
-    // }, [taskTitle]);
-
-    // useEffect(() => {
-    //     if (taskCompleted) {
-    //         gamifiedAi(taskCompleted);
-    //     };
-    // }, [taskCompleted]);
-
-    // useEffect(() => {
-    //     if (dailyStandUpId !== undefined) {
-    //         dailyStandUp(dailyStandUpId);
-    //     }
-    // }, [dailyStandUpId]);
-
-    // useEffect(() => {
-    //     if (projectAnalysisId !== undefined) {
-    //         projectAnalysis(projectAnalysisId);
-    //     }
-    // }, [projectAnalysisId]);
 
     const addUnread = () => {
         if (!isOpen) {
@@ -94,7 +100,6 @@ const AIProjectGenerator = forwardRef<AIProjectGeneratorRef>((_, ref) => {
         };
 
         setChat((prevChat) => [...prevChat, userMessage, thinkingMessage]);
-        setIsOpen(true);
 
         return userMessage;
     }
@@ -158,7 +163,6 @@ const AIProjectGenerator = forwardRef<AIProjectGeneratorRef>((_, ref) => {
         try {
             const actor_   = await initActor("ai");
             const response = await actor_.gamifiedCoach(taskCompleted);
-
             addUnread();
 
             setChat((prevChat) => {
@@ -183,6 +187,7 @@ const AIProjectGenerator = forwardRef<AIProjectGeneratorRef>((_, ref) => {
         try {
             const actor_   = await initActor("ai");
             const response = await actor_.dailyStandUp(projectId);
+            addUnread();
 
             setChat((prevChat) => {
                 const newChat = [...prevChat];
@@ -200,12 +205,14 @@ const AIProjectGenerator = forwardRef<AIProjectGeneratorRef>((_, ref) => {
 
     const projectAnalysis = async (projectId: number) => {
         const message = "Analysis my current project";
+        setIsOpen(true);
         addPreResponse(message);
         setIsLoading(true);
 
         try {
             const actor_   = await initActor("ai");
             const response = await actor_.projectAnalysis(projectId);
+            addUnread();
 
             setChat((prevChat) => {
                 const newChat = [...prevChat];
@@ -235,24 +242,17 @@ const AIProjectGenerator = forwardRef<AIProjectGeneratorRef>((_, ref) => {
 
     }, [chat]);
 
-    const test = (isOpen: boolean) => {
-        setIsOpen(isOpen);
-        if (!isOpen) {
-            // Wait for dialog to unmount, then restore focus safely
-            setTimeout(() => {
-            document.getElementById('generate-project-trigger')?.focus();
-            }, 0);
-        }
-    }
-
     return (
-        <Drawer.Root direction="right" autoFocus={true} modal={false} open={isOpen} onOpenChange={test}>
+        <Drawer.Root direction="right" modal={false} open={isOpen}>
             <Drawer.Trigger 
                 className="fixed bottom-5 right-5 flex h-12 w-12 items-center justify-center rounded-full shadow-sm bg-linear-to-r from-primary/20 to-success/40 text-white"
-                onClick={() => setUnreadMessage(0)}    
+                onClick={() => {
+                    setUnreadMessage(0);
+                    setIsOpen(true);
+                }}    
             >
                 {unreadMessage > 0   &&
-                    <div className="absolute -top-4 -left-2 bg-danger text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow">
+                    <div className="absolute -top-0.5 -left-1 bg-danger text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow">
                         {unreadMessage > 99 ? '99+' : unreadMessage}
                     </div>
                 }
@@ -265,10 +265,13 @@ const AIProjectGenerator = forwardRef<AIProjectGeneratorRef>((_, ref) => {
                     style={{ '--initial-transform': 'calc(100% + 8px)' } as React.CSSProperties}
                 >
                     <Drawer.Title className="w-full h-1/6 p-3 relative">
-                        <Drawer.Close className="h-6 w-6 rounded-lg bg-white absolute right-4 flex items-center justify-center z-10">
+                        <Drawer.Close 
+                            className="h-6 w-6 rounded-lg bg-white absolute right-4 flex items-center justify-center z-10"
+                            onClick={() => setIsOpen(false)}    
+                        >
                             <ChevronRight size={12}/>
                         </Drawer.Close>
-                        <div className="absolute top-0 left-0 -z-1 h-full w-full">
+                        <div className="bg-white absolute top-0 left-0 -z-1 h-full w-full">
                             <Image
                                 src="/images/home-bg.png"
                                 fill
