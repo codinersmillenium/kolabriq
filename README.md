@@ -13,8 +13,16 @@ Kolabriq is a decentralized project management platform that prioritizes securit
     - Change directory `cd {frontend}`
     - Install dependencies `npm install`
 
-## 📝 Documentations
+## 📝 Documentation Videos
 
+- [Landing Prolog](https://drive.google.com/file/d/122R_cEsvz0U9HTxy03PWzUPUfbToJ8ZC/view?usp=sharing)
+- [Register Admin](https://drive.google.com/file/d/1_IVVJFA8whsYkkkvlXC7CxMNvjib9zGX/view?usp=sharing)
+- [Register Dev](https://drive.google.com/file/d/1dvknF3RbWgZVSwbTDMU4wo46nPPMgvtN/view?usp=sharing)
+- [Topup Wallet](https://drive.google.com/file/d/1AW8LFvZPcVaYF6DeMnAyygY3UrOi5u_0/view?usp=sharing)
+- [App 1](https://drive.google.com/file/d/1sjMfUOQCHjMWGP2Hieac6OMJ3OdjrArc/view?usp=sharing)
+- [App 2](https://drive.google.com/file/d/1ST241O0ERshlartHE1vCqki6Quw_9yH9/view?usp=sharing)
+- [App 3](https://drive.google.com/file/d/1jr8FHzz4U8vmAgMkuaOzeAWHKb-23r4f/view?usp=sharing)
+- [AI Assistant](https://drive.google.com/file/d/1pUQRZnw52XSuEKTXPC471ONNByyuwraD/view?usp=sharing)
 
 ## 🎉 Credits
 
