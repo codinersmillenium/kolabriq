@@ -29,6 +29,7 @@ import ProjectCard from '@/components/custom/project-card'
 import { Input } from '@/components/ui/input'
 import { getPrincipal, initActor } from '@/lib/canisters'
 import { useAuth } from '@/context/auth-context'
+import ProjectPlanner from '@/components/ai/project-planner'
 
 const Table = () => {
     const [filter, setFilter] = useState<object>({
@@ -335,6 +336,7 @@ const Table = () => {
                             <Plus />
                             Create Project
                         </Button>
+                        <ProjectPlanner/>
                     </div>
                 </div>
                 <ProjectCard filter={filter} page={pages}/>

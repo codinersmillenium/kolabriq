@@ -13,6 +13,7 @@ import { ScheduleTimeline } from '@/components/custom/schedule-timeline'
 import { KanbanCard } from '@/components/custom/kanban-card'
 import { getPrincipal, initActor } from '@/lib/canisters'
 import { Badge } from '@/components/ui/badge'
+import AIProjectGenerator, { AIProjectGeneratorRef, AnalysisButton } from '@/components/ai/chatbot'
 
 const Table = () => {
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -41,7 +42,17 @@ const Table = () => {
       const id :any = localStorage.getItem('project_id')
       getTask(id)
       getTaskByid(id)
+      aiRef.current?.triggerDailyStandUp(id);
     }, [])
+
+    const handleTriggerAnalysis = (idProject: any) => {
+      idProject
+        ? aiRef.current?.triggerContext(idProject)
+        : console.warn("id project not found");
+    };
+
+    const aiRef = useRef<AIProjectGeneratorRef>(null);
+    
     return (
         <div className="space-y-4">
             <PageHeading heading={'Workspace'} />
@@ -114,6 +125,7 @@ const Table = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <AnalysisButton onTrigger={() => handleTriggerAnalysis(idProject)}/>
           <Button
             type="button"
             className="inline-flex items-center justify-center gap-1.5 text-xs/4 font-medium px-2.5 py-2 rounded-lg bg-black text-white hover:bg-[#3C3C3D] dark:bg-white dark:text-black dark:hover:text-white dark:hover:bg-black transition"
@@ -198,14 +210,14 @@ const Table = () => {
                 value="project-overview"
                 className="font-medium text-black"
             >
-                <KanbanCard task={task} tabs={{id: idProject, tab: 'overview'}}/>
+                <KanbanCard task={task} tabs={{id: idProject, tab: 'overview'}} aiRef={aiRef}/>
             </TabsContent>
 
             <TabsContent
                 value="project-task"
                 className="font-medium text-black"
             >
-                <KanbanCard task={taskId} tabs={{id: idProject, tab: 'task'}}/>
+                <KanbanCard task={taskId} tabs={{id: idProject, tab: 'task'}} aiRef={aiRef}/>
             </TabsContent>
 
             <TabsContent
@@ -220,6 +232,7 @@ const Table = () => {
             >
             </TabsContent>
         </Tabs>
+        <AIProjectGenerator ref={aiRef} />
     </div>
             </div>
         </div>

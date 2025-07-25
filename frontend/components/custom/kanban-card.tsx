@@ -12,8 +12,9 @@ import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { initActor } from '@/lib/canisters'
 import { Principal } from '@dfinity/principal'
+import { AskButton } from '../ai/chatbot'
 
-export const KanbanCard = ({ task, tabs }: any) => {
+export const KanbanCard = ({ task, tabs, aiRef }: any) => {
     // const taskTodo: Object[] = [
     //     {
     //         id: '1',
@@ -156,6 +157,7 @@ export const KanbanCard = ({ task, tabs }: any) => {
                 break;
             case 'completed':
                 if (completed) {
+                    aiRef.current?.triggerGamified(item.title);
                     setCompleted([
                         ...completed.filter(
                             (obj: any) =>
@@ -212,6 +214,10 @@ export const KanbanCard = ({ task, tabs }: any) => {
             alert('Failed Register User...');
         }
     }
+
+    const handleTriggerAsk = (taskTitle: string) => {
+        aiRef.current?.triggerContext(taskTitle);
+    };
 
     useEffect(() => {
         setTask()
@@ -336,11 +342,14 @@ export const KanbanCard = ({ task, tabs }: any) => {
                                                         <Badge variant="orange" radius='full' size='icon' className='font-bold'>{ item.title }</Badge>
                                                         <div>
                                                             <Popover>
-                                                                <PopoverTrigger asChild>
-                                                                    <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
-                                                                        <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500'/>
-                                                                    </button>
-                                                                </PopoverTrigger>
+                                                                <div className='flex items-center gap-2'>
+                                                                    <AskButton onTrigger={() => handleTriggerAsk(item.title)}/>
+                                                                    <PopoverTrigger asChild>
+                                                                        <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
+                                                                            <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500'/>
+                                                                        </button>
+                                                                    </PopoverTrigger>
+                                                                </div>
                                                                 <PopoverContent className="w-auto! p-0">
                                                                     <Card>
                                                                         <CardContent className='p-2'>
@@ -421,11 +430,14 @@ export const KanbanCard = ({ task, tabs }: any) => {
                                                         <Badge variant="grey-300" radius='full' size='icon' className='font-bold'>{ item.title }</Badge>
                                                         <div>
                                                             <Popover>
-                                                                <PopoverTrigger asChild>
-                                                                    <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
-                                                                        <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500'/>
-                                                                    </button>
-                                                                </PopoverTrigger>
+                                                                <div className='flex items-center gap-2'>
+                                                                    <AskButton onTrigger={() => handleTriggerAsk(item.title)}/>
+                                                                    <PopoverTrigger asChild>
+                                                                        <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
+                                                                            <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500'/>
+                                                                        </button>
+                                                                    </PopoverTrigger>
+                                                                </div>
                                                                 <PopoverContent className="w-auto! p-0">
                                                                     <Card>
                                                                         <CardContent className='p-2'>
@@ -506,11 +518,14 @@ export const KanbanCard = ({ task, tabs }: any) => {
                                                         <Badge variant="green" radius='full' size='icon' className='font-bold'>{ item.title }</Badge>
                                                         <div>
                                                             <Popover>
-                                                                <PopoverTrigger asChild>
-                                                                    <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
-                                                                        <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500'/>
-                                                                    </button>
-                                                                </PopoverTrigger>
+                                                                <div className='flex items-center gap-2'>
+                                                                    <AskButton onTrigger={() => handleTriggerAsk(item.title)}/>
+                                                                    <PopoverTrigger asChild>
+                                                                        <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
+                                                                            <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500'/>
+                                                                        </button>
+                                                                    </PopoverTrigger>
+                                                                </div>
                                                                 <PopoverContent className="w-auto! p-0">
                                                                     <Card>
                                                                         <CardContent className='p-2'>
