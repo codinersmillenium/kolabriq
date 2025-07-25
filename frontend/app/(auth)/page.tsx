@@ -121,10 +121,10 @@ const Home = () => {
                                 <div className="shrink-0 space-y-5 sm:space-y-12">
                                     <div className="space-y-5">
                                         <h2 className="mb-1.5! text-base/5 text-black">
-                                            Sales Overview
+                                            Project Overview
                                         </h2>
                                         <p className="text-xs/tight font-medium">
-                                            10 March 2024 - 10 April 2024
+                                            10 March 2025 - 10 July 2025
                                         </p>
                                         <div className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-2.5 py-2 text-xs/tight text-black transition hover:bg-gray-200">
                                             <CalendarCheck className="size-4 shrink-0" />
@@ -134,7 +134,7 @@ const Home = () => {
                                                         format(date, 'PP')
                                                     ) : (
                                                         <span>
-                                                            10 Mar, 2024
+                                                            10 Mar, 2025
                                                         </span>
                                                     )}{' '}
                                                 </PopoverTrigger>
@@ -154,7 +154,7 @@ const Home = () => {
                                                         format(mainDate, 'PPP')
                                                     ) : (
                                                         <span>
-                                                            10 Apr, 2024{' '}
+                                                            10 July, 2025{' '}
                                                         </span>
                                                     )}
                                                 </PopoverTrigger>
@@ -171,7 +171,7 @@ const Home = () => {
                                     </div>
                                     <div className="space-y-4 rounded-lg bg-gray-200 p-5">
                                         <h3 className="text-[26px]/8 text-black">
-                                            $75,485.57
+                                            5 Project
                                         </h3>
                                         <div className="flex items-center gap-2.5">
                                             <Badge
@@ -183,7 +183,7 @@ const Home = () => {
                                                 15.15%
                                             </Badge>
                                             <span className="text-xs/tight">
-                                                + $150.48 Increased
+                                                5 Ontime
                                             </span>
                                         </div>
                                     </div>
@@ -199,19 +199,19 @@ const Home = () => {
                                 <div className="space-y-5 bg-linear-to-b from-success/2 to-success/0 px-4 py-6 sm:px-[18px] sm:py-8">
                                     <IconChart />
                                     <p className="leading-tight mb-3!">
-                                        Avg. monthly growing
+                                        Total Project
                                     </p>
                                     <p className="text-xl/6 text-black dark:text-white">
-                                        5.24%
+                                        5
                                     </p>
                                 </div>
                                 <div className="space-y-5 border-t-0! bg-linear-to-b from-danger/2 to-danger/0 px-4 py-6 sm:px-[18px] sm:py-8">
                                     <IconGoalFlag />
                                     <p className="leading-tight mb-3!">
-                                        Rebalance accuracy
+                                        Saldo Wallet
                                     </p>
                                     <p className="text-xl/6 text-black dark:text-white">
-                                        75%
+                                        75
                                     </p>
                                 </div>
                                 <div className="space-y-5 bg-linear-to-b from-warning/2 to-warning/0 px-4 py-6 sm:px-[18px] sm:py-8">
@@ -229,10 +229,10 @@ const Home = () => {
                                 <div className="space-y-5 bg-linear-to-b from-primary/2 to-primary/0 px-4 py-6 sm:px-[18px] sm:py-8">
                                     <IconFile />
                                     <p className="leading-tight mb-3!">
-                                        Resilience index
+                                        Total Reward
                                     </p>
                                     <p className="text-xl/6 text-black dark:text-white">
-                                        0.45
+                                        50
                                     </p>
                                 </div>
                             </div>

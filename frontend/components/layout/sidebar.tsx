@@ -36,10 +36,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { usePathname } from 'next/navigation'
 import NavLink from '@/components/layout/nav-link'
+import { useAuth } from '@/context/auth-context'
 
 const Sidebar = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const pathName = usePathname()
+    const { user }: any = useAuth()
+    const [role, setRole] = useState<string>()
+
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen)
@@ -62,11 +66,18 @@ const Sidebar = () => {
         }
     }
 
+    const setAdmin = () => {
+        if (user.role) {
+            setRole(Object.keys(user.role).toString())
+        }
+    }
+
     useEffect(() => {
         if (document?.getElementById('overlay')?.classList?.contains('open')) {
             toggleSidebarResponsive()
         }
-    }, [pathName])
+        setAdmin()
+    }, [pathName, user])
 
     return (
         <>
@@ -119,28 +130,31 @@ const Sidebar = () => {
                         <Gauge className="size-[18px] shrink-0" />
                         <span>Dashboard</span>
                     </NavLink>
+                    
+                    {role === 'admin' && 
+                        <>
+                            <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs/tight font-semibold uppercase text-black">
+                                <span>Settings</span>
+                                <Minus className="hidden h-4 w-5 text-gray" />
+                            </h3>
 
-                    <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs/tight font-semibold uppercase text-black">
-                        <span>Settings</span>
-                        <Minus className="hidden h-4 w-5 text-gray" />
-                    </h3>
+                            <NavLink
+                                href="/users"
+                                className={`nav-link ${pathName === '/users' && 'text-black!'}`}
+                            >
+                                <UserLock className="size-[18px] shrink-0" />
+                                <span>Users</span>
+                            </NavLink>
 
-                    <NavLink
-                        href="/users"
-                        className={`nav-link ${pathName === '/users' && 'text-black!'}`}
-                    >
-                        <UserLock className="size-[18px] shrink-0" />
-                        <span>Users</span>
-                    </NavLink>
-
-                    <NavLink
-                        href="/projects"
-                        className={`nav-link ${pathName === '/projects' && 'text-black!'}`}
-                    >
-                        <FolderKanban className="size-[18px] shrink-0" />
-                        <span>Projects</span>
-                    </NavLink>
-
+                            <NavLink
+                                href="/projects"
+                                className={`nav-link ${pathName === '/projects' && 'text-black!'}`}
+                            >
+                                <FolderKanban className="size-[18px] shrink-0" />
+                                <span>Projects</span>
+                            </NavLink>
+                        </>
+                    }
                     <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs/tight font-semibold uppercase text-black">
                         <span>Workspaces</span>
                         <Minus className="hidden h-4 w-5 text-gray" />

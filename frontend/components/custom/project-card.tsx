@@ -8,6 +8,7 @@ import { Button } from '../ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Input } from '../ui/input';
 import { Principal } from '@dfinity/principal';
+import { Badge } from '../ui/badge';
 
 export default function ProjectCard({ filter, page } : any) {
   const [item, setItem]=  useState([])
@@ -83,8 +84,13 @@ export default function ProjectCard({ filter, page } : any) {
             />
           </Link>
 
-          <div className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs/[10px] shrink-0 font-medium whitespace-nowrap transition text-black bg-danger-light">
-            { Object.keys(i.projectType) }
+          <div className='flex justify-between'>
+            <div className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs/[10px] shrink-0 font-medium whitespace-nowrap transition text-black bg-danger-light">
+              { Object.keys(i.projectType) }
+            </div>
+            <div>
+              <Badge variant={'grey-300'} onClick={() => alert('Project Close...')}>Close</Badge>
+            </div>
           </div>
 
           <div className="space-y-1.5">

@@ -4,27 +4,27 @@ import 'react-calendar-timeline/style.css'
 import '@/public/timeline.css'
 import moment from 'moment'
 
-const groups = [{ id: 1, title: 'group 1' }, { id: 2, title: 'group 2' }]
+const groups = [{ id: 1, title: 'Burhan Armain' }, { id: 2, title: 'Muh Hisyam' }]
 
 var items = [
   {
     id: 1,
     group: 1,
-    title: 'item 1',
+    title: 'Analisa system',
     start_time: moment().add(0, 'days').valueOf(),
-    end_time: moment().add(2, 'days').valueOf()
+    end_time: moment().add(8, 'days').valueOf()
   },
   {
     id: 2,
     group: 2,
-    title: 'item 2',
+    title: 'Create core App',
     start_time: moment().add(-5, 'days').valueOf(),
     end_time: moment().add(40, 'days').valueOf()
   },
   {
     id: 3,
     group: 1,
-    title: 'item 3',
+    title: 'Design UI/UX',
     start_time: moment().add(-5, 'days').valueOf(),
     end_time: moment().add(-2, 'days').valueOf()
   }

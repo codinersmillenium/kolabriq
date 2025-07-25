@@ -14,6 +14,7 @@ import {
     Menu,
     MessageSquareText,
     UserCog,
+    Wallet,
 } from 'lucide-react'
 import {
     Popover,
@@ -32,6 +33,7 @@ import {
 import { usePathname } from 'next/navigation'
 import { signOut } from '@/lib/canisters'
 import { useAuth } from '@/context/auth-context'
+import { TopUpModal } from '@/components/custom/topup-modal'
 
 const Header = () => {
     const [date, setDate] = useState<Date>()
@@ -79,9 +81,11 @@ const Header = () => {
         )
     }
     const { logout } = useAuth()
+    const [open, setOpen] = useState(false);
 
     return (
         <header className="fixed inset-x-0 top-0 z-30 bg-white px-4 py-[15px] shadow-sm lg:px-5">
+            <TopUpModal open={open} setOpen={setOpen}/>
             <div className="flex items-center justify-between gap-5">
                 <Link href="/" className="flex items-center shrink-0 lg:ml-2.5">
                     <Image
@@ -270,6 +274,16 @@ const Header = () => {
                                     >
                                         <UserCog className="size-[18px] shrink-0" />
                                         Profile
+                                    </Link>
+                                </DropdownMenuItem>
+                                 <DropdownMenuItem className="p-0">
+                                    <Link
+                                        href="#"
+                                        className={`flex items-center gap-1.5 text-primary rounded-lg px-3 py-2 ${pathName === '/login' && 'bg-gray-400! text-danger! dark:bg-white/5! '}`}
+                                        onClick={() => setOpen(true)}
+                                    >
+                                        <Wallet className="size-[18px] shrink-0"/>
+                                        Wallet
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="p-0">
