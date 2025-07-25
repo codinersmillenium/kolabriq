@@ -2,6 +2,10 @@ import LLM "mo:llm";
 import Array "mo:base/Array";
 import Text "mo:base/Text";
 import Int "mo:base/Int";
+import Debug "mo:base/Debug";
+import Iter "mo:base/Iter";
+import Buffer "mo:base/Buffer";
+import Nat "mo:base/Nat";
 import Rand "mo:random/Rand";
 
 import TypCommon "../common/type";
@@ -39,22 +43,24 @@ actor {
 				.withParameter(
 					LLM.parameter("project:tags", #String)
 						.withEnumValues(projectTags)
-						.withDescription("Tag to describe project focus.")
+						.withDescription("Multiple related tag to describe project focus, separated by '|'")
 						.isRequired()
 				)
 				.withParameter(
 					LLM.parameter("task:title", #String)
-						.withDescription("Multiple task titles, simple and related to project.")
+						.withEnumValues(projectTags)
+						.withDescription("Multiple task titles, separated by '|', simple and related to project.")
 						.isRequired()
 				)
 				.withParameter(
 					LLM.parameter("task:tag", #String)
-						.withDescription("Task tag for assigning users, based on title.")
+						.withEnumValues(projectTags)
+						.withDescription("Multiple task tag for assigning users, separated by '|', based on title.")
 						.isRequired()
 				)
 				.withParameter(
 					LLM.parameter("timeline:title", #String)
-						.withDescription("Timeline phase title.")
+						.withDescription("Multiple timeline phase title, separated by '|'.")
 						.isRequired()
 				)
 				.build(),
@@ -63,6 +69,8 @@ actor {
 		let response = await LLM.chat(#Llama3_1_8B).withMessages([
 			#user({ content = projectTheme }),
 		]).withTools(tools).send();
+
+		Debug.print("Success");
 
 		let toolCalls = response.message.tool_calls;
 
@@ -88,12 +96,27 @@ actor {
 				};
 			};
 
+			Debug.print(projectName);
+			Debug.print(projectTags);
+			Debug.print(taskTitle);
+			Debug.print(taskTag);
+			Debug.print(timelineTitle);
+
+			Debug.print("done");
+
+			let dataProjectTags = if (not UtlAi.containSeparated(projectTags)) {
+				[UtlCommon.tagsFromString(projectTags)]
+			} else {
+				let splitProjectTags = Text.split(projectTags, #char '|');
+				Array.map<Text, TypCommon.Tags>(Iter.toArray(splitProjectTags), func (t) = UtlCommon.tagsFromString(t))
+			};
+
 			let project : TypProject.Project = {
 				id          = 0;
             	ownerId     = caller;
 				name 		= projectName;
             	desc        = projectName;
-				tags 		= [UtlCommon.tagsFromString(projectTags)];
+				tags 		= dataProjectTags;
 				status      = #new;
 				projectType = #free;
 				reward      = 0;
@@ -104,39 +127,73 @@ actor {
 				updatedById = null;
 			};
 
-			var timelines : [TypProject.Timeline] = [
-				{
-					id        = 0;
+			let bufTimeline = Buffer.Buffer<TypProject.Timeline>(0);
+			if (not UtlAi.containSeparated(timelineTitle)) {
+				bufTimeline.add({
+					id        = 1;
 					title     = timelineTitle;
 					startDate = UtlDate.addDate(await Rand.Rand().randRange(1, 3));
 					endDate   = UtlDate.addDate(await Rand.Rand().randRange(4, 6));
-				}
-			];
+				})
+			} else {
+				let splitTimelineTitle = Iter.toArray(Text.split(timelineTitle, #char '|'));
+				let splitSize = splitTimelineTitle.size();
+				for (i in Iter.range(0, splitSize - 1)) {
+					let title = splitTimelineTitle[i];
 
-			let projectId = await CanProject.saveLlmProjectTimelines(project, timelines);
-			
+					let startOffset = await Rand.Rand().randRange(1 + i, 3 + i);
+					let endOffset = await Rand.Rand().randRange(4 + i, 6 + i);
+
+					let startDate = UtlDate.addDate(startOffset);
+					let endDate = UtlDate.addDate(endOffset);
+
+					bufTimeline.add({
+						id = i;
+						title = title;
+						startDate = startDate;
+						endDate = endDate;
+					});
+				};
+			};
+
+			let projectId = await CanProject.saveLlmProjectTimelines(project, Buffer.toArray(bufTimeline));
+
+			let splitTaskTitle = Iter.toArray(Text.split(taskTitle, #char '|'));
+			let splitTaskTag = Iter.toArray(Text.split(taskTag, #char '|'));
 			let rand : Int = await Rand.Rand().randRange(2, 5);
-			var tasks : [TypTask.Task] = [
-				{
-					id          = 0;
-                	projectId   = projectId;
-					title       = taskTitle;
-					description = taskTitle; // dummy purpose
-					taskTag     = UtlCommon.tagsFromString(taskTag);
-                	status      = #todo;
-					dueDate     = UtlDate.addDate(rand); // dummy purpose
-					priority    = rand % 2 == 0; // dummy purpose
-					assignees   = [];
-					doneAt      = null;
-					doneById    = null;
-					createdAt   = UtlDate.now();
-					createdById = caller;
-					updatedAt   = null;
-					updatedById = null;
-				}
-			];
 
-			await CanTask.saveLlmTasks(tasks);
+			// Task
+			let bufTask = Buffer.Buffer<TypTask.Task>(0);
+			if (not UtlAi.containSeparated(taskTitle)) {
+				bufTask.add(UtlAi.createTask(projectId, taskTitle, #ui, rand, caller))
+			} else {
+				let splitSize = splitTaskTitle.size();
+				for (i in Iter.range(0, splitSize - 1)) {
+					bufTask.add(UtlAi.createTask(projectId, splitTaskTitle[i], #ui, rand, caller));
+				};
+			};
+			
+			// Task tag
+			let bufTaskTags = Buffer.Buffer<TypCommon.Tags>(0);
+			if (not UtlAi.containSeparated(taskTag)) {
+				bufTaskTags.add(UtlCommon.tagsFromString(taskTag));
+			} else {
+				let splitSize = splitTaskTag.size();
+				for (i in Iter.range(0, splitSize - 1)) {
+					bufTaskTags.add(UtlCommon.tagsFromString(taskTag));
+				};
+			};
+			
+			let minRange = Nat.min(splitTaskTitle.size(), splitTaskTag.size());
+
+			let bufTaskFinal = Buffer.Buffer<TypTask.Task>(0);
+			for(i in Iter.range(0, minRange - 1)) {
+				let task = bufTask.get(i);
+				let tags = bufTaskTags.get(i);
+				bufTaskFinal.add(UtlAi.createTask(projectId, task.title, tags, rand, caller));
+			};
+
+			await CanTask.saveLlmTasks(Buffer.toArray(bufTaskFinal));
 
 			return ?projectId;
 		} else {
@@ -150,7 +207,7 @@ actor {
 	* Some parameter fill with dummy data, for effecienty resource run llm
 	*/ 
 	public func chat(messages : [LLM.ChatMessage], task : ?Text) : async Text {
-		return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
+		// return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
 		var allMessages = switch (task) {
 			case (null)  { messages };
 			case (?task) {
@@ -183,7 +240,7 @@ actor {
 	* AI yang akan menjadi pengingat berdasarkan deadline, progress sebelumnya dan blocking
 	*/
 	public shared ({caller}) func dailyStandUp(projectId : TypCommon.ProjectId) : async Text {
-		return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
+		// return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
 		let tasks                = await CanTask.getUserProjectTasks(caller, projectId);
 		let isTasksAreComplete   = Array.find<TypTask.TaskResponse>(tasks, func t = t.status != #done) == null;
 		let promptSummarizeTasks = switch(isTasksAreComplete) {
@@ -226,7 +283,7 @@ actor {
 	* AI menyemangati pengguna seperti game RPG (“XP bertambah +10 karena menyelesaikan task tepat waktu!”).
 	*/
 	public func gamifiedCoach(taskTitle : Text) : async Text {
-		return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
+		// return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
 		let response = await LLM.chat(#Llama3_1_8B).withMessages([
 			#user({ content = Prompt.getGamifiedCoach(taskTitle) }),
 		]).send();
@@ -243,7 +300,7 @@ actor {
 	* Nanti setiap projek bisa di analisi apakah ada yang bakal keteteran ato waktu timelinenya tidak sesuai atau ada saran gitu.
 	*/
 	public shared func projectAnalysis(projectId : TypCommon.ProjectId) : async Text {
-		return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
+		// return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
 		let tasks = switch(await CanTask.getProjectTasks(projectId)) {
 			case(#ok(tasks)) { tasks; };
 			case(_)          { return "error: no project found" };
@@ -265,7 +322,8 @@ actor {
 		// Combine with data tasks
 		label checkTasks for(task in tasks.vals()) {
 			let taskAssigness = Array.map<TypUser.UserResponse, Text>(task.assignees, func user = user.firstName);
-			let taskSummarize = "task:" # task.title # "|due:" # Int.toText(task.dueDate) # "|user:" # Text.join(",", taskAssigness.vals()) # ";";
+			let assigness = if (taskAssigness.size() > 0) "|user:" # Text.join(",", taskAssigness.vals()) else "";
+			let taskSummarize = "task:" # task.title # "|due:" # Int.toText(task.dueDate) # assigness # ";";
 			promptBase := promptBase # taskSummarize;
 		};
 

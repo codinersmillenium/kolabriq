@@ -1,11 +1,12 @@
 import Principal "mo:base/Principal";
-import Iter "mo:base/Iter";
 import Text "mo:base/Text";
-import Array "mo:base/Array";
 
+import TypCommon "../common/type";
 import TypProject "../project/type";
 import TypTask "../task/type";
 import TypUser "../user/type";
+
+import UtlDate "../utils/date";
 
 module {
     public func dummyProject() : ([TypTask.TaskResponse], [TypProject.Timeline]) {
@@ -125,5 +126,35 @@ module {
 
 
         return (tasks, timelines);
+    };
+
+    public func containSeparated(text: Text) : Bool {
+        return Text.contains(text, #char '|');
+    };
+
+    public func createTask(
+        projectId: TypCommon.ProjectId, 
+        title: Text, 
+        tags: TypCommon.Tags,
+        randInt: Int, 
+        caller: TypCommon.UserId,
+    ) : TypTask.Task {
+        return {
+            id          = 0;
+            projectId   = projectId;
+            title       = title;
+            description = title; // dummy purpose
+            taskTag     = tags;
+            status      = #todo;
+            dueDate     = UtlDate.addDate(randInt); // dummy purpose
+            priority    = randInt % 2 == 0; // dummy purpose
+            assignees   = [];
+            doneAt      = null;
+            doneById    = null;
+            createdAt   = UtlDate.now();
+            createdById = caller;
+            updatedAt   = null;
+            updatedById = null;
+        };
     };
 }
