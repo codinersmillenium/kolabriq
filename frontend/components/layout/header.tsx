@@ -247,7 +247,7 @@ const Header = () => {
                                             Welcome back 👋
                                         </h5>
                                         <h2 className="line-clamp-1 text-xs font-bold text-black">
-                                            Jackson James
+                                            Users
                                         </h2>
                                     </div>
                                     <button

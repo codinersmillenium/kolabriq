@@ -15,6 +15,9 @@ for (const key in rawEnv) {
 
 const nextConfig = {
     env: envVars,
+    devIndicators: {
+        buildActivity: false
+    },
     // experimental: {
     //     externalDir: true,
     // },

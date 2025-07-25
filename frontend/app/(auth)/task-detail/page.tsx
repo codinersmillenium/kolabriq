@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScheduleTimeline } from '@/components/custom/schedule-timeline'
 import { KanbanCard } from '@/components/custom/kanban-card'
 import { getPrincipal, initActor } from '@/lib/canisters'
+import { Badge } from '@/components/ui/badge'
 
 const Table = () => {
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -164,8 +165,10 @@ const Table = () => {
                         <TabsTrigger
                             value="project-summary"
                             className="group flex items-center gap-1.5 whitespace-nowrap p-2.5 font-medium transition-all hover:bg-light-theme hover:text-black focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-light-theme data-[state=active]:text-black dark:hover:bg-black dark:hover:text-white dark:data-[state=active]:bg-black dark:data-[state=active]:text-white [&>svg]:size-[18px] [&>svg]:shrink-0 [&[data-state=active]>svg]:text-primary rounded-none border-b-2 border-transparent bg-transparent! px-0 py-4 data-[state=active]:border-primary"
+                            disabled
                         >
                             Summary
+                            <Badge variant={'default'}>Pro</Badge>
                         </TabsTrigger>
                     </div>
                 </div>

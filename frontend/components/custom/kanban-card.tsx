@@ -41,7 +41,7 @@ export const KanbanCard = ({ task, tabs }: any) => {
         for (let obj in task) {
             const typeTask: string = Object.keys(task[obj].status).toString()
             task[obj].dueDate = Number(task[obj].dueDate);
-            const date = new Date(task[obj].dueDate * 1000);
+            const date = new Date(task[obj].dueDate);
             const formattedDate = date.toLocaleDateString('id-ID', {
                 day: '2-digit',
                 month: 'long',
@@ -197,8 +197,7 @@ export const KanbanCard = ({ task, tabs }: any) => {
             }
             const dueDate_: any = document.querySelector('#due_date')
             const [year, month, day] = dueDate_.value.split('-').map(Number)
-            const fullYear = 2000 + year
-            const date = new Date(fullYear, month - 1, day)
+            const date = new Date(year, month - 1, day)
             formData.dueDate = date.getTime()
             formData.assignees =[Principal.fromText(formData.assignees_)]
             formData.projectId = parseFloat(tabs.id)
