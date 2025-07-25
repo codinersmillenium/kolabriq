@@ -36,28 +36,40 @@ const Table = () => {
     const [data, setData] = useState<ITable[]>([])
     const [code, setCode] = useState([''])
     
-
+    const findUser = async (id: any) => {
+        const actor_ = await initActor()
+        const { ok }: any = await actor_.findUserById(id)
+        setCode([ok.personalRefCode])
+    }
     const getUsers = async () => {
         const actor_ = await initActor()
         const { ok }: any = await actor_.getUsers()
-        var data = []
-        for(let obj in ok) {
-            var tags: string = ''
-            const role = Object.keys(ok[obj].role).toString()
-            for (let i = 0; ok[obj].tags.length; i++) {
-                tags += ok.tags[i] + '<br>'
+        if (ok && ok.length > 0) {
+            var data = []
+            for(let obj in ok) {
+                const role = Object.keys(ok[obj].role).toString()
+                if (role === 'admin') {
+                    setCode(ok[obj].personalRefCode)
+                } else {
+                    var tags: string = ''
+                    for (let obj1 in ok[obj].tags) {
+                        tags += Object.keys(ok[obj].tags[obj1]) + ', '
+                    }
+                    data.push({
+                        key: {
+                            id: ok[obj].id.toString(),
+                            role: role,
+                        },
+                        fullName: ok[obj].firstName + ' ' + ok[obj].lastName,
+                        tags: tags
+                    })
+                }
             }
-            data.push({
-                id: ok[obj].id.toString(),
-                role: role,
-                fullName: ok[obj].userName + ' ' + ok[obj].lastName,
-                tags: tags
-            })
-            if (role === 'admin') {
-                setCode(ok[obj].personalRefCode)
-            }
+            setData(data)
+        } else {
+            const principal = getPrincipal()
+            findUser(principal[1])
         }
-        setData(data)
     }
     useEffect(() => {
         getUsers()
@@ -249,7 +261,7 @@ const Table = () => {
                     )}
                 </div>
                 
-                <DataTable columns={columns} data={data} filterField="id" />
+                <DataTable columns={columns(getUsers)} data={data} filterField="id" />
             </div>
         </div>
     )

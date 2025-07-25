@@ -109,6 +109,22 @@ actor {
         };
     };
 
+    public shared ({caller}) func assignRole(
+        userId  : TypCommon.UserId,
+        role    : TypUser.Role,
+    ) : async Result.Result<TypUser.UserResponse, Text> {
+        if (role == #admin) {
+            return #err("Tidak Diizinkan...");
+        };
+        return switch(user.findUserById(userId)) {
+            case(null) { #err("Akun tidak ditemukan."); };
+            case(?u)   { 
+                let data = user.assignRole(caller, u, role);
+                #ok(user.mappedToResponse(data)); 
+            };
+        };
+    };
+
     // MARK: Update user plan
     public shared ({caller}) func updateUserPlan(
         req : TypUser.PLanRequest,

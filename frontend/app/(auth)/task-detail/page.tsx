@@ -11,10 +11,36 @@ import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScheduleTimeline } from '@/components/custom/schedule-timeline'
 import { KanbanCard } from '@/components/custom/kanban-card'
+import { getPrincipal, initActor } from '@/lib/canisters'
 
 const Table = () => {
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [task, setTask] = useState<[]>([])
+    const [taskId, setTaskId] = useState<any>([])
+    const [idProject, setIdProject] = useState()
 
+    const getTask = async (id: any) => {
+      setIdProject(id)
+      const actor_ = await initActor('task')
+      const { ok } = await actor_.getProjectTasks(parseFloat(id))
+      // console.log(ok)
+      if (typeof ok !== 'undefined') {
+        setTask(ok)
+      }
+    }
+    const getTaskByid = async (id: any) => {
+      const actor_ = await initActor('task')
+      const { ok } = await actor_.getUserProjectTasks(getPrincipal()[1], parseFloat(id))
+      if (typeof ok !== 'undefined') {
+        setTaskId([ok])
+      }
+    }
+
+    useEffect(() => {
+      const id :any = localStorage.getItem('project_id')
+      getTask(id)
+      getTaskByid(id)
+    }, [])
     return (
         <div className="space-y-4">
             <PageHeading heading={'Workspace'} />
@@ -24,7 +50,7 @@ const Table = () => {
       <div className="flex shrink-0 grow flex-col items-start gap-1.5">
         <div className="inline-flex items-center gap-2.5">
           <h2 className="text-lg/tight font-semibold text-black dark:text-white">
-            Penerimaan Tamu Jos
+            Kolabriq App
           </h2>
 
           <button type="button">
@@ -117,7 +143,7 @@ const Table = () => {
                         >
                             Overview
                             <div className="inline-flex items-center gap-1.5 rounded-lg shrink-0 bg-light-blue text-[10px]/[8px] px-1.5 py-1 font-semibold text-black">
-                                50
+                                { task.length }
                             </div>
                         </TabsTrigger>
                         <TabsTrigger
@@ -126,7 +152,7 @@ const Table = () => {
                         >
                             Task
                             <div className="inline-flex items-center gap-1.5 rounded-lg shrink-0 bg-light-purple text-[10px]/[8px] px-1.5 py-1 font-semibold text-black">
-                                50
+                                { taskId.length }
                             </div>
                         </TabsTrigger>
                         <TabsTrigger
@@ -169,14 +195,14 @@ const Table = () => {
                 value="project-overview"
                 className="font-medium text-black"
             >
-                <KanbanCard />
+                <KanbanCard task={task} tabs={{id: idProject, tab: 'overview'}}/>
             </TabsContent>
 
             <TabsContent
                 value="project-task"
                 className="font-medium text-black"
             >
-                <KanbanCard />
+                <KanbanCard task={taskId} tabs={{id: idProject, tab: 'task'}}/>
             </TabsContent>
 
             <TabsContent

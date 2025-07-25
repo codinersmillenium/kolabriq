@@ -179,30 +179,69 @@ module {
         };
 
         // MARK: Update user
+        private func bindUser(
+            original: TypUser.User,
+            updates: {
+                userName : ?Text;
+                firstName : ?Text;
+                lastName : ?Text;
+                role : ?TypUser.Role;
+                tags : ?[TypCommon.Tags];
+                updatedById : ?TypCommon.UserId;
+            }
+        ) : TypUser.User {
+            {
+                id              = original.id;
+                userName        = Option.get<Text>(updates.userName, original.userName);
+                firstName       = Option.get<Text>(updates.firstName, original.firstName);
+                lastName        = Option.get<Text>(updates.lastName, original.lastName);
+                role            = Option.get<TypUser.Role>(updates.role, original.role);
+                tags            = Option.get<[TypCommon.Tags]>(updates.tags, original.tags);
+                referrerCode    = original.referrerCode;
+                personalRefCode = original.personalRefCode;
+                plan_type       = original.plan_type;
+                plan_expired_at = original.plan_expired_at;
+                createdAt       = original.createdAt;
+                createdById     = original.createdById;
+                updatedAt       = ?UtlDate.now();
+                updatedById     = updates.updatedById;
+            };
+        };
+
         public func updateUser(
             userId : TypCommon.UserId,
             user   : TypUser.User, 
-            req    : TypUser.UserRequest,
+            req    : TypUser.UserRequest
         ) : TypUser.User {
-            let data : TypUser.User = {
-                id 		        = user.id;
-                userName        = req.userName;
-                firstName       = req.firstName;
-                lastName        = req.lastName;
-                role 	        = req.role;
-                tags 	        = req.tags;
-                referrerCode    = user.referrerCode;
-                personalRefCode = user.personalRefCode;
-                plan_type       = user.plan_type;
-                plan_expired_at = user.plan_expired_at;
-                createdAt       = user.createdAt;
-                createdById     = user.createdById;
-                updatedAt       = ?UtlDate.now();
-                updatedById     = ?userId;
-            };
+            let data = bindUser(user, {
+                userName    = ?req.userName;
+                firstName   = ?req.firstName;
+                lastName    = ?req.lastName;
+                role        = ?req.role;
+                tags        = ?req.tags;
+                updatedById = ?userId;
+            });
 
             users.put(data.id, data);
+            return data;
+        };
 
+        // MARK assign role to simple method (developer or maintenance)
+        public func assignRole(
+            userId : TypCommon.UserId,
+            user   : TypUser.User, 
+            role   : TypUser.Role
+        ) : TypUser.User {
+            let data = bindUser(user, {
+                userName    = null;
+                firstName   = null;
+                lastName    = null;
+                role        = ?role;
+                tags        = null;
+                updatedById = ?userId;
+            });
+
+            users.put(data.id, data);
             return data;
         };
 

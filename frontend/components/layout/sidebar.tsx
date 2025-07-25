@@ -182,7 +182,7 @@ const Sidebar = () => {
                         </AccordionContent>
                     </AccordionItem>
 
-                    <NavLink
+                    {/* <NavLink
                         href="/pricing-plan"
                         target="_blank"
                         className={`nav-link`}
@@ -190,7 +190,7 @@ const Sidebar = () => {
                     >
                         <Gem className="size-[18px] shrink-0" />
                         <span>SCRUM Boards</span>
-                    </NavLink>
+                    </NavLink> */}
 
                     <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs/tight font-semibold uppercase text-black">
                         <span>Pages</span>
@@ -204,54 +204,6 @@ const Sidebar = () => {
                         <Settings className="size-[18px] shrink-0" />
                         <span>Settings</span>
                     </NavLink>
-
-                    <AccordionItem value="item-6" className="p-0 shadow-none">
-                        <AccordionTrigger className="nav-link">
-                            <Fingerprint className="size-[18px] shrink-0" />
-                            <span>Authentication</span>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                            <ul className="submenu space-y-2 pl-12 pr-5">
-                                <li>
-                                    <NavLink
-                                        href="/login"
-                                        target="_blank"
-                                        isAccordion={true}
-                                    >
-                                        Login
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink
-                                        href="/register"
-                                        target="_blank"
-                                        isAccordion={true}
-                                    >
-                                        Register
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink
-                                        href="/forgot"
-                                        target="_blank"
-                                        isAccordion={true}
-                                    >
-                                        Forgot
-                                    </NavLink>
-                                </li>
-                                <li>
-                                    <NavLink
-                                        href="/password"
-                                        target="_blank"
-                                        isAccordion={true}
-                                    >
-                                        Password
-                                    </NavLink>
-                                </li>
-                            </ul>
-                        </AccordionContent>
-                    </AccordionItem>
-
                     <NavLink
                         href="/contact-us"
                         className={`nav-link ${pathName === '/contact-us' && 'text-black!'}`}
@@ -274,11 +226,11 @@ const Sidebar = () => {
                         <Rocket className="size-5 text-primary" />
                     </span>
                     <p className="mb-4 mt-3 font-semibold leading-5 text-black">
-                        Get detailed report, sales analysis, with pro plan
+                        {/* Get AI Assistant helps users automate and manage daily tasks with ease, monitors team mood to improve productivity and workplace well-being, and intelligently prioritizes tasks based on urgency and deadlines, with pro plan */}
+                        Get AI Assistant helps users automate and manage daily tasks with ease....
                     </p>
                     <Link
-                        href="https://sbthemes.lemonsqueezy.com/buy/69aeae3f-6c81-4804-a211-7b96e7e0e56a"
-                        target="_blank"
+                        href="#"
                     >
                         <Button type="button" variant={'black'}>
                             Upgrade Now

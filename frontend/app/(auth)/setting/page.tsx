@@ -33,7 +33,7 @@ export default function Setting() {
             invoice: 'WEST1000342576-001',
             billing_date: 'Mar 31, 2024',
             amount: '$710.68',
-            plan: 'Basic plan',
+            plan: 'AI Assistant',
             status: 'paid',
         },
         {
@@ -130,12 +130,6 @@ export default function Setting() {
                                 className="leading-3 data-[state=active]:bg-black data-[state=active]:text-white"
                             >
                                 My Profile
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="password"
-                                className="leading-3 data-[state=active]:bg-black data-[state=active]:text-white"
-                            >
-                                Password
                             </TabsTrigger>
                             <TabsTrigger
                                 value="billing"
@@ -380,76 +374,6 @@ export default function Setting() {
                     </TabsContent>
 
                     <TabsContent
-                        value="password"
-                        className="mx-auto w-full max-w-[566px] font-medium text-black"
-                    >
-                        <Card>
-                            <CardHeader className="space-y-1.5 rounded-t-lg border-b border-gray-300 bg-gray-100 px-5 py-4 text-base/5 font-semibold text-black">
-                                <h3>Update Password</h3>
-                                <p className="text-sm/tight font-medium text-gray-700">
-                                    Enter your current password to make update
-                                </p>
-                            </CardHeader>
-                            <CardContent>
-                                <form className="space-y-5 p-4">
-                                    <div className="space-y-2.5">
-                                        <label className="font-semibold leading-tight inline-block">
-                                            Current password
-                                        </label>
-                                        <Input
-                                            type="password"
-                                            placeholder="sdds45554"
-                                            iconLeft={
-                                                <LockKeyhole className="size-4" />
-                                            }
-                                        />
-                                    </div>
-                                    <div className="space-y-2.5">
-                                        <label className="font-semibold leading-tight inline-block">
-                                            New password
-                                        </label>
-                                        <Input
-                                            type="password"
-                                            placeholder="54841******"
-                                            iconLeft={
-                                                <LockKeyholeOpen className="size-4" />
-                                            }
-                                        />
-                                    </div>
-                                    <div className="space-y-2.5">
-                                        <label className="font-semibold leading-tight inline-block">
-                                            Confirm new password
-                                        </label>
-                                        <Input
-                                            type="password"
-                                            placeholder="54841******"
-                                            iconLeft={
-                                                <LockKeyholeOpen className="size-4" />
-                                            }
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-end gap-4">
-                                        <Button
-                                            variant={'outline-general'}
-                                            size={'large'}
-                                            className="text-danger"
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            type="submit"
-                                            variant={'black'}
-                                            size={'large'}
-                                        >
-                                            Update password
-                                        </Button>
-                                    </div>
-                                </form>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent
                         value="billing"
                         className="space-y-4 font-medium text-black dark:text-white"
                     >
@@ -460,7 +384,7 @@ export default function Setting() {
                                         <div className="space-y-1.5">
                                             <div className="flex items-center gap-1.5 *:font-semibold">
                                                 <h3 className="text-base/5">
-                                                    Basic plan
+                                                    AI Assistant
                                                 </h3>
                                                 <Badge
                                                     size={'small'}

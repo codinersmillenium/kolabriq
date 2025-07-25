@@ -18,18 +18,34 @@ import {
 } from '@/components/ui/select'
 import { format } from 'date-fns'
 import { CalendarCheck, Divide, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import DialogUI from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Search } from 'lucide-react'
 import ProjectCard from '@/components/custom/project-card'
 import { Input } from '@/components/ui/input'
+import { useAuth } from '@/context/auth-context'
 
 const Table = () => {
     const [date, setDate] = useState<Date>()
     const [mainDate, setMainDate] = useState<Date>()
-    const [isDialogOpen, setDialogOpen] = useState(false);
+    const [filter, setFilter] = useState<object>({
+        status: 'new',
+        type: 'free'
+    })
+    const [pages, setPages] = useState({
+        path: 'task-detail', role: ''
+    })
+    const { user }: any = useAuth()
+    useEffect(() => {
+        if (user.role) {
+            setPages({
+                ...pages,
+                role: Object.keys(user.role).toString()
+            })
+        }
+    }, [user.role])
 
     return (
         <div className="space-y-4">
@@ -127,7 +143,7 @@ const Table = () => {
                         </Select>
                     </div>
                 </div>
-                <ProjectCard />
+                <ProjectCard filter={filter} page={pages}/>
             </div>
         </div>
     )

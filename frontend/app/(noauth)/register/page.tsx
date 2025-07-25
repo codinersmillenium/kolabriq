@@ -14,7 +14,6 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 export default function Register() {
-    const router = useRouter()
     const [tags, useTags] = useState(false)
     const [formData, setFormData]: any = useState({
         userName: '',
@@ -56,13 +55,14 @@ export default function Register() {
             }
             const actor = await initActor()
             await actor.registerUser(formData)
+            alert('Success Register User...')
             setTimeout(() => {
                 window.location.href = '/'
-            }, 1500);
+            }, 300);
         } catch (error) {
             alert('Failed Register User...');
         }
-    };
+    }
     return (
         <div className="grid h-screen w-full gap-5 p-4 md:grid-cols-2">
             <div className="relative hidden overflow-hidden rounded-[20px] bg-[#3B06D2] p-4 md:block md:h-[calc(100vh-32px)]">
