@@ -25,11 +25,11 @@ module {
         projectType : ProjectType;
 		reward      : Nat;
         isCompleted : Bool;
+        thumbnail   : Blob;
         createdAt   : Int;
         createdById : TypCommon.UserId;
         updatedAt   : ?Int;
         updatedById : ?TypCommon.UserId;
-        // TODO : Image
     };
 
     public type ProjectFilter = {
@@ -44,9 +44,11 @@ module {
         ownerId     : TypCommon.UserId;
         name        : Text;
         desc        : Text;
+		status      : ProjectStatus;
         projectType : ProjectType;
 		reward      : Nat;
         isCompleted : Bool;
+        thumbnail   : Blob;
         teams       : [TypUser.UserResponse];
         totalTask   : Nat;
         createdAt   : Int;
@@ -59,6 +61,7 @@ module {
         tags        : [TypCommon.Tags];
         projectType : ProjectType;
         reward      : Nat;
+        thumbnail   : Blob;
     };
 
     public type ProjectResponseFromLLM = {
@@ -75,6 +78,7 @@ module {
         projectType : ProjectType;
 		reward      : Nat;
         isCompleted : Bool;
+        thumbnail   : Blob;
         teams       : [TypUser.UserResponse];
         totalTasks  : Nat;
         tasks       : [TypTask.TaskResponse];
@@ -82,7 +86,6 @@ module {
         createdById : TypCommon.UserId;
         updatedAt   : ?Int;
         updatedById : ?TypCommon.UserId;
-        // TODO : Image
     };
 
     public type PayoutRequest = {

@@ -17,18 +17,18 @@ import CanTask "canister:task";
 import CanUser "canister:user";
 import CanToken "canister:token";
 
-actor {
-    private stable var nextProjectId   : TypCommon.ProjectId = 0;
-    private stable var nexttTimelineId : TypCommon.TimelineId = 0;
+persistent actor {
+    private var nextProjectId   : TypCommon.ProjectId = 0;
+    private var nexttTimelineId : TypCommon.TimelineId = 0;
 
-    private stable var stableProjects         : [SvcProject.StableProjects]         = [];
-    private stable var stableProjectProjects  : [SvcProject.StableProjectBalances]  = [];
-    private stable var stableUserProjects     : [SvcProject.StableUserProjects]     = [];
-    private stable var stableProjectTeams     : [SvcProject.StableProjectTeams]     = [];
-    private stable var stableTimelines        : [SvcProject.StableTimelines]        = [];
-    private stable var stableProjectTimelines : [SvcProject.StableProjectTimelines] = [];
+    private var stableProjects         : [SvcProject.StableProjects]         = [];
+    private var stableProjectProjects  : [SvcProject.StableProjectBalances]  = [];
+    private var stableUserProjects     : [SvcProject.StableUserProjects]     = [];
+    private var stableProjectTeams     : [SvcProject.StableProjectTeams]     = [];
+    private var stableTimelines        : [SvcProject.StableTimelines]        = [];
+    private var stableProjectTimelines : [SvcProject.StableProjectTimelines] = [];
 
-    private let project = SvcProject.Project(
+    transient let project = SvcProject.Project(
         nextProjectId, 
         nexttTimelineId, 
         stableProjects, 
@@ -63,9 +63,11 @@ actor {
                 ownerId     = p.ownerId;
                 name        = p.name;
                 desc        = p.desc;
+                status      = p.status;
                 projectType = p.projectType;
                 reward      = p.reward;
                 isCompleted = p.isCompleted;
+                thumbnail   = p.thumbnail;
                 teams       = teams;
                 totalTask   = totalTask;
                 createdAt   = p.createdAt;
@@ -217,6 +219,7 @@ actor {
             projectType = p.projectType;
             reward      = p.reward;
             isCompleted = p.isCompleted;
+            thumbnail   = p.thumbnail;
             createdAt   = p.createdAt;
             createdById = p.ownerId;
             updatedAt   = p.updatedAt;

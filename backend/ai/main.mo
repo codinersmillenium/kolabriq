@@ -12,7 +12,7 @@ import TypCommon "../common/type";
 import TypProject "../project/type";
 import TypTask "../task/type";
 import TypUser "../user/type";
-import TypAi "type";
+import _TypAi "type";
 
 import UtlCommon "../common/util";
 import UtlDate "../utils/date";
@@ -23,13 +23,13 @@ import CanProject "canister:project";
 
 import Prompt "prompt";
 
-actor {
+persistent actor {
 	/**
 	* MARK: Project planner
 	* 
 	* Some parameter fill with dummy data, for effecienty resource run llm
 	*/ 
-	public shared ({ caller }) func planProject(projectTheme : Text) : async ?TypCommon.ProjectId {
+	public shared ({ caller }) func planProject(projectTheme : Text, thumbnail : Blob) : async ?TypCommon.ProjectId {
 		// Tags should be according TypCommon.Tags
 		let projectTags = ["backend", "bussines_analist", "frontend", "ui"];
 		let tools = [
@@ -121,6 +121,7 @@ actor {
 				projectType = #free;
 				reward      = 0;
 				isCompleted = false;
+				thumbnail   = thumbnail;
 				createdAt   = UtlDate.now();
 				createdById = caller;
 				updatedAt   = null;
@@ -207,7 +208,6 @@ actor {
 	* Some parameter fill with dummy data, for effecienty resource run llm
 	*/ 
 	public func chat(messages : [LLM.ChatMessage], task : ?Text) : async Text {
-		// return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
 		var allMessages = switch (task) {
 			case (null)  { messages };
 			case (?task) {
@@ -240,7 +240,6 @@ actor {
 	* AI yang akan menjadi pengingat berdasarkan deadline, progress sebelumnya dan blocking
 	*/
 	public shared ({caller}) func dailyStandUp(projectId : TypCommon.ProjectId) : async Text {
-		// return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
 		let tasks                = await CanTask.getUserProjectTasks(caller, projectId);
 		let isTasksAreComplete   = Array.find<TypTask.TaskResponse>(tasks, func t = t.status != #done) == null;
 		let promptSummarizeTasks = switch(isTasksAreComplete) {
@@ -283,7 +282,6 @@ actor {
 	* AI menyemangati pengguna seperti game RPG (“XP bertambah +10 karena menyelesaikan task tepat waktu!”).
 	*/
 	public func gamifiedCoach(taskTitle : Text) : async Text {
-		// return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
 		let response = await LLM.chat(#Llama3_1_8B).withMessages([
 			#user({ content = Prompt.getGamifiedCoach(taskTitle) }),
 		]).send();
@@ -300,7 +298,6 @@ actor {
 	* Nanti setiap projek bisa di analisi apakah ada yang bakal keteteran ato waktu timelinenya tidak sesuai atau ada saran gitu.
 	*/
 	public shared func projectAnalysis(projectId : TypCommon.ProjectId) : async Text {
-		// return "**Lorem ipsum dolor sit amet** consectetur adipisicing elit. Cupiditate temporibus corporis rerum nostrum molestias vitae laborum, maiores at? Dicta sint quam quibusdam laborum aut error esse culpa sed illo impedit.";
 		let tasks = switch(await CanTask.getProjectTasks(projectId)) {
 			case(#ok(tasks)) { tasks; };
 			case(_)          { return "error: no project found" };

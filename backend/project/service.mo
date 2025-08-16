@@ -106,6 +106,7 @@ module {
                 projectType = req.projectType;
                 reward      = req.reward;
                 isCompleted = false;
+                thumbnail   = req.thumbnail;
                 createdAt   = UtlDate.now();
                 createdById = ownerId;
                 updatedAt   = null;
@@ -171,6 +172,7 @@ module {
                 projectType = project.projectType;
                 reward      = project.reward;
                 isCompleted = project.isCompleted;
+                thumbnail   = project.thumbnail;
                 createdAt   = project.createdAt;
                 createdById = project.createdById;
                 updatedAt   = ?UtlDate.now();
@@ -197,6 +199,7 @@ module {
                 projectType = project.projectType;
                 reward      = project.reward;
                 isCompleted = true;
+                thumbnail   = project.thumbnail;
                 createdAt   = project.createdAt;
                 createdById = project.createdById;
                 updatedAt   = ?UtlDate.now();
@@ -223,6 +226,7 @@ module {
                 projectType = project.projectType;
                 reward      = project.reward;
                 isCompleted = project.isCompleted;
+                thumbnail   = project.thumbnail;
                 teams       = listTeams;
                 totalTasks  = listTasks.size();
                 tasks       = listTasks;
