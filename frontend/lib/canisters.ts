@@ -2,6 +2,7 @@ import * as decUser from '@/declarations/user'
 import * as decProject from '@/declarations/project'
 import * as decTask from '@/declarations/task'
 import * as decAi from '@/declarations/ai'
+import * as decToken from '@/declarations/token'
 import { AuthClient } from '@dfinity/auth-client'
 import { Principal } from '@dfinity/principal';
 
@@ -40,6 +41,9 @@ export const initActor = async (canister: string = 'user') => {
             break;
         case 'ai':
             canisterBlog = decAi.createActor(decAi.canisterId, options)
+            break;
+        case 'token':
+            canisterBlog = decToken.createActor(decToken.canisterId, options)
             break;
     }
     return canisterBlog

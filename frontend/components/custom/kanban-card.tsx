@@ -15,20 +15,6 @@ import { Principal } from '@dfinity/principal'
 import { AskButton } from '../ai/chatbot'
 
 export const KanbanCard = ({ task, tabs, aiRef }: any) => {
-    // const taskTodo: Object[] = [
-    //     {
-    //         id: '1',
-    //         tags: 'frontend',
-    //         user: 'Burhan Loli',
-    //         task: 'Engaging and welcoming tone of voice for the new and excising users.',
-    //         date: 'January 01, 2024',
-    //         comment: {
-    //             id: '1',
-    //             total: 15
-    //         }
-    //     }
-    // ]
-
     const [todo, setTodo] = useState<object[]>([])
     const [ongoing, setOngoing] = useState<object[]>()
     // const [review, setReview] = useState<object[]>()
@@ -38,7 +24,6 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
         const todoData = []
         const ongoingData = []
         const doneData = []
-        console.log(task)
         for (let obj in task) {
             const typeTask: string = Object.keys(task[obj].status).toString()
             task[obj].dueDate = Number(task[obj].dueDate);
@@ -83,7 +68,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
         e.dataTransfer.setData("item", JSON.stringify(item))
     }
 
-    const handleOnDrop = (e: DragEvent, kanban: string) => {
+    const handleOnDrop = async (e: DragEvent, kanban: string) => {
         const item = JSON.parse(e.dataTransfer.getData("item"))
         const resetCard = (flow: any = []) => {
             if (flow.indexOf('todo') !== -1) {
@@ -129,6 +114,11 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
         switch (kanban) {
             case 'todo':
                 if (todo) {
+                    const actorTask_ = await initActor('task')
+                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), {["todo"]: null})
+                    if (resTask.err) {
+                        return alert(resTask.err)
+                    }
                     setTodo([
                         ...todo.filter(
                             (obj: any) =>
@@ -143,6 +133,11 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                 break;
             case 'ongoing':
                 if (ongoing) {
+                    const actorTask_ = await initActor('task')
+                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), {["in_progress"]: null})
+                    if (resTask.err) {
+                        return alert(resTask.err)
+                    }
                     setOngoing([
                         ...ongoing.filter(
                             (obj: any) =>
@@ -157,6 +152,11 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                 break;
             case 'completed':
                 if (completed) {
+                    const actorTask_ = await initActor('task')
+                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), {["done"]: null})
+                    if (resTask.err) {
+                        return alert(resTask.err)
+                    }
                     aiRef.current?.triggerGamified(item.title);
                     setCompleted([
                         ...completed.filter(
@@ -203,7 +203,6 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
             formData.dueDate = date.getTime()
             formData.assignees =[Principal.fromText(formData.assignees_)]
             formData.projectId = parseFloat(tabs.id)
-            console.log(formData)
             const actor = await initActor('task')
             await actor.createTask(formData)
             alert('Success Create Task...')
@@ -211,6 +210,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                 window.location.href = '/'
             }, 100);
         } catch (error) {
+            console.error(error)
             alert('Failed Register User...');
         }
     }
