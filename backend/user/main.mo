@@ -13,11 +13,11 @@ import UtlUser "util";
 
 import CanToken "canister:token";
 
-actor {
-    private stable var stableUser         : [SvcUser.StableUsers]         = [];
-    private stable var stableReferrerUser : [SvcUser.StableReferrerUsers] = [];
+persistent actor {
+    private var stableUser         : [SvcUser.StableUsers]         = [];
+    private var stableReferrerUser : [SvcUser.StableReferrerUsers] = [];
 
-    private let user = SvcUser.User(stableUser, stableReferrerUser);
+    transient let user = SvcUser.User(stableUser, stableReferrerUser);
 
     // MARK: Login
     public shared ({caller}) func loginUser() : async Result.Result<TypUser.UserResponse, Text> {

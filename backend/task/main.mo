@@ -14,17 +14,17 @@ import Utl "../utils/helper";
 
 import CanUser "canister:user";
 
-actor {
-    private stable var nextTaskId   : TypCommon.TaskId       = 0;
-    private stable var nextReviewId : TypCommon.TaskReviewId = 0;
+persistent actor {
+    private var nextTaskId   : TypCommon.TaskId       = 0;
+    private var nextReviewId : TypCommon.TaskReviewId = 0;
 
-    private stable var stableTasks        : [SvcTask.StableTasks]        = [];
-    private stable var stableProjectTasks : [SvcTask.StableProjectTasks] = [];
-    private stable var stableMemberTasks  : [SvcTask.StableMemberTasks]  = [];
-    private stable var stableReviews      : [SvcTask.StableReviews]      = [];
-    private stable var stableTaskReview   : [SvcTask.StableTaskReview]   = [];
+    private var stableTasks        : [SvcTask.StableTasks]        = [];
+    private var stableProjectTasks : [SvcTask.StableProjectTasks] = [];
+    private var stableMemberTasks  : [SvcTask.StableMemberTasks]  = [];
+    private var stableReviews      : [SvcTask.StableReviews]      = [];
+    private var stableTaskReview   : [SvcTask.StableTaskReview]   = [];
 
-    private let task = SvcTask.Task(
+    transient let task = SvcTask.Task(
         nextTaskId,
         nextReviewId,
         stableTasks, 
@@ -163,7 +163,7 @@ actor {
         };
 	};
 
-    // MARK: Update status
+    // MARK: Check all complete
     public query func isAllTaskAreComplete(projectId : TypCommon.ProjectId) : async Bool {
         switch(task.projectTasks.get(Utl.natToBlob(projectId))) {
             case(null)     { return false };
@@ -172,7 +172,6 @@ actor {
 	};
 
     // MARK: Assign responsible user
-    // TODO: ASSING USER BISA BANYAK JADI NTI DI LOOP
     public shared ({caller}) func assignResponsibleUser(
         taskId       : TypCommon.TaskId, 
         assignUserId : TypCommon.UserId,
