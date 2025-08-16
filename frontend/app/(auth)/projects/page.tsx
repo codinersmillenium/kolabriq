@@ -42,7 +42,8 @@ const Table = () => {
         desc: '',
         tags_: [],
         projectType_: [],
-        reward: 0
+        reward: 0,
+        thumbnail: null,
     })
     const [rewards, setRewards] = useState(false)
     const [team, useTeam] = useState({
@@ -73,10 +74,10 @@ const Table = () => {
         handleChange(e)
     }
     const handleChange = (e: any) => {
-        const { name, value } = e.target
+        const { name, value, files, type } = e.target
         setFormData({
             ...formData,
-            [name]: value
+            [name]: type === "file" ? files[0] : value
         })
     }
     const handleSubmit = async (e: any) => {
@@ -95,9 +96,11 @@ const Table = () => {
                     }
                 }
             }
+            // handle file data
+            const arrayBuffer = await formData.thumbnail.arrayBuffer();
+            formData.thumbnail = Array.from(new Uint8Array(arrayBuffer));
             const actor = await initActor('project')
             const ok = await actor.createProject(formData)
-            console.log(ok)
             alert('Success Create Project...');
             setTimeout(() => {
                 window.location.href = '/projects'
@@ -219,6 +222,18 @@ const Table = () => {
                                                 <Textarea
                                                     placeholder="Enter desc here..."
                                                     name='desc'
+                                                    onChange={handleChange}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2.5">
+                                                <label className="block font-semibold leading-tight text-black">
+                                                    Project Thumbnail
+                                                </label>
+                                                <Input
+                                                    type="file"
+                                                    name="thumbnail"
+                                                    accept="image/*"
                                                     onChange={handleChange}
                                                     required
                                                 />

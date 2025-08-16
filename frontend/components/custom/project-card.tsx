@@ -9,8 +9,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Input } from '../ui/input';
 import { Principal } from '@dfinity/principal';
 import { Badge } from '../ui/badge';
+import { useRouter } from 'next/navigation';
 
 export default function ProjectCard({ filter, page } : any) {
+  const route = useRouter()
   const [item, setItem]=  useState([])
   const [assign, setAssign] = useState({
     name: '',
@@ -28,6 +30,10 @@ export default function ProjectCard({ filter, page } : any) {
       const { ok }: any = await actor_.getOwnedProjectList(param)
       if (page.role === 'admin') {
         for (let obj in ok) {
+          const uint8Array = new Uint8Array(ok[obj].thumbnail);
+          const blob = new Blob([uint8Array], { type: detectMimeType(uint8Array) });
+          ok[obj].thumbnailUrl = URL.createObjectURL(blob)
+          
           for (let i in ok[obj].teams) {
             const index = ok[obj].teams[i]
             const role: string = Object.keys(index.role).toString()
@@ -43,10 +49,19 @@ export default function ProjectCard({ filter, page } : any) {
       }
       setItem(ok)
   }
-  const hrefBtn = (id: string) => {
+
+  const detectMimeType = (uint8Array: Uint8Array): string => {
+    if (uint8Array[0] === 0x89 && uint8Array[1] === 0x50) return "image/png";
+    if (uint8Array[0] === 0xFF && uint8Array[1] === 0xD8) return "image/jpeg";
+    if (uint8Array[0] === 0x52 && uint8Array[1] === 0x49 && uint8Array[8] === 0x57 && uint8Array[9] === 0x45) 
+      return "image/webp";
+    return "application/octet-stream";
+  }
+
+  const handleLinkShow = (id: string) => {
     localStorage.setItem('project_id', id)
     setTimeout(() => {
-        window.location.href = '/' + page.path
+      route.push("/task-detail")
     }, 100)
   }
 
@@ -66,114 +81,145 @@ export default function ProjectCard({ filter, page } : any) {
   }, [filter, page.role])
 
   return (
-    <div className="mx-auto grid w-full max-w-[938px] gap-[13px] sm:grid-cols-2 md:grid-cols-3 mt-[10px]">
+    <div className="mx-auto grid w-full md:max-w-[938px] lg:max-w-[95%] gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mt-4">
       {item.map((i: any, j) => (
         <div className="rounded-[1vw] bg-black shadow-3xl dark:shadow-sm" key={j}>
-        <div className="space-y-4 p-3">
-          <Link
-            href="/task-detail"
-            className="mt-0 block rounded-sm bg-gray-200 p-2.5 ring-1 ring-gray-300 dark:bg-black-dark dark:ring-gray-300/10"
-          >
-            <Image
-              alt="blog-img"
-              width={180}
-              height={180}
-              src="/images/blogcard-one.svg"
-              className="mx-auto duration-300 hover:scale-105"
-              style={{ color: 'transparent' }}
-            />
-          </Link>
-
-          <div className='flex justify-between'>
-            <div className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs/[10px] shrink-0 font-medium whitespace-nowrap transition text-black bg-danger-light">
-              { Object.keys(i.projectType) }
-            </div>
-            <div>
-              <Badge variant={'grey-300'} onClick={() => alert('Project Close...')}>Close</Badge>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
+          <div className="space-y-4 p-3">
             <Link
-              href="#"
-              className="text-sm/tight font-semibold text-black duration-300 hover:text-primary text-white inline-flex"
-              onClick={() => hrefBtn(i.id)}
+              href="/task-detail"
+              className={`relative w-full h-[200px] mt-0 block rounded-xl overflow-hidden p-1.5 ring-2 dark:bg-black-dark dark:ring-gray-300/10
+                ${!i.thumbnailUrl ? "bg-gray-200 ring-gray-300" : "ring-gray-300"}`}
+              onClick={() => handleLinkShow(i.id)}
             >
-              { i.name }
+              {i.thumbnailUrl ? (
+                <Image
+                  alt="blog-img"
+                  fill
+                  src={i.thumbnailUrl}
+                  className="mx-auto"
+                  style={{ objectFit: "cover" }}
+                />
+              ) : null}
             </Link>
-            <p className="line-clamp-2 text-xs/normal font-medium text-white">
-              { i.desc }
-            </p>
-          </div>
 
-          <div className="flex items-center gap-3 justify-between">
-            <div>
-              <Button
-                variant={'ghost'}
-                className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white"
-              >
-                <LucideDollarSign className="size-4 shrink-0" />
-                { i.reward }
-              </Button>
 
-              <Button
-                variant={'ghost'}
-                className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white"
+            <div className='flex gap-2'>
+              <div
+                className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs/[10px] shrink-0 font-medium whitespace-nowrap transition text-black ${
+                  {
+                    free: "bg-gray text-white",
+                    rewarded: "bg-success-light",
+                  }[Object.keys(i.projectType)[0]]
+                }`}
               >
-                <LucideUsers className="size-4 shrink-0" />
-                { i.teams.length }
-              </Button>
+                {{
+                  free: "Free",
+                  rewarded: "Rewarded",
+                }[Object.keys(i.projectType)[0]]}
+              </div>
+              <div>
+                <Badge
+                  variant={
+                    ({
+                      new: "danger",
+                      in_progress: "orange",
+                      review: "blue",
+                      done: "green"
+                    } as const)[
+                      Object.keys(i.status)[0] as "new" | "in_progress" | "review" | "done"
+                    ] ?? "default"
+                  }
+                >
+                  {{
+                    new: "New",
+                    in_progress: "In Progress",
+                    review: "Review",
+                    done: "Done"
+                  }[Object.keys(i.status)[0]]}
+                </Badge>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {page.role !== 'developer' &&
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button 
-                          variant={'ghost'}
-                          className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white"
-                          title='Project manager or maintainer'
-                        >
-                          <LucideIdCard className="size-4 shrink-0"/>
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto! p-3" data-side="top">
-                      {!assign.status ?
-                        <form>
-                          <fieldset className="border border-gray-300 p-4 rounded-md mb-2">
-                              <legend className="text-sm font-medium text-gray-700 mb-2">User ID</legend>
-                              <div className="space-y-2">
-                                  <Input
-                                    id='user_id'
-                                    placeholder='Assign user to PM or maintainer by project'
-                                    required
-                                  />
-                              </div>
-                          </fieldset>
-                          <div className='flex justify-end'>
-                            <Button
-                              type='button'
-                              className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white"
-                              title='Assign user to PM or maintainer by project'
-                              onClick={() => assignPM(i.id)}
-                            >
-                              Assign
-                            </Button>
-                          </div>
-                        </form>
-                      : 
-                      <div>
-                        { assign.name }
-                      </div>
-                    }
-                    </PopoverContent>
-                </Popover>
-              }
-          </div>
+
+            <div className="space-y-1.5">
+              <Link
+                href="/task-detail"
+                className="text-sm/tight font-semibold text-white duration-300 hover:underline inline-flex"
+                onClick={() => handleLinkShow(i.id)}
+              >
+                { i.name }
+              </Link>
+              <p className="line-clamp-2 text-xs/normal font-medium text-white">
+                { i.desc }
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 justify-between">
+              <div className='flex items-center gap-4'>
+                <Button
+                  variant={'ghost'}
+                  className="!p-0 inline-flex items-center gap-1.5 text-xs/tight font-semibold transition text-white"
+                >
+                  <LucideDollarSign className="shrink-0" />
+                  { i.reward }
+                </Button>
+
+                <Button
+                  variant={'ghost'}
+                  className="!p-0 inline-flex items-center gap-1.5 text-xs/tight font-semibold transition text-white"
+                >
+                  <LucideUsers className="shrink-0" />
+                  { i.teams.length }
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                {page.role !== 'developer' &&
+                  <Popover>
+                      <PopoverTrigger asChild>
+                          <Button 
+                            variant={'ghost'}
+                            className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white p-0 "
+                            title='Assign project manager or maintainer'
+                          >
+                            <LucideIdCard strokeWidth={1} size={40} className="!w-6 !h-6 shrink-0"/>
+                          </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto! p-3" data-side="top">
+                        {!assign.status ?
+                          <form>
+                            <fieldset className="border border-gray-300 p-4 rounded-md mb-2">
+                                <legend className="text-sm font-medium text-gray-700 mb-2">User ID</legend>
+                                <div className="space-y-2">
+                                    <Input
+                                      id='user_id'
+                                      placeholder='Assign user to PM or maintainer by project'
+                                      required
+                                    />
+                                </div>
+                            </fieldset>
+                            <div className='flex justify-end'>
+                              <Button
+                                type='button'
+                                className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white"
+                                title='Assign user to PM or maintainer by project'
+                                onClick={() => assignPM(i.id)}
+                              >
+                                Assign
+                              </Button>
+                            </div>
+                          </form>
+                        : 
+                        <div>
+                          { assign.name }
+                        </div>
+                      }
+                      </PopoverContent>
+                  </Popover>
+                }
+            </div>
+            </div>
           </div>
         </div>
-      </div>
       ))}
-      
       {/* <div className="rounded-[1vw] bg-black shadow-3xl dark:shadow-sm">
         <div className="space-y-4 p-3">
           <Link

@@ -10,6 +10,14 @@ const ProjectPlanner: React.FC = () => {
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    const getThumbnail = async (): Promise<number[]> => {
+        const response = await fetch("/assets/thumbnail-1.jpg");
+        if (!response.ok) throw new Error("Failed to load image");
+
+        const arrayBuffer = await response.arrayBuffer();
+        return Array.from(new Uint8Array(arrayBuffer));
+    }
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!inputValue.trim() || isLoading) return;
@@ -19,7 +27,7 @@ const ProjectPlanner: React.FC = () => {
 
         try {
             const actor_    = await initActor("ai");
-            const projectId = await actor_.planProject(inputValue);
+            const projectId = await actor_.planProject(inputValue, getThumbnail());
 
             if (!projectId) {
                 setdesc('Try again with another simple idea');
