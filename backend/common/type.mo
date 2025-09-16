@@ -7,6 +7,14 @@ module {
         #ui;
         #bussines_analist;
     };
+    
+    public type Role = {
+        #admin;
+        #maintainer;
+        #developer;
+    };
+
+    public type BlockId = Nat;
 
     public type ProjectId     = Nat;
     public type TimelineId    = Nat;

@@ -111,7 +111,7 @@ persistent actor {
 
     public shared ({caller}) func assignRole(
         userId  : TypCommon.UserId,
-        role    : TypUser.Role,
+        role    : TypCommon.Role,
     ) : async Result.Result<TypUser.UserResponse, Text> {
         if (role == #admin) {
             return #err("Tidak Diizinkan...");

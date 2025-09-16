@@ -2,48 +2,90 @@ import HashMap "mo:base/HashMap";
 import Nat "mo:base/Nat";
 import Principal "mo:base/Principal";
 import Array "mo:base/Array";
-import Buffer "mo:base/Buffer";
 import Text "mo:base/Text";
 import Blob "mo:base/Blob";
 
 import TypCommon "../common/type";
-import TypUser "../user/type";
-import TypTask "../task/type";
 import TypProject "type";
 
+import UtlProject "util";
 import UtlDate "../utils/date";
 import Utl "../utils/helper";
 
-
 module {
-    private type ProjectHashKey         = Blob;
-    private type ProjectTimeLineHashKey = Blob;
+    private type BlockHashKey    = Blob;
+    private type ProjectHashKey  = Blob;
+    private type TimelineHashKey = Blob;
 
-    public type StableProjects         = (ProjectHashKey, TypProject.Project);
-    public type StableProjectBalances  = (ProjectHashKey, Nat);
-    public type StableUserProjects     = (TypCommon.UserId, [TypCommon.ProjectId]);
-    public type StableProjectTeams     = (ProjectHashKey, [TypCommon.UserId]);
-    public type StableTimelines        = (ProjectTimeLineHashKey, TypProject.Timeline);
-    public type StableProjectTimelines = (ProjectHashKey, [TypCommon.TimelineId]);
+    public type StableBlockchain       = (BlockHashKey, TypProject.ProjectBlock);
+    public type StableProjectIndex     = (ProjectHashKey, [BlockHashKey]);
+    public type StableTimelineIndex    = (TimelineHashKey, [BlockHashKey]);
+    public type StableUserProjectIndex = (TypCommon.UserId, [TypCommon.ProjectId]);
+    public type StableProjectTeamIndex = (ProjectHashKey, [TypCommon.UserId]);
 
     public class Project(
-        projectId            : Nat,
-        timelineId           : Nat,
-        dataProjects         : [StableProjects],
-        dataProjectBalances  : [StableProjectBalances],
-        dataUserProjects     : [StableUserProjects],
-        dataProjectTeams     : [StableProjectTeams],
-        dataTimelines        : [StableTimelines],
-        dataProjectTimelines : [StableProjectTimelines],
+        blockId              : TypCommon.BlockId,
+        projectId            : TypCommon.ProjectId,
+        timelineId           : TypCommon.TimelineId,
+        dataBlockchain       : [StableBlockchain],
+        dataProjectIndex     : [StableProjectIndex],
+        dataTimelineIndex    : [StableTimelineIndex],
+        dataUserProjectIndex : [StableUserProjectIndex],
+        dataProjectTeamIndex : [StableProjectTeamIndex],
     ) {
-        public var nextProjectId    = projectId;
-        public var nextTimelineId   = timelineId;
-        public let projects         = HashMap.HashMap<ProjectHashKey, TypProject.Project>(dataProjects.size(), Blob.equal, Blob.hash);
-        public let projectBalances  = HashMap.HashMap<ProjectHashKey, Nat>(dataProjectBalances.size(), Blob.equal, Blob.hash);
-        public let userProjects     = HashMap.HashMap<TypCommon.UserId, [TypCommon.ProjectId]>(dataUserProjects.size(), Principal.equal, Principal.hash);
-        public let projectTeams     = HashMap.HashMap<ProjectHashKey, [TypCommon.UserId]>(dataProjectTeams.size(), Blob.equal, Blob.hash);
-        public let timelines        = HashMap.HashMap<ProjectHashKey, TypProject.Timeline>(dataTimelines.size(), Blob.equal, Blob.hash);
-        public let projectTimelines = HashMap.HashMap<ProjectHashKey, [TypCommon.TimelineId]>(dataProjectTimelines.size(), Blob.equal, Blob.hash);
+        public var blockCounter   = blockId;
+        public var nextProjectId  = projectId;
+        public var nextTimelineId = timelineId;
+
+        public var blockchain       = HashMap.HashMap<BlockHashKey, TypProject.ProjectBlock>(dataBlockchain.size(), Blob.equal, Blob.hash);
+        public var projectIndex     = HashMap.HashMap<ProjectHashKey, [BlockHashKey]>(dataProjectIndex.size(), Blob.equal, Blob.hash );
+        public var timelineIndex    = HashMap.HashMap<TimelineHashKey, [BlockHashKey]>(dataTimelineIndex.size(), Blob.equal, Blob.hash );
+        public var userProjectIndex = HashMap.HashMap<TypCommon.UserId, [TypCommon.ProjectId]>(dataUserProjectIndex.size(), Principal.equal, Principal.hash);
+        public var projectTeamIndex = HashMap.HashMap<ProjectHashKey, [TypCommon.UserId]>(dataProjectTeamIndex.size(), Blob.equal, Blob.hash);
+
+        public let GENESIS_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
+
+        // MARK: Get previous hash
+
+        private func getPreviousHash(): Text {
+            if (blockCounter == 0) {
+                return GENESIS_HASH;
+            } else {
+                let prevBlockKey = Nat.sub(blockCounter, 1);
+                switch (blockchain.get(Utl.natToBlob(prevBlockKey))) {
+                    case (?block) { block.hash };
+                    case (null)   { GENESIS_HASH };
+                }
+            };
+        };
+
+        // MARK: Verify blockchain integrity
+
+        public func verifyChainIntegrity(): Bool {
+            if (blockCounter == 0) return true;
+            
+            var currentIndex = 1;
+            while (currentIndex < blockCounter) {
+                let prevBlockKey       = Nat.sub(currentIndex, 1);
+                let (currIdx, prevIdx) = (Utl.natToBlob(currentIndex), Utl.natToBlob(prevBlockKey));
+
+                switch (blockchain.get(currIdx), blockchain.get(prevIdx)) {
+                    case (?currentBlock, ?previousBlock) {
+                        if (currentBlock.previousHash != previousBlock.hash) return false;
+
+                        let recalculatedHash = UtlProject.calculateHash(currentBlock);
+                        if (currentBlock.hash != recalculatedHash) return false;
+                    };
+                    case (_, _) { return false; };
+                };
+
+                currentIndex += 1;
+            };
+
+            return true;
+        };
+
+        // MARK: Incremental id
 
         public func getProjectPrimaryId(): Nat {
             let projectId = nextProjectId;
@@ -57,249 +99,297 @@ module {
             return projectId;
         };
 
-        // MARK: Get project by id
-        public func getProjectsByIds(ids: [TypCommon.ProjectId]) : [TypProject.Project] {
-            let data = Buffer.Buffer<TypProject.Project>(ids.size());
-            for (id in ids.vals()) {
-                switch (findProjectById(id)) {
-                    case (null) {};
-                    case (?t)   { data.add(t) };
-                }
-            };
-            return Buffer.toArray(data);
-        };
-
-        // MARK: Get user own filtered projects
-        public func getUserProjects(
-            userId : TypCommon.UserId, 
-            filter : TypProject.ProjectFilter,
-        ) : [TypProject.Project] {
-            let projectIds = userProjects.get(userId);
-            return switch(projectIds) {
-                case(null) { [] };
-                case(?ids) {
-                    Array.filter<TypProject.Project>(
-                        getProjectsByIds(ids), 
-                        func (project) {
-                            Text.contains(project.name, #text(filter.keyword)) or
-                            Utl.hasAnyTag(filter.tags, project.tags) or
-                            project.status == filter.status or
-                            project.projectType == filter.projectType
-                        }
-                    );
-                };
-            };
-        };
-
         // MARK: Create project
+
         public func createProject(
-            ownerId : Principal, 
+            caller  : Principal, 
             req     : TypProject.ProjectRequest,
         ) : TypProject.Project {
-            let data : TypProject.Project = {
+            let projectData : TypProject.Project = {
                 id          = getProjectPrimaryId();
-                ownerId     = ownerId;
+                ownerId     = caller;
                 name        = req.name;
                 desc        = req.desc;
                 tags        = req.tags;
                 status      = #new;
                 projectType = req.projectType;
                 reward      = req.reward;
-                isCompleted = false;
                 thumbnail   = req.thumbnail;
-                createdAt   = UtlDate.now();
-                createdById = ownerId;
-                updatedAt   = null;
-                updatedById = null;
+                createdBy   = caller;
+                action      = #create;
             };
 
-            projects.put(Utl.natToBlob(data.id), data);
+            var newBlock: TypProject.ProjectBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #project(projectData);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
+            };
 
-            if (req.projectType == #rewarded) {
-                projectBalances.put(Utl.natToBlob(data.id), data.reward);
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlProject.hashBlock(newBlock));
+            
+            // Update indices
+            let blobProjectId = Utl.natToBlob(projectData.id);
+            projectIndex.put(blobProjectId, [blobBlockCounter]);
+            
+            // Add owner to user-project index
+            switch (userProjectIndex.get(caller)) {
+                case (null)      { userProjectIndex.put(caller, [projectData.id]); };
+                case (?projects) { userProjectIndex.put(caller, Array.append(projects, [projectData.id])); };
             };
             
-            userProjects.put(
-                ownerId,
-                switch(userProjects.get(ownerId)) {
-                    case (null)        { [data.id]; };
-                    case (?projectsId) { Array.append<TypCommon.ProjectId>(projectsId, [data.id]); };
-                }
-            );
+            // Initialize project team with owner
+            projectTeamIndex.put(blobProjectId, [caller]);
 
-            
-            let encodedProjectId = Utl.natToBlob(data.id);
-            projectTeams.put(
-                encodedProjectId,
-                switch(projectTeams.get(encodedProjectId)) {
-                    case (null)     { [ownerId]; };
-                    case (?usersId) { Array.append<TypCommon.UserId>(usersId, [ownerId]); };
-                }
-            );
-
-            return data;
+            blockCounter += 1;
+            return projectData;
         };
 
-        // MARK: Find project by id
-        public func findProjectById(projectId : TypCommon.ProjectId) : ?TypProject.Project {
-            return switch (projects.get(Utl.natToBlob(projectId))) {
-                case (null)    { return null; };
-                case (project) { return project; };
-            };
-        };
+        // MARK: Get curr project state
 
-        // MARK: Get project balance
-        public func getProjectBalance(projectId : TypCommon.ProjectId) : Nat {
-            switch(projectBalances.get(Utl.natToBlob(projectId))) {
-                case (null)     { 0; };
-                case (?balance) { balance; };
+        public func getCurrentProjectState(projectId: TypCommon.ProjectId): ?TypProject.Project {
+            switch (projectIndex.get(Utl.natToBlob(projectId))) {
+                case (null)      { return null; };
+                case (?blockIds) {
+                    if (blockIds.size() == 0) return null;
+                    
+                    // Find the latest project data block (not team assignment)
+                    var i = blockIds.size();
+                    while (i > 0) {
+                        i -= 1;
+                        switch (blockchain.get(blockIds[i])) {
+                            case (null)   { };
+                            case (?block) {
+                                switch (block.data) {
+                                    case (#project(data)) { return ?data; };
+                                    case (_)              { }; // Skip non-project blocks
+                                };
+                            };
+                        };
+                    };
+
+                    return null;
+                };
             };
         };
 
         // MARK: Update status
         public func updateStatus(
-            userId    : TypCommon.UserId, 
+            caller    : TypCommon.UserId, 
             project   : TypProject.Project, 
             reqStatus : TypProject.ProjectStatus,
         ) : TypProject.Project {
-            let data : TypProject.Project = {
-                id          = project.id;
-                ownerId     = project.ownerId;
-                name        = project.name;
-                desc        = project.desc;
-                tags        = project.tags;
-                status      = reqStatus;
-                projectType = project.projectType;
-                reward      = project.reward;
-                isCompleted = project.isCompleted;
-                thumbnail   = project.thumbnail;
-                createdAt   = project.createdAt;
-                createdById = project.createdById;
-                updatedAt   = ?UtlDate.now();
-                updatedById = ?userId;
+            let projectData: TypProject.Project = {
+                project with
+                status = reqStatus;
+                action = #statusUpdate({
+                    from = project.status;
+                    to   = reqStatus;
+                });
             };
 
-            projects.put(Utl.natToBlob(data.id), data);
-
-            return data;
-        };
-
-        // MARK: Set project completed
-        public func setProjectCompleted(
-            userId     : TypCommon.UserId, 
-            project    : TypProject.Project, 
-        ) : TypProject.Project {
-            let completeProject : TypProject.Project = {
-                id          = project.id;
-                ownerId     = project.ownerId;
-                name        = project.name;
-                desc        = project.desc;
-                tags        = project.tags;
-                status      = project.status;
-                projectType = project.projectType;
-                reward      = project.reward;
-                isCompleted = true;
-                thumbnail   = project.thumbnail;
-                createdAt   = project.createdAt;
-                createdById = project.createdById;
-                updatedAt   = ?UtlDate.now();
-                updatedById = ?userId;
+            var newBlock: TypProject.ProjectBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #project(projectData);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
             };
 
-            projects.put(Utl.natToBlob(completeProject.id), completeProject);
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlProject.hashBlock(newBlock));
 
-            return completeProject;
-        };
-
-        // MARK: Response mapper
-        public func mappedToResponse(
-            project   : TypProject.Project,
-            listTeams : [TypUser.UserResponse],
-            listTasks : [TypTask.TaskResponse],
-        ) : TypProject.ProjectResponse {
-            let mapped : TypProject.ProjectResponse = {
-                id          = project.id;
-                ownerId     = project.ownerId;
-                name        = project.name;
-                tags        = project.tags;
-                status      = project.status;
-                projectType = project.projectType;
-                reward      = project.reward;
-                isCompleted = project.isCompleted;
-                thumbnail   = project.thumbnail;
-                teams       = listTeams;
-                totalTasks  = listTasks.size();
-                tasks       = listTasks;
-                createdAt   = project.createdAt;
-                createdById = project.createdById;
-                updatedAt   = project.updatedAt;
-                updatedById = project.updatedById;
+            // Update indices
+            let blobProjectId = Utl.natToBlob(projectData.id);
+            switch (projectIndex.get(blobProjectId)) {
+                case (?blocks) { projectIndex.put(blobProjectId, Array.append(blocks, [blobBlockCounter])); };
+                case (null)    { };
             };
 
-            return mapped;
+            blockCounter += 1;
+            return projectData;
         };
 
-        // MARK: Assign user to team project
+        // MARK: Assign user to project
+        
         public func assignToTeamProject(
+            caller    : TypCommon.UserId, 
             projectId : TypCommon.ProjectId, 
-            usersId   : [TypCommon.UserId], 
+            userIds   : [TypCommon.UserId], 
         ) : () {
-            for(userId in usersId.vals()) {
-                userProjects.put(
-                    userId,
-                    switch(userProjects.get(userId)) {
-                        case (null)        { [projectId]; };
-                        case (?projectsId) { Array.append<TypCommon.ProjectId>(projectsId, [projectId]); };
-                    }
-                );
+            for(userId in userIds.vals()) {
+                let teamData: TypProject.TeamAssignment = {
+                    projectId  = projectId;
+                    userId     = userId;
+                    assignedBy = caller;
+                    action     = #assign;
+                };
 
-                let encodedProjectId = Utl.natToBlob(projectId);
-                projectTeams.put(
-                    encodedProjectId,
-                    switch(projectTeams.get(encodedProjectId)) {
-                        case (null)     { [userId]; };
-                        case (?usersId) { Array.append<TypCommon.UserId>(usersId, [userId]); };
-                    }
-                );
+                var newBlock: TypProject.ProjectBlock = {
+                    id           = blockCounter;
+                    timestamp    = UtlDate.now();
+                    previousHash = getPreviousHash();
+                    data         = #teamAssignment(teamData);
+                    hash         = "";
+                    signature    = Principal.toText(caller) # "_signature";
+                    nonce        = 0;
+                };
+
+                // Add to blockchain
+                let blobBlockCounter = Utl.natToBlob(blockCounter);
+                blockchain.put(blobBlockCounter, UtlProject.hashBlock(newBlock));
+                
+                // Update indices
+                let blobProjectId = Utl.natToBlob(projectId);
+                switch (userProjectIndex.get(userId)) {
+                    case (null)      { userProjectIndex.put(userId, [projectId]); };
+                    case (?projects) { userProjectIndex.put(userId, Array.append(projects, [projectId])); };
+                };
+                
+                switch (projectTeamIndex.get(blobProjectId)) {
+                    case (?team) {
+                        // Check if user already in team
+                        if (Array.find<TypCommon.UserId>(team, func(u) = u == userId) == null) {
+                            projectTeamIndex.put(blobProjectId, Array.append(team, [userId]));
+                        };
+                    };
+                    case (null) { projectTeamIndex.put(blobProjectId, [userId]); };
+                };
+
+                blockCounter += 1;
+                return;
             };
         };
 
         // MARK: Create timeline
+        
         public func createTimeline(
+            caller    : TypCommon.UserId, 
             projectId : TypCommon.ProjectId, 
             req       : TypProject.TimelineRequest, 
         ) : TypProject.Timeline {
-            let data : TypProject.Timeline = {
+            let timelineData : TypProject.Timeline = {
                 id        = getTimelinePrimaryId();
+                projectId = projectId;
                 title     = req.title;
                 startDate = req.startDate;
                 endDate   = req.endDate;
+                createdBy = caller;
+                action    = #create;
             };
 
-            timelines.put(Utl.natToBlob(data.id), data);
+            var newBlock: TypProject.ProjectBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #timeline(timelineData);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
+            };
 
-            let encodedProjectId = Utl.natToBlob(projectId);
-            projectTimelines.put(
-                encodedProjectId,
-                switch(projectTimelines.get(encodedProjectId)) {
-                    case (null)         { [data.id]; };
-                    case (?timelinesId) { Array.append<TypCommon.TimelineId>(timelinesId, [data.id]); };
-                }
-            );
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlProject.hashBlock(newBlock));
 
-            return data;
+            // Update indices
+            timelineIndex.put(Utl.natToBlob(timelineData.id), [blobBlockCounter]);
+
+            blockCounter += 1;
+            return timelineData;
         };
 
-        // MARK: Get timeline by ids
-        public func getTimelinesByIds(ids: [TypCommon.TimelineId]) : [TypProject.Timeline] {
-            let data = Buffer.Buffer<TypProject.Timeline>(ids.size());
-            for (id in ids.vals()) {
-                switch (timelines.get(Utl.natToBlob(id))) {
-                    case (null) {};
-                    case (?tl)  { data.add(tl) };
-                }
+
+        // MARK: Find timeline
+
+        public func findTimelineById(timelineId : TypCommon.TimelineId) : ?TypProject.Timeline {
+            switch (timelineIndex.get(Utl.natToBlob(timelineId))) {
+                case (null)      { null; };
+                case (?blockIds) {
+                    if (blockIds.size() == 0) return null;
+                
+                    let latestBlockId = blockIds[blockIds.size() - 1];
+                    switch (blockchain.get(latestBlockId)) {
+                        case (null)   { null; };
+                        case (?block) {
+                            switch (block.data) {
+                                case (#timeline(data)) { ?data; };
+                                case (_)               { null; };
+                            };
+                        };
+                    };
+                };
             };
-            return Buffer.toArray(data);
+        };
+
+        // MARK: Update timeline
+
+        public func updateTimeline(
+            caller   : TypCommon.UserId, 
+            timeline : TypProject.Timeline, 
+            req      : TypProject.TimelineRequest, 
+        ) : TypProject.Timeline {
+            let action = if (req.title != timeline.title) {
+                #metadataUpdate({
+                    field    = "title";
+                    oldValue = timeline.title;
+                    newValue = req.title;
+                });
+            } else if (req.startDate != timeline.startDate) {
+                #dateUpdate({
+                    field    = "startDate";
+                    oldValue = timeline.startDate;
+                    newValue = req.startDate;
+                });
+            } else if (req.endDate != timeline.endDate) {
+                #dateUpdate({
+                    field    = "endDate";
+                    oldValue = timeline.endDate;
+                    newValue = req.endDate;
+                });
+            } else {
+                #metadataUpdate({ field = "general"; oldValue = ""; newValue = "updated"; });
+            };
+
+            let timelineData : TypProject.Timeline = {
+                timeline with
+                title     = req.title;
+                startDate = req.startDate;
+                endDate   = req.endDate;
+                action    = action;
+            };
+
+            var newBlock: TypProject.ProjectBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #timeline(timelineData);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
+            };
+
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlProject.hashBlock(newBlock));
+
+            // Update indices
+            let blobTimelineId = Utl.natToBlob(timelineData.id);
+            switch (timelineIndex.get(blobTimelineId)) {
+                case (?blocks) { timelineIndex.put(blobTimelineId, Array.append(blocks, [blobBlockCounter])); };
+                case (null)    {  };
+            };
+
+            blockCounter += 1;
+            return timelineData;
         };
     }
 

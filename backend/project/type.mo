@@ -1,6 +1,4 @@
 import TypCommon "../common/type";
-import TypTask "../task/type";
-import TypUser "../user/type";
 
 module {
     public type ProjectStatus = {
@@ -15,6 +13,8 @@ module {
         #rewarded;
     };
 
+    // MARK: Project
+
     public type Project = {
 		id          : TypCommon.ProjectId;
         ownerId     : TypCommon.UserId;
@@ -24,36 +24,24 @@ module {
 		status      : ProjectStatus;
         projectType : ProjectType;
 		reward      : Nat;
-        isCompleted : Bool;
         thumbnail   : Blob;
-        createdAt   : Int;
-        createdById : TypCommon.UserId;
-        updatedAt   : ?Int;
-        updatedById : ?TypCommon.UserId;
+        createdBy   : TypCommon.UserId;
+        action      : ProjectAction;
+    };
+
+    // For project audit trail
+    public type ProjectAction = {
+        #create;
+        #statusUpdate:   { from: ProjectStatus; to: ProjectStatus };
+        #metadataUpdate: { field: Text; oldValue: Text; newValue: Text };
     };
 
     public type ProjectFilter = {
-        keyword     : Text;
-		tags        : [TypCommon.Tags];
-		status      : ProjectStatus;
-        projectType : ProjectType;
+        keyword     : ?Text;
+		tags        : ?[TypCommon.Tags];
+		status      : ?ProjectStatus;
+        projectType : ?ProjectType;
 	};
-
-    public type ProjectList = {
-		id          : TypCommon.ProjectId;
-        ownerId     : TypCommon.UserId;
-        name        : Text;
-        desc        : Text;
-		status      : ProjectStatus;
-        projectType : ProjectType;
-		reward      : Nat;
-        isCompleted : Bool;
-        thumbnail   : Blob;
-        teams       : [TypUser.UserResponse];
-        totalTask   : Nat;
-        createdAt   : Int;
-        createdById : TypCommon.UserId;
-    };
 
     public type ProjectRequest = {
         name        : Text;
@@ -64,51 +52,70 @@ module {
         thumbnail   : Blob;
     };
 
-    public type ProjectResponseFromLLM = {
-        name : Text;
-        tags : [TypCommon.Tags];
-    };
-
-    public type ProjectResponse = {
-		id          : TypCommon.ProjectId;
-        ownerId     : TypCommon.UserId;
-        name        : Text;
-        tags        : [TypCommon.Tags];
-		status      : ProjectStatus;
-        projectType : ProjectType;
-		reward      : Nat;
-        isCompleted : Bool;
-        thumbnail   : Blob;
-        teams       : [TypUser.UserResponse];
-        totalTasks  : Nat;
-        tasks       : [TypTask.TaskResponse];
-        createdAt   : Int;
-        createdById : TypCommon.UserId;
-        updatedAt   : ?Int;
-        updatedById : ?TypCommon.UserId;
-    };
+    // MARK: Payout
 
     public type PayoutRequest = {
         userId : TypCommon.UserId;
         reward : Nat;
     };
 
+    // MARK: Timeline
+
     public type Timeline = {
-        id         : TypCommon.TimelineId;
-        title      : Text;
+        id        : TypCommon.TimelineId;
+		projectId : TypCommon.ProjectId;
+        title     : Text;
         startDate : Int;
         endDate   : Int;
+        createdBy : TypCommon.UserId;
+        action    : TimelineAction;
+    };
+
+    // For timeline audit trail
+    public type TimelineAction = {
+        #create;
+        #dateUpdate:     { field: Text; oldValue: Int; newValue: Int };
+        #metadataUpdate: { field: Text; oldValue: Text; newValue: Text };
     };
 
     public type TimelineRequest = {
-        title      : Text;
+        title     : Text;
         startDate : Int;
         endDate   : Int;
     };
+    
+    // MARK: Team assigness
 
-    public type TimelineResponseFromLLM = {
-        title      : Text;
-        startDate : Int;
-        endDate   : Int;
+    public type TeamAssignment = {
+        projectId  : TypCommon.ProjectId;
+        userId     : TypCommon.UserId;
+        assignedBy : TypCommon.UserId;
+        action     : TeamAction;
+    };
+
+    // For timeline audit trail
+    public type TeamAction = {
+        #assign;
+        #unassign;
+    };
+
+    // MARK: Block
+
+    // Blockchain Block Structure for Projects & Timelines
+    public type ProjectBlock = {
+        id           : TypCommon.BlockId;
+        previousHash : Text;
+        data         : ProjectBlockData;
+        hash         : Text;
+        signature    : Text;
+        timestamp    : Int;                      // When block was created
+        nonce        : Nat;                      // For proof-of-work
+    };
+
+    // Union type for different data types in blockchain
+    public type ProjectBlockData = {
+        #project        : Project;
+        #timeline       : Timeline;
+        #teamAssignment : TeamAssignment;
     };
 };
