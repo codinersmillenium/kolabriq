@@ -2,9 +2,8 @@ import Time "mo:base/Time";
 
 module {
     public func now() : Int {
-        let now      = Time.now();
-        let dayStart = (now / 1_000_000_000) / 86400 * 86400;
-        return dayStart;
+        let nowSec = Time.now() / 1_000_000_000;
+        return nowSec;
     };
     
     public func addDate(days : Int) : Int {

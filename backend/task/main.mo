@@ -1,265 +1,495 @@
 import Result "mo:base/Result";
 import Iter "mo:base/Iter";
 import Array "mo:base/Array";
-import Buffer "mo:base/Buffer";
+import Text "mo:base/Text";
+import Int "mo:base/Int";
+import Nat "mo:base/Nat";
+import Principal "mo:base/Principal";
+import HashMap "mo:base/HashMap";
+import Blob "mo:base/Blob";
 
 import TypCommon "../common/type";
-import TypUser "../user/type";
 import TypTask "type";
 
 import SvcTask "service";
 
 import UtlTask "util";
+import UtlCommon "../common/util";
 import Utl "../utils/helper";
 
-import CanUser "canister:user";
 
 persistent actor {
-    private var nextTaskId   : TypCommon.TaskId       = 0;
-    private var nextReviewId : TypCommon.TaskReviewId = 0;
+    private var nextBlockCounter : TypCommon.BlockId  = 0;
+    private var nextTaskId       : TypCommon.TaskId   = 1;
+    private var nextReviewId     : TypCommon.ReviewId = 1;
 
-    private var stableTasks        : [SvcTask.StableTasks]        = [];
-    private var stableProjectTasks : [SvcTask.StableProjectTasks] = [];
-    private var stableMemberTasks  : [SvcTask.StableMemberTasks]  = [];
-    private var stableReviews      : [SvcTask.StableReviews]      = [];
-    private var stableTaskReview   : [SvcTask.StableTaskReview]   = [];
+    private var stableBlockchain       : [SvcTask.StableBlockchain]       = [];
+    private var stableTaskIndex        : [SvcTask.StableTaskIndex]        = [];
+    private var stableReviewIndex      : [SvcTask.StableReviewIndex]      = [];
+    private var stableTaskReviewIndex  : [SvcTask.StableTaskReviewIndex]  = [];
+    private var stableProjectTaskIndex : [SvcTask.StableProjectTaskIndex] = [];
 
     transient let task = SvcTask.Task(
+        nextBlockCounter,
         nextTaskId,
         nextReviewId,
-        stableTasks, 
-        stableProjectTasks, 
-        stableMemberTasks,
-        stableReviews,
-        stableTaskReview,
+        stableBlockchain, 
+        stableTaskIndex, 
+        stableReviewIndex,
+        stableTaskReviewIndex,
+        stableProjectTaskIndex,
     );
 
-    // MARK: Mapped arr to response
-    private func mappedArrToResponse(arrTasks: [TypTask.Task]) : async [TypTask.TaskResponse] {
-        let size = arrTasks.size();
-        let data = Array.init<TypTask.TaskResponse>(
-            size, 
-            task.mappedToResponse(arrTasks[0], [])
-        );
-        
-        for (i in Iter.range(0, size - 1)) {
-            let currtask = arrTasks[i];
-            let users    = await CanUser.getUsersByIds(currtask.assignees);
-            switch(users) {
-                case(#ok(dataUsers)) { data[i] := task.mappedToResponse(currtask, dataUsers); };
-                case(_) {};
-            };
-        };
+    // MARK: System
 
-        return Array.freeze(data);
+    system func preupgrade() {
+        // Save all HashMap data to stable variables
+        stableBlockchain       := Iter.toArray(task.blockchain.entries());
+        stableTaskIndex        := Iter.toArray(task.taskIndex.entries());
+        stableReviewIndex      := Iter.toArray(task.reviewIndex.entries());
+        stableTaskReviewIndex  := Iter.toArray(task.taskReviewIndex.entries());
+        stableProjectTaskIndex := Iter.toArray(task.projectTaskIndex.entries());
     };
 
-    // MARK: Get filtered tasks
-    public func getFilteredTasks(
-        projectId : TypCommon.ProjectId,
-        filter    : TypTask.TaskFilter,
-    ) : async Result.Result<[TypTask.TaskResponse], ()> {
-        let arrTasks = task.getFilteredTasks(projectId, filter);
-        let result   = await mappedArrToResponse(arrTasks);
+    system func postupgrade() {
+        // Restore data from stable variables to HashMaps
+        task.blockchain := HashMap.fromIter<Blob, TypTask.TaskBlock>(
+            stableBlockchain.vals(), 
+            stableBlockchain.size(), 
+            Blob.equal, 
+            Blob.hash
+        );
+        
+        task.taskIndex := HashMap.fromIter<Blob, [Blob]>(
+            stableTaskIndex.vals(),
+            stableTaskIndex.size(),
+            Blob.equal,
+            Blob.hash
+        );
+        
+        task.reviewIndex := HashMap.fromIter<Blob, [Blob]>(
+            stableReviewIndex.vals(),
+            stableReviewIndex.size(),
+            Blob.equal,
+            Blob.hash
+        );
+        
+        task.taskReviewIndex := HashMap.fromIter<Blob, [TypCommon.ReviewId]>(
+            stableTaskReviewIndex.vals(),
+            stableTaskReviewIndex.size(),
+            Blob.equal,
+            Blob.hash
+        );
+        
+        task.projectTaskIndex := HashMap.fromIter<Blob, [TypCommon.TaskId]>(
+            stableProjectTaskIndex.vals(),
+            stableProjectTaskIndex.size(),
+            Blob.equal,
+            Blob.hash
+        );
+        
+        // Clear stable variables to free memory (after restoration)
+        stableBlockchain       := [];
+        stableTaskIndex        := [];
+        stableReviewIndex      := [];
+        stableTaskReviewIndex  := [];
+        stableProjectTaskIndex := [];
+    };
 
-        return #ok(result);
-	};
-
-    // MARK: Get project tasks
-    public shared func getProjectTasks(
+    // MARK: Get task list
+    
+    public query func getTaskList(
         projectId : TypCommon.ProjectId,
-    ) : async Result.Result<[TypTask.TaskResponse], ()>  {
-        switch (task.projectTasks.get(Utl.natToBlob(projectId))) {
-            case (null)     { return #ok([]) };
-            case (?taskIds) {
-                let arrTasks = task.getTasksByIds(taskIds);
-                let result   = await mappedArrToResponse(arrTasks);
+        filter    : ?TypTask.TaskFilter,
+    ) : async Result.Result<[TypTask.Task], ()> {
+        switch(task.projectTaskIndex.get(Utl.natToBlob(projectId))) {
+            case(null)     { return #ok([]) };
+            case(?taskIds) {
+                let result = Array.mapFilter<TypCommon.TaskId, TypTask.Task>(
+                    taskIds,
+                    func(taskId: TypCommon.TaskId): ?TypTask.Task {
+                        switch (task.getCurrentTaskState(taskId)) {
+                            case (null)  { null; };
+                            case (?data) {
+                                switch(filter) {
+                                    case (null) { ?data; };
+                                    case (?f)   {
+                                        // Keyword filter
+                                        let keywordMatch = switch (f.keyword) {
+                                            case (null)     { true; };
+                                            case (?keyword) { 
+                                                if (keyword == "") { 
+                                                    true;
+                                                } else {
+                                                    Text.contains(data.title, #text keyword) or
+                                                    Text.contains(data.desc, #text keyword); 
+                                                };
+                                            };
+                                        };
+                                        
+                                        // Status filter  
+                                        let statusMatch = switch (f.status) {
+                                            case (null)        { true; };
+                                            case (?statusList) { 
+                                                if (statusList.size() == 0) {
+                                                    true;
+                                                } else {
+                                                    (Array.find<TypTask.TaskStatus>(statusList, func s = s == data.status)) != null
+                                                };
+                                            };
+                                        };
+                                        
+                                        // Tags filter  
+                                        let tagsMatch = switch (f.tag) {
+                                            case (null)        { true; };
+                                            case (?tagsList) { 
+                                                if (tagsList.size() == 0) {
+                                                    true;
+                                                } else {
+                                                    (Array.find<TypCommon.Tags>(tagsList, func s = s == data.tag)) != null
+                                                };
+                                            };
+                                        };
+                                        
+                                        // ALL conditions must be true (AND logic)
+                                        if (keywordMatch and statusMatch and tagsMatch) {
+                                            return ?data;
+                                        };
+                                        
+                                        null;
+                                    };
+                                };
+                            }
+                        };
+                    }
+                );
 
                 return #ok(result);
             };
         };
-    };
-
-    /**
-    *  MARK: Get user tasks based on project id
-    *
-    *  For AI stand up source data purposes.
-    */
-    public shared func getUserProjectTasks(
-        userId    : TypCommon.UserId,
-        projectId : TypCommon.ProjectId,
-    ) : async [TypTask.TaskResponse]  {
-        let dataTasks = task.getUserTasksBasedOnProjectId(userId, projectId);
-        let size = dataTasks.size();
-        let data = Array.init<TypTask.TaskResponse>(
-            size, 
-            task.mappedToResponse(dataTasks[0], [])
-        );
-        
-        for (i in Iter.range(0, size - 1)) {
-            let currtask = dataTasks[i];
-            data[i] := task.mappedToResponse(currtask, []);
-        };
-
-        return Array.freeze(data);
-    };
-
-    // MARK: Get task assignees
-    public shared func getTaskAssignees(
-        projectId : TypCommon.ProjectId
-    ) : async Result.Result<[TypUser.UserResponse], ()>  {
-        switch (task.projectTasks.get(Utl.natToBlob(projectId))) {
-            case (null)     { return #ok([]) };
-            case (?taskIds) {
-                let arrTasks = task.getTasksByIds(taskIds);
-                let userIds = Buffer.Buffer<TypCommon.UserId>(0);
-                for(task in arrTasks.vals()) {
-                    for(assignedUserId in task.assignees.vals()) {
-                        let hasBeenAdded = Buffer.forSome<TypCommon.UserId>(
-                            userIds, 
-                            func userId { userId == assignedUserId }
-                        );
-
-                        if (not hasBeenAdded) userIds.add(assignedUserId);
-                    };
-                };
-
-                return await CanUser.getUsersByIds(Buffer.toArray(userIds));
-            };
-        };
-    };
-
-    // MARK: Get total project tasks
-    public query func getTotalTasksProject(projectId : TypCommon.ProjectId) : async Nat  {
-        switch (task.projectTasks.get(Utl.natToBlob(projectId))) {
-            case (null)     { return 0 };
-            case (?taskIds) { return taskIds.size() };
-        };
-    };
+	};
 
     // MARK: Create task
+
     public shared ({caller}) func createTask(
         req : TypTask.TaskRequest,
-    ) : async Result.Result<TypTask.TaskResponse, Text> {
-        let result = task.createTask(caller, req);
-        return #ok(task.mappedToResponse(result, []));
+    ) : async Result.Result<TypTask.Task, Text> {
+        if (not task.verifyChainIntegrity()) {
+            return #err("Blockchain integrity compromised");
+        };
+
+        return #ok(task.createTask(caller, req));
 	};
 
+    // MARK: Get task detail
+
+    public query func getTaskDetail(
+        taskId : TypCommon.TaskId,
+    ) : async Result.Result<TypTask.Task, Text>  {
+        switch(task.getCurrentTaskState(taskId)) {
+            case(null)  { return #err("Task not found"); };
+            case(?data) { return #ok(data); };
+        };
+    };
+
+    // MARK: Update metadata
+    
+    public shared ({caller}) func updateTaskMetadata(
+        taskId : TypCommon.TaskId,
+        req    : TypTask.TaskRequest,
+    ) : async Result.Result<TypTask.Task, Text> {
+        if (not task.verifyChainIntegrity()) {
+            return #err("Blockchain integrity compromised");
+        };
+        
+        switch(task.getCurrentTaskState(req.projectId)) {
+            case(null)  { return #err("Task not found") };
+            case(?data) { return #ok(task.updateMetadata(caller, data, req)); };
+        };
+    };
+
     // MARK: Update status
-    public shared ({caller}) func updateStatus(
+    
+    public shared ({caller}) func updateTaskStatus(
         taskId    : TypCommon.TaskId,
         reqStatus : TypTask.TaskStatus,
-    ) : async Result.Result<TypTask.TaskResponse, Text> {
-        switch(task.findById(taskId)) {
-            case(null)  { return #err("Task tidak ditemukan"); };
-            case(?t) {
-                ignore task.updateStatus(caller, t, reqStatus);
-                let users = await CanUser.getUsersByIds(t.assignees);
-                return switch(users) {
-                    case(#ok(dataUsers)) { return #ok(task.mappedToResponse(t, dataUsers)); };
-                    case(_)              { return #ok(task.mappedToResponse(t, [])); };
+    ) : async Result.Result<TypTask.Task, Text> {
+        if (not task.verifyChainIntegrity()) {
+            return #err("Blockchain integrity compromised");
+        };
+        
+        switch(task.getCurrentTaskState(taskId)) {
+            case(null)  { return #err("Task not found") };
+            case(?data) { return #ok(task.updateStatus(caller, data, reqStatus)); };
+        };
+    };
+
+    // MARK: Get riviews task
+    
+    public query func getTaskReviews(
+        taskId : TypCommon.TaskId,
+    ) : async Result.Result<[TypTask.Review], Text> {
+        switch (task.getCurrentTaskState(taskId)) {
+            case (null)  { return #err("Task not found"); };
+            case (?_) {
+                switch (task.taskReviewIndex.get(Utl.natToBlob(taskId))) {
+                    case (null)       { #ok([]); };
+                    case (?reviewIds) {
+                        let reviews = Array.mapFilter<TypCommon.ReviewId, TypTask.Review>(
+                            reviewIds,
+                            func reviewId = task.getCurrentReviewState(taskId)
+                        );
+
+                        return #ok(reviews);
+                    };
                 };
             };
         };
 	};
 
-    // MARK: Check all complete
-    public query func isAllTaskAreComplete(projectId : TypCommon.ProjectId) : async Bool {
-        switch(task.projectTasks.get(Utl.natToBlob(projectId))) {
-            case(null)     { return false };
-            case(?tasksId) { return task.isTasksAreCompleted(task.getTasksByIds(tasksId)) };
-        };
-	};
+    // MARK: Get task history
 
-    // MARK: Assign responsible user
-    public shared ({caller}) func assignResponsibleUser(
-        taskId       : TypCommon.TaskId, 
-        assignUserId : TypCommon.UserId,
-    ) : async Result.Result<Text, Text> {
-        switch(task.findById(taskId)) {
-            case(null)  { return #err("Task tidak ditemukan"); };
-            case(?t) {
-                let isUserAssigned = task.assignUser(caller, t, assignUserId);
-                return switch(isUserAssigned) {
-                    case(false) { return #err("Terjadi kesalahan, mohon coba beberapa waktu lagi") };
-                    case(true)  { return #ok("Berhasil perbarui data") };
-                };
+    public query func getTaskHistory(
+        taskId : TypCommon.TaskId,
+    ) : async Result.Result<[TypTask.TaskBlock], Text> {
+        switch (task.taskIndex.get(Utl.natToBlob(taskId))) {
+            case (null)      { #err("Task not found"); };
+            case (?blockIds) {
+                let blocks = Array.mapFilter<Blob, TypTask.TaskBlock>(
+                    blockIds,
+                    func blockId = task.blockchain.get(blockId)
+                );
+
+                return #ok(blocks);
+            };
+        };
+    };
+
+    // MARK: Add task review
+
+    public shared ({caller}) func addReview(
+        req : TypTask.TaskReviewRequest,
+    ) : async Result.Result<TypTask.Review, Text> {
+        if (not task.verifyChainIntegrity()) {
+            return #err("Blockchain integrity compromised");
+        };
+        
+        switch(task.getCurrentTaskState(req.taskId)) {
+            case(null) { return #err("Task not found") };
+            case(?_)   {  return #ok(task.addReview(caller, req)); };
+        };
+    };
+
+    // MARK: Update review
+    
+    public shared ({caller}) func updateReview(
+        reviewId : TypCommon.ReviewId,
+        req      : TypTask.TaskReviewRequest,
+    ) : async Result.Result<TypTask.Review, Text> {
+        if (not task.verifyChainIntegrity()) {
+            return #err("Blockchain integrity compromised");
+        };
+        
+        switch(task.getCurrentReviewState(reviewId)) {
+            case(null)  { return #err("Task not found") };
+            case(?data) {  return #ok(task.updateReview(caller, data, req)); };
+        };
+    };
+
+    // MARK: Mark review fixed
+    
+    public shared ({caller}) func updateReviewFixed(
+        reviewId : TypCommon.ReviewId,
+    ) : async Result.Result<TypTask.Review, Text> {
+        if (not task.verifyChainIntegrity()) {
+            return #err("Blockchain integrity compromised");
+        };
+        
+        switch(task.getCurrentReviewState(reviewId)) {
+            case(null)  { return #err("Task not found") };
+            case(?data) {  return #ok(task.updateReviewFixed(caller, data)); };
+        };
+    };
+
+    // MARK: Get review history
+
+    public query func getReviewHistory(
+        reviewId : TypCommon.ReviewId,
+    ) : async Result.Result<[TypTask.TaskBlock], Text> {
+        switch (task.reviewIndex.get(Utl.natToBlob(reviewId))) {
+            case (null)      { #err("Review not found"); };
+            case (?blockIds) {
+                let blocks = Array.mapFilter<Blob, TypTask.TaskBlock>(
+                    blockIds,
+                    func blockId = task.blockchain.get(blockId)
+                );
+
+                return #ok(blocks);
             };
         };
     };
 
     // MARK: Get user overview
+
     public query func getUserOverview(
         projectId : TypCommon.ProjectId, 
     ) : async Result.Result<[TypTask.UserOverview], Text> {
         let (result, error) = task.userOverview(projectId);
-        if (error != #found) return #err(UtlTask.translateOverviewError(error));
-        return #ok(result);
+        if (error == #found) return #ok(result);
+
+        return #err(UtlTask.translateOverviewError(error));
     };
 
-    // MARK: Set review
-    public shared ({caller}) func setReview(req : TypTask.TaskReviewRequest) : async Result.Result<Text, ()> {
-        task.saveReview(caller, req, false);
-        return #ok("Berhasil menambahkan review");
-    };
+    // MARK: Health
 
-    // MARK: Save tasks from llm
-    public func saveLlmTasks(
-        ts : [TypTask.Task],
-    ) : async () {
-        for(t in ts.vals()) {
-            let data : TypTask.Task = {
-                id          = task.getTaskPrimaryId();
-                projectId   = t.projectId;
-                title       = t.title;
-                description = t.description;
-                taskTag     = t.taskTag;
-                status      = t.status;
-                dueDate     = t.dueDate;
-                priority    = t.priority;
-                assignees   = t.assignees;
-                doneAt      = t.doneAt;
-                doneById    = t.doneById;
-                createdAt   = t.createdAt;
-                createdById = t.createdById;
-                updatedAt   = t.updatedAt;
-                updatedById = t.updatedById;
+    public query func healthCheck(): async {
+        totalBlocks    : Nat;
+        chainIntegrity : Bool;
+        lastBlockHash  : Text;
+        totalTasks     : Nat;
+        totalReviews   : Nat;
+    } {
+        let integrity    = task.verifyChainIntegrity();
+        let blockCounter = task.blockCounter;
+        let lastHash     = if (blockCounter > 0) {
+            let prevBlockKey = Nat.sub(blockCounter, 1);
+            switch (task.blockchain.get(Utl.natToBlob(prevBlockKey))) {
+                case (null)   { "No blocks" };
+                case (?block) { block.hash };
             };
+        } else {
+            UtlCommon.GENESIS_HASH;
+        };
+        
+        return {
+            totalBlocks    = blockCounter;
+            chainIntegrity = integrity;
+            lastBlockHash  = lastHash;
+            totalTasks  = task.taskIndex.size();
+            totalReviews = task.reviewIndex.size();
+        };
+    };
 
-            task.tasks.put(Utl.natToBlob(data.id), data);
+    /**
+     *  MARK: AI Summary user tasks
+     *
+     *  This function generates a summary of all tasks 
+     *  belonging to the caller for a given project.
+     *  It skips completed tasks (#done).
+     *  The output is a text string that can be used as input for AI prompts.
+     */
+    public query func summaryUserTasks(
+        projectId : TypCommon.ProjectId,
+    ) : async Text {
+        switch(task.projectTaskIndex.get(Utl.natToBlob(projectId))) {
+            case(null)     { return "Project didnt has task" };
+            case(?taskIds) {
+                // Prepare task description from the template
+                let baseTaskQuery  = "Task [index]: [title] | Status: [status] | Due: [dueDate] | Priority: [priority]";
+                var tasksQueryList = "";
+                var idx = 1;
 
-            let encodedProjectId = Utl.natToBlob(data.projectId);
-            task.projectTasks.put(
-                encodedProjectId,
-                switch(task.projectTasks.get(encodedProjectId)) {
-                    case (null)     { [data.id]; };
-                    case (?tasksId) { Array.append<TypCommon.TaskId>(tasksId, [data.id]); };
-                }
-            );
+                label loopTask for(taskId in taskIds.vals()) {
+                    switch (task.getCurrentTaskState(taskId)) {
+                        case (null)  {  };
+                        case (?task) {
+                            if (task.status != #done) continue loopTask;
 
-            for(userId in t.assignees.vals()) {
-                task.memberTasks.put(
-                    userId,
-                    switch(task.memberTasks.get(userId)) {
-                        case (null)     { [data.id]; };
-                        case (?tasksId) { Array.append<Nat>(tasksId, [data.id]); };
-                    }
-                );
+                            let priority = if (task.priority) "yes" else "no";
+                            let status   = switch(task.status) {
+                                case(#in_progress) { "in progress" };
+                                case(_)            { "todo" };
+                            };
+
+                            // Replace placeholders with real values
+                            var tasksQuery = baseTaskQuery;
+                            tasksQuery := Text.replace(tasksQuery, #text "[index]", Int.toText(idx));
+                            tasksQuery := Text.replace(tasksQuery, #text "[title]", task.title);
+                            tasksQuery := Text.replace(tasksQuery, #text "[status]", status);
+                            tasksQuery := Text.replace(tasksQuery, #text "[dueDate]", Int.toText(task.dueDate));
+                            tasksQuery := Text.replace(tasksQuery, #text "[priority]", priority);
+
+                            // Append to the final result string
+                            tasksQueryList := tasksQueryList # tasksQuery # "; ";
+                            idx += 1;
+                        };
+                    };
+                };
+
+                return tasksQueryList;
             };
         };
     };
 
-    // MARK: System
+    /**
+     *  MARK: Project Analysis
+     *
+     *  This function generates a summary of tasks inside a project.
+     *  - It fetches all tasks by project ID.
+     *  - It skips completed tasks (#done).
+     *  - For each task, it lists title, status, due date, priority, and assignees.
+     *  - The result is a single text string useful for analysis or AI prompts.
+     */
+    public query func projectAnalysis(
+        projectId : TypCommon.ProjectId,
+    ) : async Text {
+        switch(task.projectTaskIndex.get(Utl.natToBlob(projectId))) {
+            case(null)     { return "Project didnt has task" };
+            case(?taskIds) {
+                // Prepare task description from the template
+                let baseTaskQuery  = "Task [index]: [title] | Status: [status] | Due: [dueDate] | Priority: [priority]";
+                var tasksQueryList = "";
+                var idx = 1;
 
-    system func preupgrade() {
-        stableTasks        := Iter.toArray(task.tasks.entries());
-        stableProjectTasks := Iter.toArray(task.projectTasks.entries());
-        stableMemberTasks  := Iter.toArray(task.memberTasks.entries());
+                label loopTask for(taskId in taskIds.vals()) {
+                    switch (task.getCurrentTaskState(taskId)) {
+                        case (null)  {  };
+                        case (?task) {
+                            if (task.status == #done) continue loopTask;
+
+                            // TODO: NEXT PAKE USERNAME
+                            let taskAssigness  = Array.map<TypCommon.UserId, Text>(task.assignees, func user = Principal.toText(user));
+                            let queryAssigness = if (taskAssigness.size() > 0) " | Assigness: " # Text.join(",", taskAssigness.vals()) else "";
+                            let priority       = if (task.priority) "yes" else "no";
+
+                            // Replace placeholders with real values
+                            var tasksQuery = baseTaskQuery;
+                            tasksQuery := Text.replace(tasksQuery, #text "[index]", Int.toText(idx));
+                            tasksQuery := Text.replace(tasksQuery, #text "[title]", task.title);
+                            tasksQuery := Text.replace(tasksQuery, #text "[status]", UtlTask.getStrStatus(task.status));
+                            tasksQuery := Text.replace(tasksQuery, #text "[dueDate]", Int.toText(task.dueDate));
+                            tasksQuery := Text.replace(tasksQuery, #text "[priority]", priority);
+
+                            // Append to the final result string
+                            tasksQueryList := tasksQueryList # tasksQuery # queryAssigness # "; ";
+                            idx += 1;
+                        };
+                    };
+                };
+
+                return tasksQueryList;
+            };
+        };
     };
 
-    system func postupgrade() {
-        stableTasks        := [];
-        stableProjectTasks := [];
-        stableMemberTasks  := [];
+    // MARK: Save multiple tasks from llm
+
+    public func saveLlmTasks(
+        caller    : TypCommon.UserId,
+        projectId : TypCommon.ProjectId,
+        reqTasks  : [TypTask.TaskRequest],
+    ) : async Result.Result<(), Text> {
+        if (not task.verifyChainIntegrity()) {
+            return #err("Blockchain integrity compromised");
+        };
+
+        for(req in reqTasks.vals()) {
+            ignore task.createTask(caller, { 
+                req with 
+                projectId = projectId;
+            });
+        };
+
+        return #ok();
     };
 }

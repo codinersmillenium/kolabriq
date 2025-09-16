@@ -1,79 +1,69 @@
 import TypCommon "../common/type";
-import TypUser "../user/type";
 
 module {
+    // MARK: Task status
     public type TaskStatus = {
         #todo;
         #in_progress;
         #done;
     };
 
+    // MARK: Task
+
     public type Task = {
 		id          : TypCommon.TaskId;
         projectId   : TypCommon.ProjectId;
         title       : Text;
-        description : Text;
-        taskTag     : TypCommon.Tags;
+        desc        : Text;
+        tag         : TypCommon.Tags;
 		status      : TaskStatus;
-        dueDate     : Int;
         priority    : Bool; 
         assignees   : [TypCommon.UserId];
+        dueDate     : Int;
         doneAt      : ?Int;
         doneById    : ?TypCommon.UserId;
-        createdAt   : Int;
         createdById : TypCommon.UserId;
-        updatedAt   : ?Int;
-        updatedById : ?TypCommon.UserId;
+        action      : TaskAction;
+    };
+
+    // For task audit trail
+    public type TaskAction = {
+        #create;
+        #statusUpdate   : { from: TaskStatus; to: TaskStatus };
+        #assigneeUpdate : { added: [TypCommon.UserId]; removed: [TypCommon.UserId] };
+        #metadataUpdate : { field: Text; oldValue: Text; newValue: Text };
     };
 
     public type TaskFilter = {
-        keyword : Text;
-		status  : [TaskStatus];
-        taskTag : [TypCommon.Tags];
+        keyword : ?Text;
+		status  : ?[TaskStatus];
+        tag     : ?[TypCommon.Tags];
 	};
 
     public type TaskRequest = {
         projectId   : TypCommon.ProjectId;
 		title       : Text;
-		description : Text;
-        taskTag     : TypCommon.Tags;
+		desc        : Text;
+        tag         : TypCommon.Tags;
         dueDate     : Int;
         assignees   : [TypCommon.UserId]; 
 	};
+    // MARK: Review
 
-    public type TaskResponse = {
-		id          : TypCommon.TaskId;
-        projectId   : TypCommon.ProjectId;
-        title       : Text;
-        description : Text;
-        taskTag     : TypCommon.Tags;
-		status      : TaskStatus;
-        dueDate     : Int;
-        priority    : Bool;
-        isOverdue   : Bool;
-        assignees   : [TypUser.UserResponse];
-        doneAt      : ?Int;
-        review      : ?TaskReview;
+    public type Review = {
+        id         : TypCommon.ReviewId;
+		taskId     : TypCommon.TaskId;
+        review     : Text;
+        reviewerId : TypCommon.UserId;
+        fixedAt    : ?Int;
+        fixedById  : ?TypCommon.UserId;
+        action     : ReviewAction;
     };
 
-    public type TaskResponseFromLLM = {
-		title       : Text;
-		description : Text;
-        taskTag     : TypCommon.Tags;
-        dueDate     : Int;
-        priority    : Bool;
-	};
-
-    public type TaskReview = {
-        id          : TypCommon.TaskId;
-		taskId      : TypCommon.TaskId;
-        review      : Text;
-        fixedAt     : ?Int;
-        fixedById   : ?TypCommon.UserId;
-        createdAt   : Int;
-        createdById : TypCommon.UserId;
-        updatedAt   : ?Int;
-        updatedById : ?TypCommon.UserId;
+    public type ReviewAction = {
+        #create;
+        #fix:    { fixedBy: TypCommon.UserId };
+        #update: { oldReview: Text; newReview: Text };
     };
 
     public type TaskReviewRequest = {
@@ -81,31 +71,37 @@ module {
         review : Text;
     };
 
+    // MARK: Overview
+
     public type OverviewError = {
-        #notFound;
-        #notDone;
+        #not_found;
+        #not_done;
         #found;
     };
 
     public type UserOverview = {
-        userId            : TypCommon.UserId;
-        totalTask         : Nat;
-		totalDone         : Nat;
-        totalOverdue      : Nat;
-        avgCompletingTime : Int;
+        userId       : TypCommon.UserId;
+        totalTask    : Nat;
+		totalDone    : Nat;
+        totalOverdue : Nat;
     };
 
-    public type HistoryCategory = {
-        #in_progress;
-        #done;
-        #correction;
+    // MARK: Block
+
+    // Block Structure for Projects & Timelines
+    public type TaskBlock = {
+        id           : Nat; 
+        previousHash : Text;
+        data         : TaskBlockData;
+        hash         : Text;
+        signature    : Text;
+        timestamp    : Int;
+        nonce        : Nat;
     };
 
-    public type TaskHistory = {
-        id        : TypCommon.TaskHistoryId;
-		taskId    : TypCommon.TaskId;
-        category  : HistoryCategory;
-        timestamp : Int;
-        username  : Text;
+    // Union type for different data types in blockchain
+    public type TaskBlockData = {
+        #task   : Task;
+        #review : Review;
     };
 };

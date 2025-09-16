@@ -2,12 +2,17 @@ import Result "mo:base/Result";
 import Nat "mo:base/Nat";
 import Array "mo:base/Array";
 import Text "mo:base/Text";
+import Iter "mo:base/Iter";
+import HashMap "mo:base/HashMap";
+import Blob "mo:base/Blob";
+import Principal "mo:base/Principal";
 
 import TypCommon "../common/type";
 import TypProject "type";
 
 import SvcProject "service";
 
+import UtlCommon "../common/util";
 import Utl "../utils/helper";
 
 persistent actor {
@@ -35,21 +40,57 @@ persistent actor {
     // MARK: System
 
     system func preupgrade() {
-        // stableProjects         := Iter.toArray(project.projects.entries());
-        // stableProjectProjects  := Iter.toArray(project.projectBalances.entries());
-        // stableUserProjects     := Iter.toArray(project.userProjects.entries());
-        // stableProjectTeams     := Iter.toArray(project.projectTeams.entries());
-        // stableTimelines        := Iter.toArray(project.timelines.entries());
-        // stableProjectTimelines := Iter.toArray(project.projectTimelines.entries());
+        // Save all HashMap data to stable variables
+        stableBlockchain       := Iter.toArray(project.blockchain.entries());
+        stableProjectIndex     := Iter.toArray(project.projectIndex.entries());
+        stableTimelineIndex    := Iter.toArray(project.timelineIndex.entries());
+        stableUserProjectIndex := Iter.toArray(project.userProjectIndex.entries());
+        stableProjectTeamIndex := Iter.toArray(project.projectTeamIndex.entries());
     };
 
     system func postupgrade() {
-        // stableProjects         := [];
-        // stableProjectProjects  := [];
-        // stableUserProjects     := [];
-        // stableProjectTeams     := [];
-        // stableTimelines        := [];
-        // stableProjectTimelines := [];
+        // Restore data from stable variables to HashMaps
+        project.blockchain := HashMap.fromIter<Blob, TypProject.ProjectBlock>(
+            stableBlockchain.vals(), 
+            stableBlockchain.size(), 
+            Blob.equal, 
+            Blob.hash
+        );
+        
+        project.projectIndex := HashMap.fromIter<Blob, [Blob]>(
+            stableProjectIndex.vals(),
+            stableProjectIndex.size(),
+            Blob.equal,
+            Blob.hash
+        );
+        
+        project.timelineIndex := HashMap.fromIter<Blob, [Blob]>(
+            stableTimelineIndex.vals(),
+            stableTimelineIndex.size(),
+            Blob.equal,
+            Blob.hash
+        );
+        
+        project.userProjectIndex := HashMap.fromIter<TypCommon.UserId, [TypCommon.ProjectId]>(
+            stableUserProjectIndex.vals(),
+            stableUserProjectIndex.size(),
+            Principal.equal,
+            Principal.hash
+        );
+        
+        project.projectTeamIndex := HashMap.fromIter<Blob, [TypCommon.UserId]>(
+            stableProjectTeamIndex.vals(),
+            stableProjectTeamIndex.size(),
+            Blob.equal,
+            Blob.hash
+        );
+        
+        // Clear stable variables to free memory (after restoration)
+        stableBlockchain       := [];
+        stableProjectIndex     := [];
+        stableTimelineIndex    := [];
+        stableUserProjectIndex := [];
+        stableProjectTeamIndex := [];
     };
 
     // MARK: Get owned project list
@@ -103,7 +144,7 @@ persistent actor {
                                     case (?filterType) { data.projectType == filterType; };
                                 };
                                 
-                                // ✅ ALL conditions must be true (AND logic)
+                                // ALL conditions must be true (AND logic)
                                 if (keywordMatch and tagsMatch and statusMatch and typeMatch) {
                                     return ?data;
                                 };
@@ -141,6 +182,7 @@ persistent actor {
 	};
 
     // MARK: Get project detail
+
     public query func getProjectDetail(
         projectId : TypCommon.ProjectId,
     ) : async Result.Result<TypProject.Project, Text>  {
@@ -153,6 +195,7 @@ persistent actor {
     };
 
     // MARK: Update status
+
     public shared ({caller}) func updateProjectStatus(
         projectId : TypCommon.ProjectId,
         reqStatus : TypProject.ProjectStatus,
@@ -163,10 +206,7 @@ persistent actor {
         
         switch(project.getCurrentProjectState(projectId)) {
             case(null)  { return #err("Project not found") };
-            case(?data) { 
-                let result = project.updateStatus(caller, data, reqStatus);
-                return #ok(result);
-            };
+            case(?data) { return #ok(project.updateStatus(caller, data, reqStatus)); };
         };
     };
 
@@ -311,6 +351,8 @@ persistent actor {
         };
     };
 
+    // MARK: Health
+
     public query func healthCheck(): async {
         totalBlocks    : Nat;
         chainIntegrity : Bool;
@@ -327,7 +369,7 @@ persistent actor {
                 case (?block) { block.hash };
             };
         } else {
-            project.GENESIS_HASH;
+            UtlCommon.GENESIS_HASH;
         };
         
         return {
@@ -339,67 +381,40 @@ persistent actor {
         };
     };
 
-    // // MARK: Save project, timelines from llm
-    // public func saveLlmProjectTimelines(
-    //     p : TypProject.Project,
-    //     tls : [TypProject.Timeline],
-    // ) : async TypCommon.ProjectId {
-    //     let dataProject : TypProject.Project = {
-    //         id          = project.getProjectPrimaryId();
-    //         ownerId     = p.ownerId;
-    //         name        = p.name;
-    //         desc        = p.desc;
-    //         tags        = p.tags;
-    //         status      = p.status;
-    //         projectType = p.projectType;
-    //         reward      = p.reward;
-    //         isCompleted = p.isCompleted;
-    //         thumbnail   = p.thumbnail;
-    //         createdAt   = p.createdAt;
-    //         createdById = p.ownerId;
-    //         updatedAt   = p.updatedAt;
-    //         updatedById = p.updatedById;
-    //     };
+    // MARK: Save project, timelines from llm
+    
+    public func saveLlmProjectTimelines(
+        caller       : TypCommon.UserId,
+        reqProject   : TypProject.ProjectRequest,
+        reqTimelines : [TypProject.TimelineRequest],
+    ) : async Result.Result<TypProject.LLMSaveResponse, Text> {
+        if (not project.verifyChainIntegrity()) {
+            return #err("Blockchain integrity compromised");
+        };
 
-    //     project.projects.put(Utl.natToBlob(dataProject.id), dataProject);
-    //     project.userProjects.put(
-    //         p.ownerId,
-    //         switch(project.userProjects.get(p.ownerId)) {
-    //             case (null)        { [dataProject.id]; };
-    //             case (?projectsId) { Array.append<TypCommon.ProjectId>(projectsId, [dataProject.id]); };
-    //         }
-    //     );
+        let resultProject   = project.createProject(caller, reqProject);
+        var startDate : Int = 9999999999;
+        var endDate   : Int = 0;
 
-        
-    //     let encodedProjectId = Utl.natToBlob(dataProject.id);
-    //     project.projectTeams.put(
-    //         encodedProjectId,
-    //         switch(project.projectTeams.get(encodedProjectId)) {
-    //             case (null)     { [p.ownerId]; };
-    //             case (?usersId) { Array.append<TypCommon.UserId>(usersId, [p.ownerId]); };
-    //         }
-    //     );
+        for(reqTimeline in reqTimelines.vals()) {
+            if (startDate > reqTimeline.startDate) {
+                startDate := reqTimeline.startDate
+            };
 
-    //     for(tl in tls.vals()) {
-    //         let dataTimeline : TypProject.Timeline = {
-    //             id        = project.getTimelinePrimaryId();
-    //             title     = tl.title;
-    //             startDate = tl.startDate;
-    //             endDate   = tl.endDate;
-    //         };
+            if (endDate < reqTimeline.endDate) {
+                endDate := reqTimeline.endDate
+            };
 
-    //         project.timelines.put(Utl.natToBlob(dataTimeline.id), dataTimeline);
-    //         project.projectTimelines.put(
-    //             encodedProjectId,
-    //             switch(project.projectTimelines.get(encodedProjectId)) {
-    //                 case (null)         { [dataTimeline.id]; };
-    //                 case (?timelinesId) { Array.append<TypCommon.TimelineId>(timelinesId, [dataTimeline.id]); };
-    //             }
-    //         );
-    //     };
+            ignore project.createTimeline(caller, resultProject.id, reqTimeline);
+        };
 
+        let result : TypProject.LLMSaveResponse = {
+            project   = resultProject;
+            startDate = startDate;
+            endDate   = endDate;
+        };
 
-    //     return dataProject.id;
-	// };
+        return #ok(result);
+	};
 
 }

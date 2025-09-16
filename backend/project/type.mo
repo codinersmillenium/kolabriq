@@ -101,15 +101,15 @@ module {
 
     // MARK: Block
 
-    // Blockchain Block Structure for Projects & Timelines
+    // Blockchain Block Structure for Projects, Timelines & Team assigness
     public type ProjectBlock = {
         id           : TypCommon.BlockId;
         previousHash : Text;
         data         : ProjectBlockData;
         hash         : Text;
         signature    : Text;
-        timestamp    : Int;                      // When block was created
-        nonce        : Nat;                      // For proof-of-work
+        timestamp    : Int;               // When block was created
+        nonce        : Nat;               // For proof-of-work
     };
 
     // Union type for different data types in blockchain
@@ -117,5 +117,13 @@ module {
         #project        : Project;
         #timeline       : Timeline;
         #teamAssignment : TeamAssignment;
+    };
+
+    // MARK: LLM
+
+    public type LLMSaveResponse = {
+        project   : Project;
+        startDate : Int;
+        endDate   : Int;
     };
 };

@@ -4,13 +4,17 @@ import Buffer "mo:base/Buffer";
 import Nat8 "mo:base/Nat8";
 import Array "mo:base/Array";
 import Blob "mo:base/Blob";
-import Random "mo:base/Random";
 import Text "mo:base/Text";
 import Char "mo:base/Char";
 import Nat32 "mo:base/Nat32";
 import Int32 "mo:base/Int32";
+import Principal "mo:base/Principal";
+import Int "mo:base/Int";
 
 import TypCommon "../common/type";
+
+import UtlDate "date";
+import UtlSha256 "sha256";
 
 module {
     public func hasAnyTag(haystack : [TypCommon.Tags], needle : [TypCommon.Tags]) : Bool {
@@ -41,20 +45,15 @@ module {
         return Blob.fromArray(arr)
     };
 
-    public func generateReferralCode() : async Text {
-        let charsetText  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        let charset      = Iter.toArray(Text.toIter(charsetText));
-        let charsetSize  = charset.size();
-        let randomBlob   = await Random.blob();
-        var code         = "";
+    public func generateReferralCode(caller : Principal) : Text {
+        let userText  = Principal.toText(caller);
+        let timestamp = Int.toText(UtlDate.now());
+        let hashed    = UtlSha256.sha256(userText # timestamp);
+        let export    = Array.take(Text.toArray(hashed), 16);
 
-        for (byte in randomBlob.vals()) {
-            let idx = Nat8.toNat(byte) % charsetSize;
-            code   #= Text.fromChar(charset[idx]);
-        };
-
-        return "REF-#" # code;
+        return Text.fromArray(export);
     };
+
 
     public func textToNat(t : Text) : Int {
         var n : Nat32 = 0;

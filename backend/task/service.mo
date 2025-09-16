@@ -1,4 +1,3 @@
-import Iter "mo:base/Iter";
 import HashMap "mo:base/HashMap";
 import Nat "mo:base/Nat";
 import Buffer "mo:base/Buffer";
@@ -10,436 +9,526 @@ import Option "mo:base/Option";
 
 import TypCommon "../common/type";
 import TypTask "type";
-import TypUser "../user/type";
 
+import UtlTask "util";
+import UtlCommon "../common/util";
 import UtlDate "../utils/date";
 import Utl "../utils/helper";
 
 module {
-    private type TaskHashKey       = Blob;
-    private type ReviewHashKey     = Blob;
-    private type ProjectHashKey    = Blob;
+    private type BlockHashKey       = Blob;
+    private type TaskHashKey        = Blob;
+    private type ReviewHashKey      = Blob;
+    private type ProjectTaskHashKey = Blob;
 
-    public type StableTasks        = (TaskHashKey, TypTask.Task);
-    public type StableProjectTasks = (ProjectHashKey, [TypCommon.TaskId]);
-    public type StableMemberTasks  = (TypCommon.UserId, [TypCommon.TaskId]);
-    public type StableReviews      = (ReviewHashKey, TypTask.TaskReview);
-    public type StableTaskReview   = (TaskHashKey, TypCommon.TaskReviewId);
+    public type StableBlockchain       = (BlockHashKey, TypTask.TaskBlock);
+    public type StableTaskIndex        = (TaskHashKey, [BlockHashKey]);
+    public type StableReviewIndex      = (ReviewHashKey, [BlockHashKey]);
+    public type StableTaskReviewIndex  = (TaskHashKey, [TypCommon.ReviewId]);
+    public type StableProjectTaskIndex = (ProjectTaskHashKey, [TypCommon.TaskId]);
     
     public class Task(
-        taskId           : TypCommon.TaskId,
-        reviewId         : TypCommon.TaskReviewId,
-        dataTasks        : [StableTasks],
-        dataProjectTasks : [StableProjectTasks],
-        dataMemberTasks  : [StableMemberTasks],
-        dataReviews      : [StableReviews],
-        dataTaskReview   : [StableTaskReview],
+        blockId              : TypCommon.BlockId,
+        taskId               : TypCommon.TaskId,
+        reviewId             : TypCommon.ReviewId,
+        dataBlockchain       : [StableBlockchain],
+        dataTaskIndex        : [StableTaskIndex],
+        dataReviewIndex      : [StableReviewIndex],
+        dataTaskReviewIndex  : [StableTaskReviewIndex],
+        dataProjectTaskIndex : [StableProjectTaskIndex],
     ) {
+        public var blockCounter = blockId;
         public var nextTasksId  = taskId;
         public var nextReviewId = reviewId;
-        public let tasks        = HashMap.HashMap<TaskHashKey, TypTask.Task>(dataTasks.size(), Blob.equal, Blob.hash);
-        public let projectTasks = HashMap.HashMap<ProjectHashKey, [TypCommon.TaskId]>(dataProjectTasks.size(), Blob.equal, Blob.hash);
-        public let memberTasks  = HashMap.HashMap<TypCommon.UserId, [TypCommon.TaskId]>(dataMemberTasks.size(), Principal.equal, Principal.hash);
-        public let reviews      = HashMap.HashMap<ReviewHashKey, TypTask.TaskReview>(dataReviews.size(), Blob.equal, Blob.hash);
-        public let taskReview   = HashMap.HashMap<ProjectHashKey, TypCommon.TaskReviewId>(dataTaskReview.size(), Blob.equal, Blob.hash);
 
-        // MARK: Task primary id
+        public var blockchain       = HashMap.HashMap<BlockHashKey, TypTask.TaskBlock>(dataBlockchain.size(), Blob.equal, Blob.hash);
+        public var taskIndex        = HashMap.HashMap<TaskHashKey, [BlockHashKey]>(dataTaskIndex.size(), Blob.equal, Blob.hash);
+        public var reviewIndex      = HashMap.HashMap<ReviewHashKey, [BlockHashKey]>(dataReviewIndex.size(), Blob.equal, Blob.hash);
+        public var taskReviewIndex  = HashMap.HashMap<TaskHashKey, [TypCommon.ReviewId]>(dataTaskReviewIndex.size(), Blob.equal, Blob.hash);
+        public var projectTaskIndex = HashMap.HashMap<ProjectTaskHashKey, [TypCommon.TaskId]>(dataProjectTaskIndex.size(), Blob.equal, Blob.hash);
+
+        // MARK: Blockchain handler
+
+        private func getPreviousHash(): Text {
+            if (blockCounter == 0) {
+                return UtlCommon.GENESIS_HASH;
+            } else {
+                let prevBlockKey = Nat.sub(blockCounter, 1);
+                switch (blockchain.get(Utl.natToBlob(prevBlockKey))) {
+                    case (?block) { block.hash };
+                    case (null)   { UtlCommon.GENESIS_HASH };
+                }
+            };
+        };
+
+        // MARK: Verify blockchain integrity
+
+        public func verifyChainIntegrity(): Bool {
+            if (blockCounter == 0) return true;
+            
+            var currentIndex = 1;
+            while (currentIndex < blockCounter) {
+                let prevBlockKey       = Nat.sub(currentIndex, 1);
+                let (currIdx, prevIdx) = (Utl.natToBlob(currentIndex), Utl.natToBlob(prevBlockKey));
+
+                switch (blockchain.get(currIdx), blockchain.get(prevIdx)) {
+                    case (?currentBlock, ?previousBlock) {
+                        if (currentBlock.previousHash != previousBlock.hash) return false;
+
+                        let recalculatedHash = UtlTask.calculateHash(currentBlock);
+                        if (currentBlock.hash != recalculatedHash) return false;
+                    };
+                    case (_, _) { return false; };
+                };
+
+                currentIndex += 1;
+            };
+
+            return true;
+        };
+
+        // MARK: Incremental id
+
         public func getTaskPrimaryId() : Nat {
             let tasksId = nextTasksId;
             nextTasksId += 1;
             return tasksId;
         };
 
-        // MARK: Review primary id
         public func getReviewPrimaryId() : Nat {
             let tasksId = nextReviewId;
             nextReviewId += 1;
             return tasksId;
         };
 
-        // MARK: Get task by id
-        public func getTasksByIds(ids: [TypCommon.TaskId]) : [TypTask.Task] {
-            let data = Buffer.Buffer<TypTask.Task>(ids.size());
-            for (id in ids.vals()) {
-                switch (findById(id)) {
-                    case (?t) data.add(t);
-                    case (null) {};
-                }
-            };
-            return Buffer.toArray(data);
-        };
-
-        // MARK: Filter task
-        public func getFilteredTasks(
-            projectId : TypCommon.ProjectId,
-            filter    : TypTask.TaskFilter,
-        ) : [TypTask.Task] {
-            switch(projectTasks.get(Utl.natToBlob(projectId))) {
-                case(null) { return [] };
-                case(?tasksId) {
-                    let filteredTask = Iter.filter<TypTask.Task>(
-                        getTasksByIds(tasksId).vals(), 
-                        func (task : TypTask.Task) : Bool {
-                            Text.contains(task.title, #text(filter.keyword)) or
-                            Text.contains(task.description, #text(filter.keyword)) or
-                            Array.find<TypTask.TaskStatus>(filter.status, func(s) = s == task.status) != null or
-                            Array.find<TypCommon.Tags>(filter.taskTag, func(t) = t == task.taskTag) != null
-                    });
-
-                    return Buffer.toArray<TypTask.Task>(Buffer.fromIter<TypTask.Task>(filteredTask));
-                };
-            };
-        };
-
-        // MARK: Get user tasks based on project id
-        public func getUserTasksBasedOnProjectId(
-            userId    : TypCommon.UserId,
-            projectId : TypCommon.ProjectId,
-        ) : [TypTask.Task] {
-            switch(projectTasks.get(Utl.natToBlob(projectId))) {
-                case(null)              { return [] };
-                case(?tasksIdByProject) {
-                    switch(memberTasks.get(userId)) {
-                        case(null)           { return [] };
-                        case(?tasksIdByUser) {
-                            let filteredUserProjectTask = Array.filter<TypCommon.TaskId>(
-                                tasksIdByUser,
-                                func (tUser) {
-                                    Array.find<TypCommon.TaskId>(
-                                        tasksIdByProject, 
-                                        func tProject = tProject == tUser,
-                                    ) != null
-                                }
-                            );
-                            return getTasksByIds(filteredUserProjectTask);
-                        };
-                    };
-                };
-            };
-        };
-
         // MARK: Create task
+
         public func createTask(
-            owner : TypCommon.UserId, 
-            req : TypTask.TaskRequest
+            caller : TypCommon.UserId, 
+            req    : TypTask.TaskRequest,
         ) : TypTask.Task {
-            let data : TypTask.Task = {
+            let taskData: TypTask.Task = {
                 id          = getTaskPrimaryId();
                 projectId   = req.projectId;
                 title       = req.title;
-                description = req.description;
-                taskTag     = req.taskTag;
+                desc        = req.desc;
+                tag         = req.tag;
                 status      = #todo;
-                dueDate     = req.dueDate;
                 priority    = false;
                 assignees   = req.assignees;
+                dueDate     = req.dueDate;
                 doneAt      = null;
                 doneById    = null;
-                createdAt   = UtlDate.now();
-                createdById = owner;
-                updatedAt   = null;
-                updatedById = null;
+                createdById = caller;
+                action      = #create;
             };
 
-            tasks.put(Utl.natToBlob(data.id), data);
-
-            let encodedProjectId = Utl.natToBlob(data.projectId);
-            projectTasks.put(
-                encodedProjectId,
-                switch(projectTasks.get(encodedProjectId)) {
-                    case (null)     { [data.id]; };
-                    case (?tasksId) { Array.append<TypCommon.TaskId>(tasksId, [data.id]); };
-                }
-            );
-
-            for(userId in req.assignees.vals()) {
-                memberTasks.put(
-                    userId,
-                    switch(memberTasks.get(userId)) {
-                        case (null)     { [data.id]; };
-                        case (?tasksId) { Array.append<Nat>(tasksId, [data.id]); };
-                    }
-                );
+            var newBlock: TypTask.TaskBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #task(taskData);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
             };
 
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlTask.hashBlock(newBlock));
+        
+            // Update task index for quick lookups
+            let blobTaskId = Utl.natToBlob(taskData.id);
+            taskIndex.put(blobTaskId, [blobBlockCounter]);
 
-            return data;
+            // Add project id to project-task index
+            let blobProjectId = Utl.natToBlob(taskData.projectId);
+            switch (projectTaskIndex.get(blobProjectId)) {
+                case (null)      { projectTaskIndex.put(blobProjectId, [taskData.id]); };
+                case (?projects) { projectTaskIndex.put(blobProjectId, Array.append(projects, [taskData.id])); };
+            };
+
+            blockCounter += 1;
+            return taskData;
         };
 
-        // MARK: Find by id
-        public func findById(idTask : TypCommon.TaskId) : ?TypTask.Task {
-            return switch (tasks.get(Utl.natToBlob(idTask))) {
-                case (null)  { return null; };
-                case (?task) {
-                    let data : TypTask.Task = {
-                        id          = task.id;
-                        projectId   = task.projectId;
-                        title       = task.title;
-                        description = task.description;
-                        taskTag     = task.taskTag;
-                        status      = task.status;
-                        dueDate     = task.dueDate;
-                        priority    = task.priority;
-                        assignees   = task.assignees;
-                        doneAt      = task.doneAt;
-                        doneById    = task.doneById;
-                        createdAt   = task.createdAt;
-                        createdById = task.createdById;
-                        updatedAt   = task.updatedAt;
-                        updatedById = task.updatedById;
+        // MARK: Get curr task state
+
+        public func getCurrentTaskState(taskId: TypCommon.TaskId): ?TypTask.Task {
+            switch (taskIndex.get(Utl.natToBlob(taskId))) {
+                case (null)      { return null; };
+                case (?blockIds) {
+                    if (blockIds.size() == 0) return null;
+
+                    // Find the latest task data block
+                    var i = blockIds.size();
+                    while (i > 0) {
+                        i -= 1;
+                        switch (blockchain.get(blockIds[i])) {
+                            case (null)   { };
+                            case (?block) {
+                                switch (block.data) {
+                                    case (#task(data)) { return ?data; };
+                                    case (_)           { }; // Skip non-project blocks
+                                };
+                            };
+                        };
                     };
-                    return ?data;
+
+                    return null;
                 };
             };
+        };
+
+        // MARK: Update metadata
+        
+        public func updateMetadata(
+            caller : TypCommon.UserId, 
+            task   : TypTask.Task,
+            req    : TypTask.TaskRequest,
+        ) : TypTask.Task {
+            // Update specific field
+            let updatedState = if (task.title != req.title) {{ 
+                task with 
+                title  = req.title;
+                action = #metadataUpdate({
+                    field    = "title";
+                    oldValue = task.title;
+                    newValue = req.title;
+                });
+            }} else if (task.desc != req.desc) {{ 
+                task with 
+                desc   = req.desc;
+                action = #metadataUpdate({
+                    field    = "desc";
+                    oldValue = task.desc;
+                    newValue = req.desc;
+                });
+            }} else if (task.tag != req.tag) {{ 
+                task with 
+                tag    = req.tag;
+                action = #metadataUpdate({
+                    field    = "tag";
+                    oldValue = UtlCommon.getStrTag(task.tag);
+                    newValue = UtlCommon.getStrTag(req.tag);
+                });
+            }} else {
+                task
+            };
+
+            var newBlock: TypTask.TaskBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #task(updatedState);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
+            };
+
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlTask.hashBlock(newBlock));
+        
+            // Update task index for quick lookups
+            let blobTaskId = Utl.natToBlob(updatedState.id);
+            switch (taskIndex.get(blobTaskId)) {
+                case (null)    { };
+                case (?blocks) { taskIndex.put(blobTaskId, Array.append(blocks, [blobBlockCounter])); };
+            };
+
+            blockCounter += 1;
+            return updatedState;
         };
 
         // MARK: Update status
+        
         public func updateStatus(
-            userId    : TypCommon.UserId, 
-            task      : TypTask.Task, 
+            caller    : TypCommon.UserId, 
+            task      : TypTask.Task,
             reqStatus : TypTask.TaskStatus,
         ) : TypTask.Task {
-            let doneTimestamp : ?Int = if (reqStatus == #done) {
-                ?UtlDate.now();
+            let (doneAt, doneById) = if (reqStatus == #done) {
+                (?UtlDate.now(), ?caller);
+            } else if (reqStatus != #done and task.status == #done) {
+                // Task was undone, clear completion data
+                (null, null);
             } else {
-                task.doneAt;
+                (task.doneAt, task.doneById);
             };
 
-            let data : TypTask.Task = {
-                id          = task.id;
-                projectId   = task.projectId;
-                title       = task.title;
-                description = task.description;
-                taskTag     = task.taskTag;
-                status      = reqStatus;
-                dueDate     = task.dueDate;
-                priority    = false;
-                assignees   = task.assignees;
-                doneAt      = doneTimestamp;
-                doneById    = ?userId;
-                createdAt   = task.createdAt;
-                createdById = task.createdById;
-                updatedAt   = ?UtlDate.now();
-                updatedById = ?userId;
+            let taskData: TypTask.Task = {
+                task with
+                status   = reqStatus;
+                doneAt   = doneAt;
+                doneById = doneById;
+                action   = #statusUpdate({
+                    from = task.status;
+                    to   = reqStatus;
+                });
             };
 
-            tasks.put(Utl.natToBlob(data.id), data);
+            var newBlock: TypTask.TaskBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #task(taskData);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
+            };
 
-            // Update review if exists
-            switch(taskReview.get(Utl.natToBlob(data.id))) {
-                case(null)      {};
-                case(?reviewId) {
-                    switch(reviews.get(Utl.natToBlob(reviewId))) {
-                        case(null)    {};
-                        case(?review) {
-                            if (task.status == #done) {
-                                saveReview(
-                                    userId,
-                                    {
-                                        taskId = data.id;
-                                        review = review.review;
-                                    },
-                                    true
-                                )
-                            }
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlTask.hashBlock(newBlock));
+        
+            // Update task index for quick lookups
+            let blobTaskId = Utl.natToBlob(taskData.id);
+            switch (taskIndex.get(blobTaskId)) {
+                case (null)    { };
+                case (?blocks) { taskIndex.put(blobTaskId, Array.append(blocks, [blobBlockCounter])); };
+            };
+
+            blockCounter += 1;
+            return taskData;
+        };
+
+        // MARK: Add review
+
+        public func addReview(
+            caller : TypCommon.UserId, 
+            req    : TypTask.TaskReviewRequest,
+        ) : TypTask.Review {
+            let reviewData: TypTask.Review = {
+                id         = getReviewPrimaryId();
+                taskId     = req.taskId;
+                review     = req.review;
+                reviewerId = caller;
+                fixedAt    = null;
+                fixedById  = null;
+                action     = #create;
+            };
+
+            var newBlock: TypTask.TaskBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #review(reviewData);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
+            };
+
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlTask.hashBlock(newBlock));
+        
+            // Update review index for quick lookups
+            let blobReviewId = Utl.natToBlob(reviewData.id);
+            reviewIndex.put(blobReviewId, [blobBlockCounter]);
+      
+            // Update task-review relationship
+            let blobTaskId = Utl.natToBlob(req.taskId);
+            switch (taskReviewIndex.get(blobTaskId)) {
+                case (null)     { taskReviewIndex.put(blobTaskId, [reviewData.id]); };
+                case (?reviews) { taskReviewIndex.put(blobTaskId, Array.append(reviews, [reviewData.id])); };
+            };
+
+            // Also add to task index to link review with task
+            switch (taskIndex.get(blobTaskId)) {
+                case (?blocks) { taskIndex.put(blobTaskId, Array.append(blocks, [blobBlockCounter])); };
+                case (null)    { };
+            };
+
+            blockCounter += 1;
+            return reviewData;
+        };
+
+        // MARK: Get curr review state
+
+        public func getCurrentReviewState(reviewId: TypCommon.ReviewId): ?TypTask.Review {
+            switch (reviewIndex.get(Utl.natToBlob(reviewId))) {
+                case (null)      { return null; };
+                case (?blockIds) {
+                    if (blockIds.size() == 0) return null;
+
+                    // Find the latest review data block
+                    var i = blockIds.size();
+                    while (i > 0) {
+                        i -= 1;
+                        switch (blockchain.get(blockIds[i])) {
+                            case (null)   { };
+                            case (?block) {
+                                switch (block.data) {
+                                    case (#review(data)) { return ?data; };
+                                    case (_)           { }; // Skip non-project blocks
+                                };
+                            };
                         };
                     };
+
+                    return null;
                 };
             };
-
-            return data;
         };
 
-        // MARK: Check task are complete
-        public func isTasksAreCompleted(tasks : [TypTask.Task]) : Bool {
-            return not (Array.find<TypTask.Task>(tasks, func t = t.status != #done ) != null);
-        };
+        // MARK: Update review
 
-        // MARK: Assign user
-        public func assignUser(
-            userId         : TypCommon.UserId,
-            task           : TypTask.Task, 
-            assignedUserId : TypCommon.UserId,
-        ) : Bool {
-            let newUser : [TypCommon.UserId] = Array.append<TypCommon.UserId>(
-                task.assignees, [assignedUserId]
-            );
-
-            let data : TypTask.Task = {
-                id          = task.id;
-                projectId   = task.projectId;
-                title       = task.title;
-                description = task.description;
-                taskTag     = task.taskTag;
-                status      = task.status;
-                dueDate     = task.dueDate;
-                priority    = task.priority;
-                assignees   = newUser;
-                doneAt      = task.doneAt;
-                doneById    = task.doneById;
-                createdAt   = task.createdAt;
-                createdById = task.createdById;
-                updatedAt   = ?UtlDate.now();
-                updatedById = ?userId;
+        public func updateReview(
+            caller : TypCommon.UserId,
+            review : TypTask.Review,
+            req    : TypTask.TaskReviewRequest,
+        ) : TypTask.Review {
+            let reviewData: TypTask.Review = {
+                review with
+                taskId = req.taskId;
+                review = req.review;
+                action = #update({
+                    oldReview = review.review;
+                    newReview = req.review;
+                });
             };
 
-            tasks.put(Utl.natToBlob(data.id), data);
+            var newBlock: TypTask.TaskBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #review(reviewData);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
+            };
 
-            return true;
-        };
-
-        // MARK: Response mapper
-        public func mappedToResponse(
-            task  : TypTask.Task,
-            users : [TypUser.UserResponse],
-        ) : TypTask.TaskResponse {
-            let review = switch(taskReview.get(Utl.natToBlob(task.id))) {
-                case(null) { null };
-                case(?reviewId) {
-                    switch(reviews.get(Utl.natToBlob(reviewId))) {
-                        case(null)   { null };
-                        case(review) { review; };
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlTask.hashBlock(newBlock));
+        
+            // Update review index
+            let blobReviewId = Utl.natToBlob(reviewData.id);
+            switch (reviewIndex.get(blobReviewId)) {
+                case (null)    { };
+                case (?blocks) { reviewIndex.put(blobReviewId, Array.append(blocks, [blobBlockCounter])); };
+            };
+      
+            // Update task-review relationship
+            let blobTaskId = Utl.natToBlob(req.taskId);
+            switch (taskReviewIndex.get(blobTaskId)) {
+                case (null) {};
+                case (?_)   {
+                    switch (taskIndex.get(blobTaskId)) {
+                        case (null)    { };
+                        case (?blocks) { taskIndex.put(blobTaskId, Array.append(blocks, [blobBlockCounter])); };
                     };
                 };
             };
 
-            let result : TypTask.TaskResponse = {
-                id          = task.id;
-                projectId   = task.projectId;
-                title       = task.title;
-                description = task.description;
-                taskTag     = task.taskTag;
-                status      = task.status;
-                dueDate     = task.dueDate;
-                priority    = task.priority;
-                isOverdue   = task.dueDate < UtlDate.now();
-                assignees   = users;
-                doneAt      = task.doneAt;
-                review      = review;
+            blockCounter += 1;
+            return reviewData;
+        };
+
+        // MARK: Update review fixed
+
+        public func updateReviewFixed(
+            caller : TypCommon.UserId,
+            review : TypTask.Review,
+        ) : TypTask.Review {
+            let fixedReviewData: TypTask.Review = {
+                review with
+                fixedAt   = ?UtlDate.now();
+                fixedById = ?caller;
+                action    = #fix({ fixedBy = caller; });
             };
 
-            return result;
+            var newBlock: TypTask.TaskBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #review(fixedReviewData);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
+            };
+
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlTask.hashBlock(newBlock));
+        
+            // Update review index
+            let blobReviewId = Utl.natToBlob(fixedReviewData.id);
+            switch (reviewIndex.get(blobReviewId)) {
+                case (null)    { };
+                case (?blocks) { reviewIndex.put(blobReviewId, Array.append(blocks, [blobBlockCounter])); };
+            };
+      
+            // Update task-review relationship
+            let blobTaskId = Utl.natToBlob(fixedReviewData.taskId);
+            switch (taskIndex.get(blobTaskId)) {
+                case (null)    { };
+                case (?blocks) { taskIndex.put(blobTaskId, Array.append(blocks, [blobBlockCounter])); };
+            };
+
+            blockCounter += 1;
+            return fixedReviewData;
         };
 
         // MARK: Get user overview
+
         public func userOverview(
             projectId : TypCommon.ProjectId,
         ) : ([TypTask.UserOverview], TypTask.OverviewError) {
-            switch(projectTasks.get(Utl.natToBlob(projectId))) {
-                case(null)     { return ([], #notFound) };
-                case(?tasksId) {
-                    let dataTask      = getTasksByIds(tasksId);
+            switch(projectTaskIndex.get(Utl.natToBlob(projectId))) {
+                case(null)     { return ([], #not_found) };
+                case(?taskIds) {
                     let dumpPrincipal = Principal.fromText("un4fu-tqaaa-aaaab-qadjq-cai");
                     let overviewMap   = HashMap.HashMap<
                         TypCommon.UserId, 
                         TypTask.UserOverview
                     >(0, Principal.equal, Principal.hash);
 
-                    if (not isTasksAreCompleted(dataTask)) return ([], #notDone);
+                    label loopTask for(taskId in taskIds.vals()) {
+                        switch (getCurrentTaskState(taskId)) {
+                            case (null)  {  };
+                            case (?task) {
+                                if (task.status != #done) continue loopTask;
 
-                    label loopTask for(task in dataTask.vals()) {
-                        if (task.status != #done) continue loopTask;
+                                // Get users who completed
+                                let userId = Option.get(task.doneById, dumpPrincipal);
+                                let doneAt = Option.get(task.doneAt, UtlDate.now());
 
-                        let userId       = Option.get(task.doneById, dumpPrincipal);
-                        let doneAt       = Option.get(task.doneAt, UtlDate.now());
-                        let userAssigned = Buffer.forSome<TypCommon.UserId>(
-                            Buffer.fromArray(task.assignees), 
-                            func uId = uId == userId
-                        );
+                                // Check whether the task is completed past the due date
+                                let isOverdue = doneAt > task.dueDate;
 
-                        let isOverdue      = doneAt < task.dueDate;
-                        let completingTime = doneAt - task.dueDate;
-
-                        switch(overviewMap.get(userId)) {
-                            case(null) {
-                                let data : TypTask.UserOverview = {
-                                    userId            = userId;
-                                    totalTask         = if (userAssigned) 1 else 0;
-                                    totalDone         = 1;
-                                    totalOverdue      = if (isOverdue) 1 else 0;
-                                    avgCompletingTime = completingTime;
-                                };
-
-                                overviewMap.put(data.userId, data);
-                            };
-                            case(?overview) {
-                                let data : TypTask.UserOverview = {
-                                    userId            = overview.userId;
-                                    totalTask         = overview.totalTask + (if (userAssigned) 1 else 0);
-                                    totalDone         = overview.totalDone + 1;
-                                    totalOverdue      = overview.totalOverdue + (if (isOverdue) 1 else 0);
-                                    avgCompletingTime = overview.avgCompletingTime + (completingTime);
-                                };
-
-                                overviewMap.put(data.userId, data);
+                                overviewMap.put(userId, switch(overviewMap.get(userId)) {
+                                    case(null) {{
+                                        userId       = userId;
+                                        totalTask    = 1;
+                                        totalDone    = 1;
+                                        totalOverdue = if (isOverdue) 1 else 0;
+                                    }};
+                                    case(?overview) {{
+                                        userId       = overview.userId;
+                                        totalTask    = overview.totalTask + 1; // only the tasks he completes
+                                        totalDone    = overview.totalDone + 1;
+                                        totalOverdue = overview.totalOverdue + (if (isOverdue) 1 else 0);
+                                    }};
+                                });
                             };
                         };
                     };
 
-                    let result = Buffer.Buffer<TypTask.UserOverview>(0);
-                    for(overview in overviewMap.vals()) {
-                        let averageCompletingTime          = overview.avgCompletingTime / overview.totalDone;
-                        let newData : TypTask.UserOverview = {
-                            userId            = overview.userId;
-                            totalTask         = overview.totalTask;
-                            totalDone         = overview.totalDone;
-                            totalOverdue      = overview.totalOverdue;
-                            avgCompletingTime = averageCompletingTime;
-                        };
+                    if (overviewMap.size() == 0) return ([], #not_done);
 
-                        result.add(newData);
+                    let result = Buffer.Buffer<TypTask.UserOverview>(overviewMap.size());
+                    for(overview in overviewMap.vals()) {
+                        result.add({
+                            userId       = overview.userId;
+                            totalTask    = overview.totalTask;
+                            totalDone    = overview.totalDone;
+                            totalOverdue = overview.totalOverdue;
+                        });
                     };
 
                     return (Buffer.toArray(result), #found);
-                };
-            };
-        };
-
-        // MARK: Save review
-        public func saveReview(
-            userId  : TypCommon.UserId,
-            req     : TypTask.TaskReviewRequest,
-            isFixed : Bool,
-        ) {
-            switch(taskReview.get(Utl.natToBlob(req.taskId))) {
-                case(null) {
-                    let data : TypTask.TaskReview = {
-                        id          = getReviewPrimaryId();
-                        taskId      = req.taskId;
-                        review      = req.review;
-                        fixedAt     = null;
-                        fixedById   = null;
-                        createdAt   = UtlDate.now();
-                        createdById = userId;
-                        updatedAt   = null;
-                        updatedById = null;
-                    };
-
-                    reviews.put(Utl.natToBlob(data.taskId), data);
-                    taskReview.put(Utl.natToBlob(data.taskId), data.id);
-                };
-                case(?reviewId) {
-                    switch(reviews.get(Utl.natToBlob(reviewId))) {
-                        case(null) {};
-                        case(?review) {
-                            let fixedAt   : ?Int               = if (isFixed) ?UtlDate.now() else null;
-                            let fixedById : ?TypCommon.UserId  = if (isFixed) ?userId else null;
-                            let data      : TypTask.TaskReview = {
-                                id          = review.id;
-                                taskId      = review.taskId;
-                                review      = req.review;
-                                fixedAt     = fixedAt;
-                                fixedById   = fixedById;
-                                createdAt   = review.createdAt;
-                                createdById = review.createdById;
-                                updatedAt   = ?UtlDate.now();
-                                updatedById = ?userId;
-                            };
-
-                            reviews.put(Utl.natToBlob(data.taskId), data);
-                            taskReview.put(Utl.natToBlob(data.taskId), data.id);
-                        };
-                    };
                 };
             };
         };

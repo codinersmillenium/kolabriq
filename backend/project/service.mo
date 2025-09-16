@@ -9,6 +9,7 @@ import TypCommon "../common/type";
 import TypProject "type";
 
 import UtlProject "util";
+import UtlCommon "../common/util";
 import UtlDate "../utils/date";
 import Utl "../utils/helper";
 
@@ -43,18 +44,16 @@ module {
         public var userProjectIndex = HashMap.HashMap<TypCommon.UserId, [TypCommon.ProjectId]>(dataUserProjectIndex.size(), Principal.equal, Principal.hash);
         public var projectTeamIndex = HashMap.HashMap<ProjectHashKey, [TypCommon.UserId]>(dataProjectTeamIndex.size(), Blob.equal, Blob.hash);
 
-        public let GENESIS_HASH = "0000000000000000000000000000000000000000000000000000000000000000";
-
         // MARK: Get previous hash
 
         private func getPreviousHash(): Text {
             if (blockCounter == 0) {
-                return GENESIS_HASH;
+                return UtlCommon.GENESIS_HASH;
             } else {
                 let prevBlockKey = Nat.sub(blockCounter, 1);
                 switch (blockchain.get(Utl.natToBlob(prevBlockKey))) {
                     case (?block) { block.hash };
-                    case (null)   { GENESIS_HASH };
+                    case (null)   { UtlCommon.GENESIS_HASH };
                 }
             };
         };
@@ -158,7 +157,7 @@ module {
                 case (?blockIds) {
                     if (blockIds.size() == 0) return null;
                     
-                    // Find the latest project data block (not team assignment)
+                    // Find the latest project data block
                     var i = blockIds.size();
                     while (i > 0) {
                         i -= 1;

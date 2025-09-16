@@ -14,12 +14,11 @@ module {
         #developer;
     };
 
-    public type BlockId = Nat;
-
+    public type BlockId       = Nat;
     public type ProjectId     = Nat;
     public type TimelineId    = Nat;
     public type TaskId        = Nat;
-    public type TaskReviewId  = Nat;
+    public type ReviewId      = Nat;
     public type TaskHistoryId = Nat;
     public type UserId        = Principal;
 }
