@@ -4,7 +4,7 @@
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Star, Settings, FilePlus2, Share2, LucideSearch, LucideListFilter } from 'lucide-react'
-import { useEffect, useState, useRef, FormEvent } from 'react'
+import { useEffect, useState, useRef, FormEvent, Dispatch, SetStateAction } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import Image from 'next/image';
@@ -16,6 +16,13 @@ import { Badge } from '@/components/ui/badge'
 import AIProjectGenerator, { AIProjectGeneratorRef, AnalysisButton } from '@/components/ai/chatbot'
 import DialogUi from '@/components/ui/dialog'
 import { Principal } from '@dfinity/principal'
+import { DataTable } from '@/components/custom/table/data-table'
+import {
+  dashboardcolumns,
+  ITable,
+} from '@/components/custom/table/dashboard-columns'
+import { ProjectBlock } from '@/types/task'
+import { historyColumns, IBlockHistory } from '@/components/custom/table/block-history-columns'
 
 const Table = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -26,6 +33,8 @@ const Table = () => {
   const [isDialogOpen, setDialogOpen] = useState<boolean>(false)
   const [overview, setOverview] = useState<any>([])
   const [formPayout, setFormPayout] = useState({});
+
+  const [openDialCreateTask, setOpenDialCreateTask] = useState<boolean>(false);
 
   const getProject = async (id: any) => {
     setIdProject(id)
@@ -40,18 +49,26 @@ const Table = () => {
     alert("project not found")
   }
   const getTask = async (id: any) => {
+    let param = {
+      keyword: [],
+      status: [],
+      tag: [],
+    };
+    console.log(param);
+
     const actor_ = await initActor('task')
-    const { ok } = await actor_.getProjectTasks(parseFloat(id))
+    const { ok } = await actor_.getTaskList(parseFloat(id), [param])
     if (typeof ok !== 'undefined') {
       setTask(ok)
     }
   }
   const getTaskByid = async (id: any) => {
-    const actor_ = await initActor('task')
-    const { ok } = await actor_.getUserProjectTasks(getPrincipal()[1], parseFloat(id))
-    if (typeof ok !== 'undefined') {
-      setTaskId([ok])
-    }
+    // const actor_ = await initActor('task')
+    // const { ok } = await actor_.getUserProjectTasks(getPrincipal()[1], parseFloat(id))
+    // if (typeof ok !== 'undefined') {
+    //   setTaskId([ok])
+    // }
+    setTaskId([])
   }
 
   useEffect(() => {
@@ -60,7 +77,9 @@ const Table = () => {
     getProject(id)
     getTask(id)
     getTaskByid(id)
-    aiRef.current?.triggerDailyStandUp(id);
+    getProjectHistory(id)
+
+    // aiRef.current?.triggerDailyStandUp(id);
   }, [])
 
   const handleTriggerAnalysis = (idProject: any) => {
@@ -156,9 +175,37 @@ const Table = () => {
       console.error(error)
       alert('Failed Register User...');
     }
-  } 
+  }
 
   const aiRef = useRef<AIProjectGeneratorRef>(null);
+
+  // MARK: Add task
+
+  const openDialogCT = () => {
+    setOpenDialCreateTask(true);
+  }
+
+  const DialogCreateTask = () => (
+    <DialogUi open={openDialCreateTask} onOpenChange={setOpenDialCreateTask} title='' content={
+      <div>
+
+      </div>
+    } />
+  )
+
+
+  // MARK: Project history
+
+  const [projectHistory, setProjectHistory] = useState<IBlockHistory[]>([]);
+
+  const getProjectHistory = async (id: any) => {
+    const projectActor = await initActor('project')
+    const { ok } = await projectActor.getProjectHistory(parseFloat(id))
+
+    if (typeof ok !== 'undefined') {
+      setProjectHistory(ok)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -307,12 +354,13 @@ const Table = () => {
                     Timeline
                   </TabsTrigger>
                   <TabsTrigger
-                    value="project-summary"
+                    value="project-history"
                     className="group flex items-center gap-1.5 whitespace-nowrap p-2.5 font-medium transition-all hover:bg-light-theme hover:text-black focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-light-theme data-[state=active]:text-black dark:hover:bg-black dark:hover:text-white dark:data-[state=active]:bg-black dark:data-[state=active]:text-white [&>svg]:size-[18px] [&>svg]:shrink-0 [&[data-state=active]>svg]:text-primary rounded-none border-b-2 border-transparent bg-transparent! px-0 py-4 data-[state=active]:border-primary"
-                    disabled
                   >
-                    Summary
-                    <Badge variant={'default'}>Pro</Badge>
+                    Project History
+                    <div className="inline-flex items-center gap-1.5 rounded-lg shrink-0 bg-primary text-white text-[10px]/[8px] px-1.5 py-1 font-semibold text-black">
+                      {projectHistory.length}
+                    </div>
                   </TabsTrigger>
                 </div>
               </div>
@@ -335,6 +383,15 @@ const Table = () => {
                     className="lucide lucide-list-filter size-4"
                   />
                   Filter
+                </Button>
+                <span className="h-6 w-px rounded-full bg-gray-300 dark:bg-gray-300/50" />
+                <Button
+                  type='button'
+                  className="inline-flex items-center justify-center gap-1.5 text-xs/4 px-2.5 py-2 rounded-lg ring-1 ring-inset ring-gray-300 bg-white shadow-sm text-black hover:bg-gray-200 dark:text-white dark:bg-black-dark dark:ring-gray dark:hover:bg-black"
+                  onClick={() => openDialogCT()}
+                >
+                  <FilePlus2 className="size-4 shrink-0" />
+                  Add Task
                 </Button>
               </div>
             </TabsList>
@@ -359,13 +416,27 @@ const Table = () => {
               <ScheduleTimeline />
             </TabsContent>
             <TabsContent
-              value="project-summary"
-              className="font-medium text-black dark:text-white"
+              value="project-history"
+              className="font-medium text-black dark:text-white mt-5"
             >
+              <Card className="grow overflow-x-auto shadow-sm">
+                <CardContent>
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    <div id="search-table" hidden></div>
+                  </div>
+                  <DataTable
+                    columns={historyColumns}
+                    data={projectHistory}
+                    filterField={'id'}
+                    isRemovePagination={false}
+                  />
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
           <AIProjectGenerator ref={aiRef} />
         </div>
+        {DialogCreateTask()}
         <DialogUi open={isDialogOpen} onOpenChange={setDialogOpen} title=''
           content={
             <Card>
@@ -381,12 +452,12 @@ const Table = () => {
                     return (
                       <div className="space-y-2.5">
                         <div className='font-bold'>
-                          <div>{`User #${i+1}:`}</div>
+                          <div>{`User #${i + 1}:`}</div>
                           <div className='text-xs'>{o.userId.toString()}</div>
                         </div>
                         <fieldset className="border border-gray-300 p-4 rounded-md">
                           <legend className="text-sm font-medium text-gray-700 mb-2">
-                            {`Payout #${i+1}`}
+                            {`Payout #${i + 1}`}
                           </legend>
                           <div className="space-y-2">
                             <div className='grid grid-cols-3'>

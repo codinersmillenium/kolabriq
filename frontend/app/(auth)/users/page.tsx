@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select'
 import { format } from 'date-fns'
 import { CalendarCheck, Divide, Plus } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import DialogUI from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -35,18 +35,19 @@ const Table = () => {
     const [isDialogOpen, setDialogOpen] = useState(false);
     const [data, setData] = useState<ITable[]>([])
     const [code, setCode] = useState([''])
-    
+
     const findUser = async (id: any) => {
         const actor_ = await initActor()
-        const { ok }: any = await actor_.findUserById(id)
+        const { ok }: any = await actor_.getUserDetail(id)
         setCode([ok.personalRefCode])
     }
+
     const getUsers = async () => {
         const actor_ = await initActor()
         const { ok }: any = await actor_.getUsers()
         if (ok && ok.length > 0) {
             var data = []
-            for(let obj in ok) {
+            for (let obj in ok) {
                 const role = Object.keys(ok[obj].role).toString()
                 if (role === 'admin') {
                     setCode(ok[obj].personalRefCode)
@@ -71,8 +72,13 @@ const Table = () => {
             findUser(principal[1])
         }
     }
+    const isAsdCalled = useRef(false);
+
     useEffect(() => {
         getUsers()
+        if (!isAsdCalled.current) {
+            isAsdCalled.current = true;
+        }
     }, [])
 
     return (
@@ -169,7 +175,7 @@ const Table = () => {
                                 </div>
                             </SelectContent>
                         </Select>
-                         <Select>
+                        <Select>
                             <SelectTrigger>
                                 <SelectValue placeholder="Singing, learning" />
                             </SelectTrigger>
@@ -256,11 +262,11 @@ const Table = () => {
                 <div className='w-full flex justify-end bg-white px-2 py-2'>
                     {code[0] && (
                         <Badge variant={'primary'}>
-                            { code[0] }
+                            {code[0]}
                         </Badge>
                     )}
                 </div>
-                
+
                 <DataTable columns={columns(getUsers)} data={data} filterField="id" />
             </div>
         </div>

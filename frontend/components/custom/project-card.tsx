@@ -11,49 +11,55 @@ import { Principal } from '@dfinity/principal';
 import { Badge } from '../ui/badge';
 import { useRouter } from 'next/navigation';
 
-export default function ProjectCard({ filter, page } : any) {
+export default function ProjectCard({ filter, page }: any) {
   const route = useRouter()
-  const [item, setItem]=  useState([])
+  const [item, setItem] = useState([])
   const [assign, setAssign] = useState({
     name: '',
     status: false
   })
 
   const getProject = async () => {
-      const actor_ = await initActor('project')
-      var param = {
-        status: {[filter.status]: null},
-        projectType: {[filter.type]: null},
-        tags: [],
-        keyword: ''
-      }
-      const { ok }: any = await actor_.getOwnedProjectList(param)
-      if (page.role === 'admin') {
-        for (let obj in ok) {
-          const uint8Array = new Uint8Array(ok[obj].thumbnail);
-          const blob = new Blob([uint8Array], { type: detectMimeType(uint8Array) });
-          ok[obj].thumbnailUrl = URL.createObjectURL(blob)
-          
-          for (let i in ok[obj].teams) {
-            const index = ok[obj].teams[i]
-            const role: string = Object.keys(index.role).toString()
-            if (role === 'maintainer') {
-              setAssign({
-                  name: index.firstName + ' ' + index.lastName,
-                  status: true
-              })
-              break
-            }
+    const actor_ = await initActor('project')
+    var param = {
+      status: [{ [filter.status]: null }],
+      projectType: [{ [filter.type]: null }],
+      tags: [],
+      keyword: [],
+    }
+    // var param = {
+    //   status: {[filter.status]: null},
+    //   projectType: {[filter.status]: null},
+    //   tags: [],
+    //   keyword: ''
+    // }
+    const { ok }: any = await actor_.getOwnedProjectList(param)
+    if (page.role === 'admin') {
+      for (let obj in ok) {
+        const uint8Array = new Uint8Array(ok[obj].thumbnail);
+        const blob = new Blob([uint8Array], { type: detectMimeType(uint8Array) });
+        ok[obj].thumbnailUrl = URL.createObjectURL(blob)
+
+        for (let i in ok[obj].teams) {
+          const index = ok[obj].teams[i]
+          const role: string = Object.keys(index.role).toString()
+          if (role === 'maintainer') {
+            setAssign({
+              name: index.firstName + ' ' + index.lastName,
+              status: true
+            })
+            break
           }
         }
       }
-      setItem(ok)
+    }
+    setItem(ok)
   }
 
   const detectMimeType = (uint8Array: Uint8Array): string => {
     if (uint8Array[0] === 0x89 && uint8Array[1] === 0x50) return "image/png";
     if (uint8Array[0] === 0xFF && uint8Array[1] === 0xD8) return "image/jpeg";
-    if (uint8Array[0] === 0x52 && uint8Array[1] === 0x49 && uint8Array[8] === 0x57 && uint8Array[9] === 0x45) 
+    if (uint8Array[0] === 0x52 && uint8Array[1] === 0x49 && uint8Array[8] === 0x57 && uint8Array[9] === 0x45)
       return "image/webp";
     return "application/octet-stream";
   }
@@ -72,12 +78,12 @@ export default function ProjectCard({ filter, page } : any) {
     await actor_.assignProjectTeam(id, principal)
     alert('Success Assign User')
     setTimeout(() => {
-        window.location.href = '/' + page.path
+      window.location.href = '/' + page.path
     }, 100)
   }
 
   useEffect(() => {
-      getProject()
+    getProject()
   }, [filter, page.role])
 
   return (
@@ -105,12 +111,11 @@ export default function ProjectCard({ filter, page } : any) {
 
             <div className='flex gap-2'>
               <div
-                className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs/[10px] shrink-0 font-medium whitespace-nowrap transition text-black ${
-                  {
-                    free: "bg-gray text-white",
-                    rewarded: "bg-success-light",
-                  }[Object.keys(i.projectType)[0]]
-                }`}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs/[10px] shrink-0 font-medium whitespace-nowrap transition text-black ${{
+                  free: "bg-gray text-white",
+                  rewarded: "bg-success-light",
+                }[Object.keys(i.projectType)[0]]
+                  }`}
               >
                 {{
                   free: "Free",
@@ -126,7 +131,7 @@ export default function ProjectCard({ filter, page } : any) {
                       review: "blue",
                       done: "green"
                     } as const)[
-                      Object.keys(i.status)[0] as "new" | "in_progress" | "review" | "done"
+                    Object.keys(i.status)[0] as "new" | "in_progress" | "review" | "done"
                     ] ?? "default"
                   }
                 >
@@ -146,10 +151,10 @@ export default function ProjectCard({ filter, page } : any) {
                 className="text-sm/tight font-semibold text-white duration-300 hover:underline inline-flex"
                 onClick={() => handleLinkShow(i.id)}
               >
-                { i.name }
+                {i.name}
               </Link>
               <p className="line-clamp-2 text-xs/normal font-medium text-white">
-                { i.desc }
+                {i.desc}
               </p>
             </div>
 
@@ -160,7 +165,7 @@ export default function ProjectCard({ filter, page } : any) {
                   className="!p-0 inline-flex items-center gap-1.5 text-xs/tight font-semibold transition text-white"
                 >
                   <LucideDollarSign className="shrink-0" />
-                  { i.reward }
+                  {i.reward}
                 </Button>
 
                 <Button
@@ -168,54 +173,55 @@ export default function ProjectCard({ filter, page } : any) {
                   className="!p-0 inline-flex items-center gap-1.5 text-xs/tight font-semibold transition text-white"
                 >
                   <LucideUsers className="shrink-0" />
-                  { i.teams.length }
+                  {/* {i.teams.length} */}
+                  0
                 </Button>
               </div>
               <div className="flex items-center gap-2">
                 {page.role !== 'developer' &&
                   <Popover>
-                      <PopoverTrigger asChild>
-                          <Button 
-                            variant={'ghost'}
-                            className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white p-0 "
-                            title='Assign project manager or maintainer'
-                          >
-                            <LucideIdCard strokeWidth={1} size={40} className="!w-6 !h-6 shrink-0"/>
-                          </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto! p-3" data-side="top">
-                        {!assign.status ?
-                          <form>
-                            <fieldset className="border border-gray-300 p-4 rounded-md mb-2">
-                                <legend className="text-sm font-medium text-gray-700 mb-2">User ID</legend>
-                                <div className="space-y-2">
-                                    <Input
-                                      id='user_id'
-                                      placeholder='Assign user to PM or maintainer by project'
-                                      required
-                                    />
-                                </div>
-                            </fieldset>
-                            <div className='flex justify-end'>
-                              <Button
-                                type='button'
-                                className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white"
-                                title='Assign user to PM or maintainer by project'
-                                onClick={() => assignPM(i.id)}
-                              >
-                                Assign
-                              </Button>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={'ghost'}
+                        className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white p-0 "
+                        title='Assign project manager or maintainer'
+                      >
+                        <LucideIdCard strokeWidth={1} size={40} className="!w-6 !h-6 shrink-0" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto! p-3" data-side="top">
+                      {!assign.status ?
+                        <form>
+                          <fieldset className="border border-gray-300 p-4 rounded-md mb-2">
+                            <legend className="text-sm font-medium text-gray-700 mb-2">User ID</legend>
+                            <div className="space-y-2">
+                              <Input
+                                id='user_id'
+                                placeholder='Assign user to PM or maintainer by project'
+                                required
+                              />
                             </div>
-                          </form>
-                        : 
+                          </fieldset>
+                          <div className='flex justify-end'>
+                            <Button
+                              type='button'
+                              className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white"
+                              title='Assign user to PM or maintainer by project'
+                              onClick={() => assignPM(i.id)}
+                            >
+                              Assign
+                            </Button>
+                          </div>
+                        </form>
+                        :
                         <div>
-                          { assign.name }
+                          {assign.name}
                         </div>
                       }
-                      </PopoverContent>
+                    </PopoverContent>
                   </Popover>
                 }
-            </div>
+              </div>
             </div>
           </div>
         </div>

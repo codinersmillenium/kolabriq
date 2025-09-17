@@ -6,13 +6,19 @@ import {
 } from '@/components/ui/popover'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { LucideMessageSquareText, LucidePlus, LucideUser, LucideEllipsis } from 'lucide-react'
+import { LucideMessageSquareText, LucidePlus, LucideUser, LucideEllipsis, WandSparkles, SquarePen, History } from 'lucide-react'
 import { useState, DragEvent, useEffect } from 'react'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { initActor } from '@/lib/canisters'
 import { Principal } from '@dfinity/principal'
 import { AskButton } from '../ai/chatbot'
+import { formatDate } from '@/lib/utils'
+import Image from 'next/image'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
+import { Drawer } from 'vaul'
+import { DataTable } from './table/data-table'
+import { dashboardcolumns, ITable } from './table/dashboard-columns'
 
 export const KanbanCard = ({ task, tabs, aiRef }: any) => {
     const [todo, setTodo] = useState<object[]>([])
@@ -26,23 +32,20 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
         const doneData = []
         for (let obj in task) {
             const typeTask: string = Object.keys(task[obj].status).toString()
-            task[obj].dueDate = Number(task[obj].dueDate);
-            const date = new Date(task[obj].dueDate);
-            const formattedDate = date.toLocaleDateString('id-ID', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric'
-            });
             task[obj].id = Number(task[obj].id)
             task[obj].projectId = Number(task[obj].projectId)
-            task[obj].dueDateText = formattedDate
+            task[obj].dueDateText = formatDate(task[obj].dueDate)
+
+            console.log(task[obj]);
+
+
             var assign = ''
             for (let i in task[obj].assignees) {
                 task[obj].assignees[i].createdAt = Number(task[obj].assignees[i].createdAt)
                 assign += task[obj].assignees[i].firstName + ' ' + task[obj].assignees[i].lastName + '\n'
             }
             task[obj].name = assign
-            switch(typeTask) {
+            switch (typeTask) {
                 case 'todo':
                     todoData.push(task[obj])
                     break;
@@ -53,7 +56,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                     doneData.push(task[obj])
                     break;
             }
-            
+
         }
         setTodo(todoData)
         setOngoing(ongoingData)
@@ -115,7 +118,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
             case 'todo':
                 if (todo) {
                     const actorTask_ = await initActor('task')
-                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), {["todo"]: null})
+                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), { ["todo"]: null })
                     if (resTask.err) {
                         return alert(resTask.err)
                     }
@@ -134,7 +137,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
             case 'ongoing':
                 if (ongoing) {
                     const actorTask_ = await initActor('task')
-                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), {["in_progress"]: null})
+                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), { ["in_progress"]: null })
                     if (resTask.err) {
                         return alert(resTask.err)
                     }
@@ -153,7 +156,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
             case 'completed':
                 if (completed) {
                     const actorTask_ = await initActor('task')
-                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), {["done"]: null})
+                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), { ["done"]: null })
                     if (resTask.err) {
                         return alert(resTask.err)
                     }
@@ -172,16 +175,16 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                 break;
         }
     }
-    
+
     const [formData, setFormData]: any = useState({
         title: '',
         taskTag: [],
-        description: '',
+        desc: '',
         assignees_: ''
     })
     const handleChange = (e: any) => {
         const { name, value } = e.target
-         setFormData({
+        setFormData({
             ...formData,
             [name]: value
         })
@@ -193,16 +196,18 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
             formData.taskTag = {}
             for (let i = 0; i < tag.length; i++) {
                 if (tag[i].checked) {
-                    formData.taskTag = {[tag[i].value]: null}
+                    formData.tag = { [tag[i].value]: null }
                     break
                 }
             }
             const dueDate_: any = document.querySelector('#due_date')
             const [year, month, day] = dueDate_.value.split('-').map(Number)
             const date = new Date(year, month - 1, day)
-            formData.dueDate = date.getTime()
-            formData.assignees =[Principal.fromText(formData.assignees_)]
+            formData.dueDate = Math.floor(date.getTime() / 1000)
+            formData.assignees = [Principal.fromText(formData.assignees_)]
             formData.projectId = parseFloat(tabs.id)
+            console.log(formData);
+
             const actor = await initActor('task')
             await actor.createTask(formData)
             alert('Success Create Task...')
@@ -222,6 +227,19 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
     useEffect(() => {
         setTask()
     }, [task])
+
+    const data: ITable[] = Array.from({ length: 20 }, (_, i) => ({
+        id: `${200250 + i}`,
+        receptionist: {
+            image: '/images/avatar.svg',
+            name: `User ${i + 1}`,
+        },
+        sales_id: `#${200250 + i}`,
+        amount: `$${(Math.random() * 1000).toFixed(2)}`,
+        due_date: `Mar ${25 + i}, 2024`,
+        status: i % 2 === 0 ? 'done' : 'pending',
+    }));
+
     return (
         <div className="overflow-x-auto pb-2 mt-5">
             <div className="flex justify-start gap-4 pb-2" id="scoreboard">
@@ -254,7 +272,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                                     </div>
                                                     <div className="relative space-y-1">
                                                         <Textarea
-                                                            name='description'
+                                                            name='desc'
                                                             placeholder='Enter description...'
                                                             onChange={handleChange}
                                                         />
@@ -292,11 +310,11 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                                                     <span className="text-sm text-gray-700">Backend Developer</span>
                                                                 </label>
                                                                 <label className="flex items-center space-x-2">
-                                                                    <input type="radio" name="tags" value="ui" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange}/>
+                                                                    <input type="radio" name="tags" value="ui" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
                                                                     <span className="text-sm text-gray-700">UI/UX Design</span>
                                                                 </label>
                                                                 <label className="flex items-center space-x-2">
-                                                                    <input type="radio" name="tags" value="bussines_analist" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange}/>
+                                                                    <input type="radio" name="tags" value="bussines_analist" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
                                                                     <span className="text-sm text-gray-700">Bussiness Analyst</span>
                                                                 </label>
                                                             </div>
@@ -322,12 +340,12 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                         <div
                             className="min-h-[200px]"
                             onDragOver={handleOnDragOver}
-                            onDrop={(e) => {handleOnDrop(e, 'todo')}}
+                            onDrop={(e) => { handleOnDrop(e, 'todo') }}
                         >
                             {todo &&
                                 todo.map((item: any, i) => {
                                     return (
-                                            <div
+                                        <div
                                             className='mb-3'
                                             draggable
                                             key={i}
@@ -335,61 +353,159 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                                 handleOnDrag(e, item);
                                             }}
                                         >
-                                        <Card key={i}>
-                                            <CardContent>
-                                                <div className="space-y-4 p-3">
-                                                    <div className='flex justify-between'>
-                                                        <Badge variant="orange" radius='full' size='icon' className='font-bold'>{ item.title }</Badge>
-                                                        <div>
-                                                            <Popover>
-                                                                <div className='flex items-center gap-2'>
-                                                                    <AskButton onTrigger={() => handleTriggerAsk(item.title)}/>
+                                            <Card key={i}>
+                                                <CardContent>
+                                                    <div className="space-y-4 p-3">
+                                                        {/* <AskButton onTrigger={() => handleTriggerAsk(item.title)} /> */}
+                                                        <div className='flex justify-between'>
+                                                            <h4 className="font-bold leading-tight text-black dark:text-white">{item.title}</h4>
+                                                            {/* <Badge variant="blue" size='icon' className='font-bold rounded-sm text-sm'>{item.title}</Badge> */}
+                                                            {/* <div>
+                                                                <Popover>
+                                                                    <div className='flex items-center gap-2'>
+                                                                        <PopoverTrigger asChild>
+                                                                            <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
+                                                                                <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500' />
+                                                                            </button>
+                                                                        </PopoverTrigger>
+                                                                    </div>
+                                                                    <PopoverContent className="w-auto! p-0">
+                                                                        <Card>
+                                                                            <CardContent className='p-2'>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant={'ghost'}
+                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
+                                                                                >Edit</Button>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant={'ghost'}
+                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
+                                                                                >Delete</Button>
+                                                                            </CardContent>
+                                                                        </Card>
+                                                                    </PopoverContent>
+                                                                </Popover>
+                                                            </div> */}
+                                                        </div>
+                                                        <span className="hidden h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50" />
+                                                        <p className="line-clamp-5 text-xs/5 font-medium overflow-auto">
+                                                            {item.desc}
+                                                        </p>
+                                                        <div className="inline-flex items-center gap-2 -space-x-4.5">
+                                                            {[1, 2, 3, 4].map((team: any, i: number) => {
+                                                                const rand = Math.floor(Math.random() * 4) + 1; // hasil 1,2,3,4
+                                                                return (
+                                                                    <TooltipProvider>
+                                                                        <Tooltip>
+                                                                            <TooltipTrigger asChild>
+                                                                                <Image
+                                                                                    key={i}
+                                                                                    src={`/images/kanban-avatar${rand}.svg`}
+                                                                                    alt="avatar"
+                                                                                    width={30}
+                                                                                    height={30}
+                                                                                    className={`size-[30px] rounded-full ${i < 2 ? "hidden xl:block" : ""}`}
+                                                                                    title={"asd"}
+                                                                                />
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent>
+                                                                                {`team ${team}`}
+                                                                            </TooltipContent>
+                                                                        </Tooltip>
+                                                                    </TooltipProvider>
+
+                                                                )
+                                                            })}
+                                                            <Button
+                                                                type="button"
+                                                                className="grid h-[30px] min-w-[30px] shrink-0 place-content-center rounded-full border-2 border-white bg-gray-300 px-1 text-[11px]/none font-bold text-black shadow-sm"
+                                                            >
+                                                                +5
+                                                            </Button>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="flex items-center">
+                                                                <p className="text-xs/tight font-medium ltr:ml-0 ltr:mr-auto rtl:ml-auto rtl:mr-0">
+                                                                    {item.dueDateText}
+                                                                </p>
+                                                                <Button type="button" variant={'ghost'} className="pr-0">
+                                                                    <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
+                                                                    15
+                                                                </Button>
+
+                                                                <Drawer.Root>
+                                                                    <Drawer.Trigger>
+                                                                        <Button type="button" variant={'ghost'}>
+                                                                            <History className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
+                                                                            15
+                                                                        </Button>
+                                                                    </Drawer.Trigger>
+                                                                    <Drawer.Portal>
+                                                                        <Drawer.Overlay className="fixed inset-0 bg-black/40" />
+                                                                        <Drawer.Title />
+                                                                        <Drawer.Content className="bg-gray-100 h-fit w-[calc(100%-260px)] fixed bottom-0 right-0 outline-none">
+                                                                            <Card className="grow overflow-x-auto shadow-sm">
+                                                                                <CardHeader className="flex items-center justify-between px-5 py-3.5">
+                                                                                    <h2 className="whitespace-nowrap text-base/5 font-semibold text-black">
+                                                                                        Task History
+                                                                                    </h2>
+                                                                                    <div className="flex items-center gap-2 sm:gap-4">
+                                                                                        <div id="search-table" hidden></div>
+                                                                                    </div>
+                                                                                </CardHeader>
+                                                                                <CardContent className="overflow-y-auto max-h-[375px]">
+                                                                                    <DataTable
+                                                                                        columns={dashboardcolumns}
+                                                                                        data={data}
+                                                                                        filterField={'sales_id'}
+                                                                                        isRemovePagination={false}
+                                                                                    />
+                                                                                </CardContent>
+                                                                            </Card>
+                                                                        </Drawer.Content>
+                                                                    </Drawer.Portal>
+                                                                </Drawer.Root>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => console.log("asd")}
+                                                                    className="flex-grow text-xs p-2 py-2 bg-linear-to-r from-danger/80 to-warning/50 text-white rounded flex items-center justify-center gap-1 rounded-md"
+                                                                >
+                                                                    <WandSparkles size={16} />
+                                                                    Ask for Details
+                                                                </button>
+                                                                <Popover>
                                                                     <PopoverTrigger asChild>
-                                                                        <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
-                                                                            <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500'/>
-                                                                        </button>
+                                                                        <Button
+                                                                            variant="outline-general"
+                                                                            onClick={() => console.log("asd")}
+                                                                        >
+                                                                            <LucideEllipsis size={16} />
+                                                                        </Button>
                                                                     </PopoverTrigger>
-                                                                </div>
-                                                                <PopoverContent className="w-auto! p-0">
-                                                                    <Card>
-                                                                        <CardContent className='p-2'>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant={'ghost'}
-                                                                                className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                            >Edit</Button>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant={'ghost'}
-                                                                                className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                            >Delete</Button>
-                                                                        </CardContent>
-                                                                    </Card>
-                                                                </PopoverContent>
-                                                            </Popover>
+                                                                    <PopoverContent className="w-auto! p-0" align="start">
+                                                                        <Card>
+                                                                            <CardContent className='p-2'>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant={'ghost'}
+                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
+                                                                                >Edit</Button>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant={'ghost'}
+                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
+                                                                                >Delete</Button>
+                                                                            </CardContent>
+                                                                        </Card>
+                                                                    </PopoverContent>
+                                                                </Popover>
+                                                            </div>
                                                         </div>
-                                                    </div> 
-                                                    <p className="line-clamp-5 text-xs/5 font-medium overflow-auto">
-                                                        { item.description }
-                                                    </p>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="size-6 shrink-0 overflow-hidden rounded-lg">
-                                                            <LucideUser/>
-                                                        </div>
-                                                        <span className="text-xs/tight font-medium text-black dark:text-white">{ 
-                                                            item.name
-                                                        }</span>
                                                     </div>
-                                                    <div className="flex items-center">
-                                                        <p className="text-xs/tight font-medium ltr:ml-0 ltr:mr-auto rtl:ml-auto rtl:mr-0">{ item.dueDateText }</p>
-                                                        <Button type="button" variant={'ghost'}>
-                                                            <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                            15 
-                                                        </Button>
-                                                    </div>
-                                                    </div>
-                                            </CardContent>
-                                        </Card>
+                                                </CardContent>
+                                            </Card>
                                         </div>
                                     )
                                 })
@@ -410,12 +526,12 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                         <div
                             className="min-h-[200px]"
                             onDragOver={handleOnDragOver}
-                            onDrop={(e) => {handleOnDrop(e, 'ongoing')}}
+                            onDrop={(e) => { handleOnDrop(e, 'ongoing') }}
                         >
                             {ongoing &&
                                 ongoing.map((item: any, i) => {
                                     return (
-                                            <div
+                                        <div
                                             className='mb-3'
                                             draggable
                                             key={i}
@@ -423,61 +539,61 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                                 handleOnDrag(e, item);
                                             }}
                                         >
-                                        <Card key={i}>
-                                            <CardContent>
-                                                <div className="space-y-4 p-3">
-                                                    <div className='flex justify-between'>
-                                                        <Badge variant="grey-300" radius='full' size='icon' className='font-bold'>{ item.title }</Badge>
-                                                        <div>
-                                                            <Popover>
-                                                                <div className='flex items-center gap-2'>
-                                                                    <AskButton onTrigger={() => handleTriggerAsk(item.title)}/>
-                                                                    <PopoverTrigger asChild>
-                                                                        <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
-                                                                            <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500'/>
-                                                                        </button>
-                                                                    </PopoverTrigger>
-                                                                </div>
-                                                                <PopoverContent className="w-auto! p-0">
-                                                                    <Card>
-                                                                        <CardContent className='p-2'>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant={'ghost'}
-                                                                                className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                            >Edit</Button>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant={'ghost'}
-                                                                                className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                            >Delete</Button>
-                                                                        </CardContent>
-                                                                    </Card>
-                                                                </PopoverContent>
-                                                            </Popover>
+                                            <Card key={i}>
+                                                <CardContent>
+                                                    <div className="space-y-4 p-3">
+                                                        <div className='flex justify-between'>
+                                                            <AskButton onTrigger={() => handleTriggerAsk(item.title)} />
+                                                            <Badge variant="grey-300" radius='full' size='icon' className='font-bold'>{item.title}</Badge>
+                                                            <div>
+                                                                <Popover>
+                                                                    <div className='flex items-center gap-2'>
+                                                                        <PopoverTrigger asChild>
+                                                                            <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
+                                                                                <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500' />
+                                                                            </button>
+                                                                        </PopoverTrigger>
+                                                                    </div>
+                                                                    <PopoverContent className="w-auto! p-0">
+                                                                        <Card>
+                                                                            <CardContent className='p-2'>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant={'ghost'}
+                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
+                                                                                >Edit</Button>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant={'ghost'}
+                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
+                                                                                >Delete</Button>
+                                                                            </CardContent>
+                                                                        </Card>
+                                                                    </PopoverContent>
+                                                                </Popover>
+                                                            </div>
                                                         </div>
-                                                    </div> 
-                                                    <p className="line-clamp-5 text-xs/5 font-medium overflow-auto">
-                                                        { item.description }
-                                                    </p>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="size-6 shrink-0 overflow-hidden rounded-lg">
-                                                            <LucideUser/>
+                                                        <p className="line-clamp-5 text-xs/5 font-medium overflow-auto">
+                                                            {item.desc}
+                                                        </p>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="size-6 shrink-0 overflow-hidden rounded-lg">
+                                                                <LucideUser />
+                                                            </div>
+                                                            <span className="text-xs/tight font-medium text-black dark:text-white">{
+                                                                item.name
+                                                            }</span>
                                                         </div>
-                                                        <span className="text-xs/tight font-medium text-black dark:text-white">{ 
-                                                            item.name
-                                                        }</span>
+                                                        <div className="flex items-center">
+                                                            <p className="text-xs/tight font-medium ltr:ml-0 ltr:mr-auto rtl:ml-auto rtl:mr-0">{item.dueDateText}</p>
+                                                            <Button type="button" variant={'ghost'}>
+                                                                <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
+                                                                15
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center">
-                                                        <p className="text-xs/tight font-medium ltr:ml-0 ltr:mr-auto rtl:ml-auto rtl:mr-0">{ item.dueDateText }</p>
-                                                        <Button type="button" variant={'ghost'}>
-                                                            <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                            15 
-                                                        </Button>
-                                                    </div>
-                                                    </div>
-                                            </CardContent>
-                                        </Card>
+                                                </CardContent>
+                                            </Card>
                                         </div>
                                     )
                                 })
@@ -498,12 +614,12 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                         <div
                             className="min-h-[200px]"
                             onDragOver={handleOnDragOver}
-                            onDrop={(e) => {handleOnDrop(e, 'completed')}}
+                            onDrop={(e) => { handleOnDrop(e, 'completed') }}
                         >
                             {completed &&
                                 completed.map((item: any, i) => {
                                     return (
-                                            <div
+                                        <div
                                             className='mb-3'
                                             draggable
                                             key={i}
@@ -511,61 +627,61 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                                 handleOnDrag(e, item);
                                             }}
                                         >
-                                        <Card key={i}>
-                                            <CardContent>
-                                                <div className="space-y-4 p-3">
-                                                    <div className='flex justify-between'>
-                                                        <Badge variant="green" radius='full' size='icon' className='font-bold'>{ item.title }</Badge>
-                                                        <div>
-                                                            <Popover>
-                                                                <div className='flex items-center gap-2'>
-                                                                    <AskButton onTrigger={() => handleTriggerAsk(item.title)}/>
-                                                                    <PopoverTrigger asChild>
-                                                                        <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
-                                                                            <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500'/>
-                                                                        </button>
-                                                                    </PopoverTrigger>
-                                                                </div>
-                                                                <PopoverContent className="w-auto! p-0">
-                                                                    <Card>
-                                                                        <CardContent className='p-2'>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant={'ghost'}
-                                                                                className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                            >Edit</Button>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant={'ghost'}
-                                                                                className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                            >Delete</Button>
-                                                                        </CardContent>
-                                                                    </Card>
-                                                                </PopoverContent>
-                                                            </Popover>
+                                            <Card key={i}>
+                                                <CardContent>
+                                                    <div className="space-y-4 p-3">
+                                                        <div className='flex justify-between'>
+                                                            <AskButton onTrigger={() => handleTriggerAsk(item.title)} />
+                                                            <Badge variant="green" radius='full' size='icon' className='font-bold'>{item.title}</Badge>
+                                                            <div>
+                                                                <Popover>
+                                                                    <div className='flex items-center gap-2'>
+                                                                        <PopoverTrigger asChild>
+                                                                            <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
+                                                                                <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500' />
+                                                                            </button>
+                                                                        </PopoverTrigger>
+                                                                    </div>
+                                                                    <PopoverContent className="w-auto! p-0">
+                                                                        <Card>
+                                                                            <CardContent className='p-2'>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant={'ghost'}
+                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
+                                                                                >Edit</Button>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant={'ghost'}
+                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
+                                                                                >Delete</Button>
+                                                                            </CardContent>
+                                                                        </Card>
+                                                                    </PopoverContent>
+                                                                </Popover>
+                                                            </div>
                                                         </div>
-                                                    </div> 
-                                                    <p className="line-clamp-5 text-xs/5 font-medium overflow-auto">
-                                                        { item.description }
-                                                    </p>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="size-6 shrink-0 overflow-hidden rounded-lg">
-                                                            <LucideUser/>
+                                                        <p className="line-clamp-5 text-xs/5 font-medium overflow-auto">
+                                                            {item.desc}
+                                                        </p>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="size-6 shrink-0 overflow-hidden rounded-lg">
+                                                                <LucideUser />
+                                                            </div>
+                                                            <span className="text-xs/tight font-medium text-black dark:text-white">{
+                                                                item.name
+                                                            }</span>
                                                         </div>
-                                                        <span className="text-xs/tight font-medium text-black dark:text-white">{ 
-                                                            item.name
-                                                        }</span>
+                                                        <div className="flex items-center">
+                                                            <p className="text-xs/tight font-medium ltr:ml-0 ltr:mr-auto rtl:ml-auto rtl:mr-0">{item.dueDateText}</p>
+                                                            <Button type="button" variant={'ghost'}>
+                                                                <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
+                                                                15
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center">
-                                                        <p className="text-xs/tight font-medium ltr:ml-0 ltr:mr-auto rtl:ml-auto rtl:mr-0">{ item.dueDateText }</p>
-                                                        <Button type="button" variant={'ghost'}>
-                                                            <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                            15 
-                                                        </Button>
-                                                    </div>
-                                                    </div>
-                                            </CardContent>
-                                        </Card>
+                                                </CardContent>
+                                            </Card>
                                         </div>
                                     )
                                 })

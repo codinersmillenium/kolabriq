@@ -12,10 +12,9 @@ import {
 } from 'lucide-react'
 import Image from 'next/image';
 import { task } from '@/declarations/task';
-import AIProjectGenerator, { AIProjectGeneratorRef } from '@/components/ai/chatbot';
+import AIProjectGenerator, { AIProjectGeneratorRef, AskButton, AnalysisButton } from '@/components/ai/chatbot';
 import DialogUi from '@/components/ui/dialog';
 import ProjectPlanner from '@/components/ai/project-planner';
-import { TriggerButton } from './test';
 
 
 export default function Chatbot() {
@@ -34,24 +33,34 @@ export default function Chatbot() {
 
     const aiRef = useRef<AIProjectGeneratorRef>(null);
 
-    const handleTriggerA = () => {
-        aiRef.current?.triggerContext("Theme: E-commerce App");
+    const handleTriggerAsk = (taskTitle: string) => {
+        aiRef.current?.triggerContext(taskTitle);
     };
 
-    const handleTriggerB = () => {
-        aiRef.current?.triggerContext("Theme: Chatbot with AI");
+    const handleTriggerAnalysis = (projectId: number) => {
+        aiRef.current?.triggerAnalysis(projectId);
+    };
+
+    const handleTriggerGamified = (taskTitle: string) => {
+        aiRef.current?.triggerGamified(taskTitle);
+    };
+
+    const handleTriggerDailyStandUp = (projectId: number) => {
+        aiRef.current?.triggerDailyStandUp(projectId);
     };
 
 
     return (
         <>
-            <div className="space-y-6">
+            <AskButton onTrigger={() => handleTriggerAsk("Create beautiful landing")}/>
+            <AnalysisButton onTrigger={() => handleTriggerAnalysis(2)}/>
+            {/* <div className="space-y-6">
                 <div className="flex gap-3">
                     <TriggerButton onTrigger={handleTriggerA} label="E-commerce Context" />
                 </div>
 
+            </div> */}
                 <AIProjectGenerator ref={aiRef} />
-            </div>
 
             <ProjectPlanner/>
 

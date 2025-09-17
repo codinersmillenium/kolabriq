@@ -59,9 +59,9 @@ export const callbackSignIn = async () => {
     if (!identity || !isAuthenticated) return 'init'
     const principal: any = getPrincipal()
     const actor = await initActor()
-    const { ok }: any = await actor.findUserById(principal[1])
+    const { ok }: any = await actor.getUserDetail(principal[1])
     if (typeof ok === 'undefined') return false
-    
+
     return true
 }
 

@@ -15,7 +15,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
   const [user, setUser] = useState<object>({})
   const router = useRouter()
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       const identity = authClient.getIdentity().getPrincipal().toString()
       const actor_ = await initActor()
-      const { ok }: any = await actor_.findUserById(Principal.fromText(identity))
+      const { ok }: any = await actor_.getUserDetail(Principal.fromText(identity))
       setUser(ok)
     }
     setIsAuthenticated(isAuthenticated)

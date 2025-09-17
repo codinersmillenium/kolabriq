@@ -47,10 +47,10 @@ export default function Register() {
             const tag: any = document.querySelectorAll('[name="tags[]"]')
             formData.tags = []
             formData.referrerCode = [formData.referrerCode_]
-            formData.role = {[formData.role_]: null}
+            formData.role = { [formData.role_]: null }
             for (let i = 0; i < tag.length; i++) {
                 if (tag[i].checked) {
-                    formData.tags.push({[tag[i].value]: null})
+                    formData.tags.push({ [tag[i].value]: null })
                 }
             }
             const actor = await initActor()
@@ -147,56 +147,56 @@ export default function Register() {
                                     onChange={handleChange}
                                 />
                             </div>
+                            <div className='relative space-y-3'>
+                                <label className="block font-semibold leading-none text-black">
+                                    Regist As
+                                </label>
+                                <select name="role_" onChange={setTags} required>
+                                    <option value="">
+                                        Change Option
+                                    </option>
+                                    <option value="admin">Company</option>
+                                    <option value="developer">Developer</option>
+                                </select>
+                            </div>
+                            {tags && (
                                 <div className='relative space-y-3'>
-                                    <label className="block font-semibold leading-none text-black">
-                                        Regist As
-                                    </label>
-                                    <select name="role_" onChange={ setTags } required>
-                                        <option value="">
-                                           Change Option
-                                        </option>
-                                        <option value="admin">Company</option>
-                                        <option value="developer">Developer</option>
-                                    </select>
-                                </div>
-                                { tags && (
-                                    <div className='relative space-y-3'>
-                                        <div className="relative space-y-3">
-                                            <label className="block font-semibold leading-none text-black">
-                                                Reference Code
-                                            </label>
-                                            <Input
-                                                type="text"
-                                                variant={'input-form'}
-                                                placeholder="The code is provided by the company..."
-                                                iconRight={<Key className="size-[18px]" />}
-                                                name='referrerCode_'
-                                                onChange={handleChange}
-                                            />
-                                        </div>
-                                        <fieldset className="border border-gray-300 p-4 rounded-md">
-                                            <legend className="text-sm font-medium text-gray-700 mb-2">Tags</legend>
-                                            <div className="space-y-2">
-                                                <label className="flex items-center space-x-2">
-                                                    <input type="checkbox" name="tags[]" value="frontend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
-                                                    <span className="text-sm text-gray-700">Frontend Developer</span>
-                                                </label>
-                                                <label className="flex items-center space-x-2">
-                                                    <input type="checkbox" name="tags[]" value="backend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
-                                                    <span className="text-sm text-gray-700">Backend Developer</span>
-                                                </label>
-                                                <label className="flex items-center space-x-2">
-                                                    <input type="checkbox" name="tags[]" value="ui" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange}/>
-                                                    <span className="text-sm text-gray-700">UI/UX Design</span>
-                                                </label>
-                                                <label className="flex items-center space-x-2">
-                                                    <input type="checkbox" name="tags[]" value="bussines_analist" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange}/>
-                                                    <span className="text-sm text-gray-700">Bussiness Analyst</span>
-                                                </label>
-                                            </div>
-                                        </fieldset>
+                                    <div className="relative space-y-3">
+                                        <label className="block font-semibold leading-none text-black">
+                                            Reference Code
+                                        </label>
+                                        <Input
+                                            type="text"
+                                            variant={'input-form'}
+                                            placeholder="The code is provided by the company..."
+                                            iconRight={<Key className="size-[18px]" />}
+                                            name='referrerCode_'
+                                            onChange={handleChange}
+                                        />
                                     </div>
-                                )}
+                                    <fieldset className="border border-gray-300 p-4 rounded-md">
+                                        <legend className="text-sm font-medium text-gray-700 mb-2">Tags</legend>
+                                        <div className="space-y-2">
+                                            <label className="flex items-center space-x-2">
+                                                <input type="checkbox" name="tags[]" value="frontend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                                                <span className="text-sm text-gray-700">Frontend Developer</span>
+                                            </label>
+                                            <label className="flex items-center space-x-2">
+                                                <input type="checkbox" name="tags[]" value="backend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                                                <span className="text-sm text-gray-700">Backend Developer</span>
+                                            </label>
+                                            <label className="flex items-center space-x-2">
+                                                <input type="checkbox" name="tags[]" value="ui" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                                                <span className="text-sm text-gray-700">UI/UX Design</span>
+                                            </label>
+                                            <label className="flex items-center space-x-2">
+                                                <input type="checkbox" name="tags[]" value="bussines_analist" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                                                <span className="text-sm text-gray-700">Bussiness Analyst</span>
+                                            </label>
+                                        </div>
+                                    </fieldset>
+                                </div>
+                            )}
                             <Button
                                 type="submit"
                                 variant={'black'}

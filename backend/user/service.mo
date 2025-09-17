@@ -4,6 +4,7 @@ import Array "mo:base/Array";
 import Text "mo:base/Text";
 import Nat "mo:base/Nat";
 import Blob "mo:base/Blob";
+import Debug "mo:base/Debug";
 
 import TypCommon "../common/type";
 import TypUser "type";
@@ -145,7 +146,28 @@ module {
             return userProfile;
         };
 
-        // MARK: Authenticote
+        // MARK: Save block
+
+        public func saveBlock(caller : TypCommon.UserId, blockCounter : TypCommon.BlockId, block : TypUser.UserBlock) {
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlUser.hashBlock(block));
+
+            Debug.print("Current user block: " # Nat.toText(blockCounter));
+            
+            // Update indices
+            switch (userIndex.get(caller)) {
+                case (?blocks) { 
+                    Debug.print("Update user index");
+                    userIndex.put(caller, Array.append(blocks, [blobBlockCounter])); 
+                };
+                case (null) {
+                    Debug.print("User index: " # Nat.toText(blockCounter) # " not found");
+                };
+            };
+        };
+
+        // MARK: Authenticate
 
         public func authenticate(
             caller : TypCommon.UserId, 
@@ -171,16 +193,9 @@ module {
             };
 
             // Add to blockchain
-            let blobBlockCounter = Utl.natToBlob(blockCounter);
-            blockchain.put(blobBlockCounter, UtlUser.hashBlock(newBlock));
-            
-            // Update indices
-            switch (userIndex.get(caller)) {
-                case (?blocks) { userIndex.put(caller, Array.append(blocks, [blobBlockCounter])); };
-                case (null)    { };
-            };
-
+            saveBlock(caller, blockCounter, newBlock);
             blockCounter += 1;
+
             return userProfile;
         };
 
@@ -227,16 +242,9 @@ module {
             };
 
             // Add to blockchain
-            let blobBlockCounter = Utl.natToBlob(blockCounter);
-            blockchain.put(blobBlockCounter, UtlUser.hashBlock(newBlock));
-            
-            // Update indices
-            switch (userIndex.get(caller)) {
-                case (?blocks) { userIndex.put(caller, Array.append(blocks, [blobBlockCounter])); };
-                case (null)    { };
-            };
-
+            saveBlock(caller, blockCounter, newBlock);
             blockCounter += 1;
+
             return updatedState;
         };
 
@@ -247,39 +255,30 @@ module {
             user    : TypUser.UserProfile,
             reqRole : TypCommon.Role,
         ): TypUser.UserProfile {
-            let updatedState = if (user.role != reqRole) {{
+            let userProfile: TypUser.UserProfile = {
                 user with
                 role   = reqRole;
                 action = #updateRole({
                     oldRole = user.role;
                     newRole = reqRole;
                 });
-            }} else {
-                user;
             };
 
             var newBlock: TypUser.UserBlock = {
                 id           = blockCounter;
                 timestamp    = UtlDate.now();
                 previousHash = getPreviousHash();
-                data         = updatedState;
+                data         = userProfile;
                 hash         = "";
                 signature    = Principal.toText(caller) # "_signature";
                 nonce        = 0;
             };
 
             // Add to blockchain
-            let blobBlockCounter = Utl.natToBlob(blockCounter);
-            blockchain.put(blobBlockCounter, UtlUser.hashBlock(newBlock));
-            
-            // Update indices
-            switch (userIndex.get(caller)) {
-                case (?blocks) { userIndex.put(caller, Array.append(blocks, [blobBlockCounter])); };
-                case (null)    { };
-            };
-
+            saveBlock(caller, blockCounter, newBlock);
             blockCounter += 1;
-            return updatedState;
+
+            return userProfile;
         };
 
         // MARK: Update plan
@@ -316,16 +315,9 @@ module {
             };
 
             // Add to blockchain
-            let blobBlockCounter = Utl.natToBlob(blockCounter);
-            blockchain.put(blobBlockCounter, UtlUser.hashBlock(newBlock));
-            
-            // Update indices
-            switch (userIndex.get(caller)) {
-                case (?blocks) { userIndex.put(caller, Array.append(blocks, [blobBlockCounter])); };
-                case (null)    { };
-            };
-
+            saveBlock(caller, blockCounter, newBlock);
             blockCounter += 1;
+            
             return userProfile;
         };
     }
