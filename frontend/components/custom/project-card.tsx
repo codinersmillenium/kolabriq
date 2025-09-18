@@ -1,17 +1,22 @@
 'use client'
 import { initActor } from '@/lib/canisters';
-import { LucideDollarSign, LucideEllipsisVertical, LucideIdCard, LucideUsers, X } from 'lucide-react';
+import { Clipboard, ClipboardList, Coins, History, LucideDollarSign, LucideEllipsisVertical, LucideIdCard, LucideUsers, SquarePen, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { HTMLAttributes, useEffect, useState } from 'react';
+import { HTMLAttributes, ReactNode, useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Input } from '../ui/input';
 import { Principal } from '@dfinity/principal';
 import { Badge } from '../ui/badge';
 import { useRouter } from 'next/navigation';
+import { ProjectTypeClass, ProjectTypeLabel, StatusColor, StatusLabel } from '@/constants/status';
+import { ProjectType, StatusType } from '@/types/project';
+import { e8sToStr, formatDate } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import DialogUi from '../ui/dialog';
 
-export default function ProjectCard({ filter, page }: any) {
+export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTitle }: any) {
   const route = useRouter()
   const [item, setItem] = useState([])
   const [assign, setAssign] = useState({
@@ -19,11 +24,15 @@ export default function ProjectCard({ filter, page }: any) {
     status: false
   })
 
+  const getUsers = async () => {
+
+  }
+
   const getProject = async () => {
     const actor_ = await initActor('project')
     var param = {
-      status: [{ [filter.status]: null }],
-      projectType: [{ [filter.type]: null }],
+      status: filter.status ? [{ [filter.status]: null }] : [],
+      projectType: filter.type ? [{ [filter.type]: null }] : [],
       tags: [],
       keyword: [],
     }
@@ -34,6 +43,10 @@ export default function ProjectCard({ filter, page }: any) {
     //   keyword: ''
     // }
     const { ok }: any = await actor_.getOwnedProjectList(param)
+    const user = await initActor()
+    const data = await user.checkPrincipal()
+    console.log(ok, data.toString());
+
     if (page.role === 'admin') {
       for (let obj in ok) {
         const uint8Array = new Uint8Array(ok[obj].thumbnail);
@@ -71,6 +84,9 @@ export default function ProjectCard({ filter, page }: any) {
     }, 100)
   }
 
+  // MARK: Projeck manager
+  const [isOpenDialogPM, setOpenDialogPM] = useState(false)
+
   const assignPM = async (id: string) => {
     const actor_ = await initActor('project')
     const { value }: any = document.querySelector('#user_id')
@@ -82,233 +98,136 @@ export default function ProjectCard({ filter, page }: any) {
     }, 100)
   }
 
+  const DialogPM = (id: string): any => {
+    !assign.status ?
+      <div>
+        <label className="font-semibold leading-tight inline-block">
+          Name
+        </label>
+        <form>
+          <fieldset className="border border-gray-300 p-4 rounded-md mb-2">
+            <legend className="text-sm font-medium text-gray-700 mb-2">User ID</legend>
+            <div className="space-y-2">
+              <Input
+                id='user_id'
+                placeholder='Assign user to PM or maintainer by project'
+                required
+              />
+            </div>
+          </fieldset>
+          <div className='flex justify-end'>
+            <Button
+              type='button'
+              className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white"
+              title='Assign user to PM or maintainer by project'
+              onClick={() => assignPM(id)}
+            >
+              Assign
+            </Button>
+          </div>
+        </form>
+      </div>
+      :
+      <div>
+        {assign.name}
+      </div>
+  }
+
   useEffect(() => {
     getProject()
   }, [filter, page.role])
 
   return (
-    <div className="mx-auto grid w-full md:max-w-[938px] lg:max-w-[95%] gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 mt-4">
-      {item.map((i: any, j) => (
-        <div className="rounded-[1vw] bg-black shadow-3xl dark:shadow-sm" key={j}>
-          <div className="space-y-4 p-3">
-            <Link
-              href="/task-detail"
-              className={`relative w-full h-[200px] mt-0 block rounded-xl overflow-hidden p-1.5 ring-2 dark:bg-black-dark dark:ring-gray-300/10
-                ${!i.thumbnailUrl ? "bg-gray-200 ring-gray-300" : "ring-gray-300"}`}
-              onClick={() => handleLinkShow(i.id)}
-            >
-              {i.thumbnailUrl ? (
-                <Image
-                  alt="blog-img"
-                  fill
-                  src={i.thumbnailUrl}
-                  className="mx-auto"
-                  style={{ objectFit: "cover" }}
-                />
-              ) : null}
-            </Link>
+    <div className="mx-auto grid w-full gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 mt-4">
+      {item.map((i: any, j) => {
+        const statusKey = Object.keys(i.status)[0] as StatusType;
+        const projectTypeKey = Object.keys(i.projectType)[0] as ProjectType;
 
-
-            <div className='flex gap-2'>
-              <div
-                className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs/[10px] shrink-0 font-medium whitespace-nowrap transition text-black ${{
-                  free: "bg-gray text-white",
-                  rewarded: "bg-success-light",
-                }[Object.keys(i.projectType)[0]]
-                  }`}
-              >
-                {{
-                  free: "Free",
-                  rewarded: "Rewarded",
-                }[Object.keys(i.projectType)[0]]}
-              </div>
-              <div>
-                <Badge
-                  variant={
-                    ({
-                      new: "danger",
-                      in_progress: "orange",
-                      review: "blue",
-                      done: "green"
-                    } as const)[
-                    Object.keys(i.status)[0] as "new" | "in_progress" | "review" | "done"
-                    ] ?? "default"
-                  }
-                >
-                  {{
-                    new: "New",
-                    in_progress: "In Progress",
-                    review: "Review",
-                    done: "Done"
-                  }[Object.keys(i.status)[0]]}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
+        return (
+          <div className="rounded-[1vw] bg-[#232324] shadow-3xl dark:shadow-sm" key={j}>
+            <div className="space-y-4 p-3">
               <Link
-                href="/task-detail"
-                className="text-sm/tight font-semibold text-white duration-300 hover:underline inline-flex"
+                href="/task-detail/1"
+                className={`relative w-full h-[200px] mt-0 block rounded-xl overflow-hidden p-1.5 ring-2 dark:bg-black-dark dark:ring-gray-300/10
+                  ${!i.thumbnailUrl ? "bg-gray-200 ring-gray-300" : "ring-gray-300"}`}
                 onClick={() => handleLinkShow(i.id)}
               >
-                {i.name}
+                {i.thumbnailUrl ? (
+                  <Image
+                    alt="blog-img"
+                    fill
+                    src={i.thumbnailUrl}
+                    className="mx-auto"
+                    style={{ objectFit: "cover" }}
+                  />
+                ) : null}
               </Link>
-              <p className="line-clamp-2 text-xs/normal font-medium text-white">
-                {i.desc}
-              </p>
-            </div>
 
-            <div className="flex items-center gap-3 justify-between">
-              <div className='flex items-center gap-4'>
-                <Button
-                  variant={'ghost'}
-                  className="!p-0 inline-flex items-center gap-1.5 text-xs/tight font-semibold transition text-white"
-                >
-                  <LucideDollarSign className="shrink-0" />
-                  {i.reward}
-                </Button>
 
-                <Button
-                  variant={'ghost'}
-                  className="!p-0 inline-flex items-center gap-1.5 text-xs/tight font-semibold transition text-white"
+              <div className='flex justify-between'>
+                <div className='flex gap-2'>
+                  <Badge variant={StatusColor[statusKey] ?? "default"}>
+                    {StatusLabel[statusKey]}
+                  </Badge>
+
+                  <div className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs/[10px] shrink-0 font-medium whitespace-nowrap transition text-black ${ProjectTypeClass[projectTypeKey]}`}>
+                    {ProjectTypeLabel[projectTypeKey]}
+                  </div>
+                </div>
+                <div className='flex items-center gap-1.5'>
+                  <button onClick={() => setOpenDialogPM(true)}><LucideIdCard size={23} color="#ffffff" /></button>
+                  <button onClick={() => {
+                    dialogTitle("Edit Project: " + i.name)
+                    dialogProjectOpen(true)
+                  }}><SquarePen size={18} color="#ffffff" /></button>
+                </div>
+
+              </div>
+
+              <div className='flex items-center gap-1.5'>
+                <Coins size={18} color="#ffffff" />
+                <span className='text-white text-xs'>{i.reward ? e8sToStr(i.reward) : 0}</span>
+              </div>
+
+              <div className="space-y-1.5">
+                <Link
+                  href="/task-detail"
+                  className="text-sm/tight font-semibold text-white duration-300 hover:underline inline-flex"
+                  onClick={() => handleLinkShow(i.id)}
                 >
-                  <LucideUsers className="shrink-0" />
-                  {/* {i.teams.length} */}
-                  0
-                </Button>
+                  Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                  {/* {i.name} */}
+                </Link>
+                <p className="line-clamp-3 text-xs/normal font-medium text-white">
+                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis optio necessitatibus assumenda, voluptatum sit in dicta? Illum velit officiis numquam perferendis maxime, non in labore.
+                  {/* {i.desc} */}
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                {page.role !== 'developer' &&
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={'ghost'}
-                        className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white p-0 "
-                        title='Assign project manager or maintainer'
-                      >
-                        <LucideIdCard strokeWidth={1} size={40} className="!w-6 !h-6 shrink-0" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto! p-3" data-side="top">
-                      {!assign.status ?
-                        <form>
-                          <fieldset className="border border-gray-300 p-4 rounded-md mb-2">
-                            <legend className="text-sm font-medium text-gray-700 mb-2">User ID</legend>
-                            <div className="space-y-2">
-                              <Input
-                                id='user_id'
-                                placeholder='Assign user to PM or maintainer by project'
-                                required
-                              />
-                            </div>
-                          </fieldset>
-                          <div className='flex justify-end'>
-                            <Button
-                              type='button'
-                              className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition text-white"
-                              title='Assign user to PM or maintainer by project'
-                              onClick={() => assignPM(i.id)}
-                            >
-                              Assign
-                            </Button>
-                          </div>
-                        </form>
-                        :
-                        <div>
-                          {assign.name}
-                        </div>
-                      }
-                    </PopoverContent>
-                  </Popover>
-                }
+
+              <span className="hidden h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50" />
+
+              <div className='mb-2 flex items-center justify-between'>
+                <div className='flex items-center gap-3'>
+                  <p className="flex items-center font-semibold text-white gap-1">
+                    <LucideUsers size={18} />
+                    <span>0</span>
+                  </p>
+                  <p className="flex items-center font-semibold text-white gap-1">
+                    <ClipboardList size={18} />
+                    <span>0</span>
+                  </p>
+                </div>
+                <History size={18} color="#ffffff" />
               </div>
+
+              {/* 
+                MARK: Dialog assign PM
+              */}
+              <DialogUi open={isOpenDialogPM} onOpenChange={setOpenDialogPM} title="Project Manager" content={DialogPM(i.id)} />
             </div>
           </div>
-        </div>
-      ))}
-      {/* <div className="rounded-[1vw] bg-black shadow-3xl dark:shadow-sm">
-        <div className="space-y-4 p-3">
-          <Link
-            href="/task-detail"
-            className="mt-0 block rounded-sm bg-gray-200 p-2.5 ring-1 ring-gray-300 dark:bg-black-dark dark:ring-gray-300/10"
-          >
-            <Image
-              alt="blog-img"
-              width={180}
-              height={180}
-              src="/images/blogcard-one.svg"
-              className="mx-auto duration-300 hover:scale-105"
-              style={{ color: 'transparent' }}
-            />
-          </Link>
-
-          <div className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs/[10px] shrink-0 font-medium whitespace-nowrap transition text-black bg-danger-light">
-            Marketing
-          </div>
-
-          <div className="space-y-1.5">
-            <Link
-              href="/task-detail"
-              className="text-sm/tight font-semibold text-black duration-300 hover:text-primary text-white inline-flex"
-            >
-              The Impact of Bankruptcy
-            </Link>
-            <p className="line-clamp-2 text-xs/normal font-medium">
-              Refund is the most popular payment gateways, which is the most convenient to use for you.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition hover:text-black dark:hover:text-white"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="lucide lucide-thumbs-up size-4 shrink-0"
-                aria-hidden="true"
-              >
-                <path d="M7 10v12"></path>
-                <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"></path>
-              </svg>
-              120k
-            </button>
-
-            <button
-              type="button"
-              className="inline-flex items-end gap-1.5 text-xs/tight font-semibold transition hover:text-black dark:hover:text-white"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="lucide lucide-users size-4 shrink-0"
-                aria-hidden="true"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-              </svg>
-              140k
-            </button>
-          </div>
-        </div>
-      </div> */}
+        )
+      })}
     </div>
   );
 }

@@ -13,7 +13,7 @@ import { ScheduleTimeline } from '@/components/custom/schedule-timeline'
 import { KanbanCard } from '@/components/custom/kanban-card'
 import { getPrincipal, initActor } from '@/lib/canisters'
 import { Badge } from '@/components/ui/badge'
-import AIProjectGenerator, { AIProjectGeneratorRef, AnalysisButton } from '@/components/ai/chatbot'
+import Chatbot, { ChatbotRef, AnalysisButton } from '@/components/ai/chatbot'
 import DialogUi from '@/components/ui/dialog'
 import { Principal } from '@dfinity/principal'
 import { DataTable } from '@/components/custom/table/data-table'
@@ -36,32 +36,46 @@ const Table = () => {
 
   const [openDialCreateTask, setOpenDialCreateTask] = useState<boolean>(false);
 
-  const getProject = async (id: any) => {
-    setIdProject(id)
-    const actorProject_ = await initActor('project')
-    const dataProject = await actorProject_.getProjectDetail(parseFloat(id))
+  // MARK: Actors
+  const [taskActor, setTaskActor] = useState<any>(null);
+  const [projectActor, setProjectActor] = useState<any>(null)
 
-    if (dataProject?.ok) {
-      setProject(dataProject.ok)
+  const initActors = async (): Promise<{ tActor: any; pActor: any }> => {
+    const tActor = await initActor("task");
+    const pActor = await initActor("project");
+
+    setTaskActor(tActor);
+    setProjectActor(pActor);
+
+    return { tActor, pActor };
+  };
+
+
+  const getProject = async (id: any, pActor: any) => {
+    setIdProject(id)
+
+    const { ok } = await pActor.getProjectDetail(parseFloat(id))
+    if (typeof ok !== 'undefined') {
+      setProject(ok)
       return
     }
 
     alert("project not found")
   }
-  const getTask = async (id: any) => {
+
+  const getTask = async (id: any, tActor: any) => {
     let param = {
       keyword: [],
       status: [],
       tag: [],
     };
-    console.log(param);
 
-    const actor_ = await initActor('task')
-    const { ok } = await actor_.getTaskList(parseFloat(id), [param])
+    const { ok } = await tActor.getTaskList(parseFloat(id), [param])
     if (typeof ok !== 'undefined') {
       setTask(ok)
     }
   }
+
   const getTaskByid = async (id: any) => {
     // const actor_ = await initActor('task')
     // const { ok } = await actor_.getUserProjectTasks(getPrincipal()[1], parseFloat(id))
@@ -72,15 +86,22 @@ const Table = () => {
   }
 
   useEffect(() => {
-    const id: any = localStorage.getItem('project_id')
-    setIdProject(id)
-    getProject(id)
-    getTask(id)
-    getTaskByid(id)
-    getProjectHistory(id)
+    const init = async () => {
+      const { tActor, pActor } = await initActors();
 
-    // aiRef.current?.triggerDailyStandUp(id);
-  }, [])
+      const id: any = localStorage.getItem('project_id');
+      setIdProject(id);
+
+      getProject(id, pActor);
+      getTask(id, tActor);
+      getTaskByid(id);
+      getProjectHistory(id, pActor);
+
+      // aiRef.current?.triggerDailyStandUp(id);
+    };
+
+    init();
+  }, []);
 
   const handleTriggerAnalysis = (idProject: any) => {
     idProject
@@ -100,7 +121,7 @@ const Table = () => {
         const actorProject_ = await initActor('project')
         const resProject = await actorProject_.updateStatus(parseFloat(idProject), { [reqStatus[status]]: null })
         if (resProject) {
-          getProject(parseFloat(idProject))
+          getProject(parseFloat(idProject), projectActor)
           return alert("success push project")
         }
 
@@ -177,7 +198,7 @@ const Table = () => {
     }
   }
 
-  const aiRef = useRef<AIProjectGeneratorRef>(null);
+  const aiRef = useRef<ChatbotRef>(null);
 
   // MARK: Add task
 
@@ -185,10 +206,100 @@ const Table = () => {
     setOpenDialCreateTask(true);
   }
 
-  const DialogCreateTask = () => (
-    <DialogUi open={openDialCreateTask} onOpenChange={setOpenDialCreateTask} title='' content={
-      <div>
+  const handleSubmit = async (e: any) => {
+    console.log(e);
+  }
 
+  // TODO: LAST HERE
+
+  const DialogCreateTask = () => (
+    <DialogUi open={openDialCreateTask} onOpenChange={setOpenDialCreateTask} title="Add Task" content={
+      <div>
+        <span className="h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50" />
+        <div className='pt-4'>
+          <form className="px-[3px]" onSubmit={handleSubmit}>
+            <div className='space-y-5 max-h-[350px] overflow-y-scroll ps-[2px] pr-[10px]'>
+              <div className="space-y-2.5">
+                <label className="block font-semibold leading-tight text-black">
+                  Task Name
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g., Implement login page"
+                  name='title'
+                  // onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2.5">
+                <label className="block font-semibold leading-tight text-black">
+                  Task Desc
+                </label>
+                <Textarea
+                  placeholder="Describe the task in detail, including requirements or notes..."
+                  name='desc'
+                  // onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2.5">
+                <label className="block font-semibold leading-tight text-black">
+                  Task Deadline
+                </label>
+                <Popover>
+                  <PopoverTrigger>
+                    {dueDate ? (
+                      format(dueDate, 'PP')
+                    ) : (
+                      <span>
+                        {nowStr()}
+                      </span>
+                    )}{' '}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto! p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dueDate}
+                      onSelect={setDueDate}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className='relative space-y-1'>
+                <fieldset className="border border-gray-300 p-4 rounded-md">
+                  <legend className="text-sm font-medium text-gray-700 mb-2">Tags</legend>
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2">
+                      <input type="radio" name="tags" value="frontend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                      <span className="text-sm text-gray-700">Frontend Developer</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="radio" name="tags" value="backend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                      <span className="text-sm text-gray-700">Backend Developer</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="radio" name="tags" value="ui" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                      <span className="text-sm text-gray-700">UI/UX Design</span>
+                    </label>
+                    <label className="flex items-center space-x-2">
+                      <input type="radio" name="tags" value="bussines_analist" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                      <span className="text-sm text-gray-700">Bussiness Analyst</span>
+                    </label>
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+            <span className="h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50 mb-4" />
+            <Button
+              type="submit"
+              variant={'black'}
+              size={'large'}
+              className="w-full"
+            >
+              Add Task
+            </Button>
+          </form>
+        </div>
       </div>
     } />
   )
@@ -198,10 +309,8 @@ const Table = () => {
 
   const [projectHistory, setProjectHistory] = useState<IBlockHistory[]>([]);
 
-  const getProjectHistory = async (id: any) => {
-    const projectActor = await initActor('project')
-    const { ok } = await projectActor.getProjectHistory(parseFloat(id))
-
+  const getProjectHistory = async (id: any, pActor: any) => {
+    const { ok } = await pActor.getProjectHistory(parseFloat(id))
     if (typeof ok !== 'undefined') {
       setProjectHistory(ok)
     }
@@ -434,7 +543,7 @@ const Table = () => {
               </Card>
             </TabsContent>
           </Tabs>
-          <AIProjectGenerator ref={aiRef} />
+          <Chatbot ref={aiRef} />
         </div>
         {DialogCreateTask()}
         <DialogUi open={isDialogOpen} onOpenChange={setDialogOpen} title=''

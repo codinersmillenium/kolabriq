@@ -13,12 +13,17 @@ import { Textarea } from '../ui/textarea'
 import { initActor } from '@/lib/canisters'
 import { Principal } from '@dfinity/principal'
 import { AskButton } from '../ai/chatbot'
-import { formatDate } from '@/lib/utils'
+import { formatDate, nowStr } from '@/lib/utils'
 import Image from 'next/image'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { Drawer } from 'vaul'
 import { DataTable } from './table/data-table'
 import { dashboardcolumns, ITable } from './table/dashboard-columns'
+import Loader from '../ui/loader'
+import { historyColumns } from './table/block-history-columns'
+import DialogUi from '../ui/dialog'
+import { Calendar } from '../ui/calendar'
+import { format } from 'date-fns'
 
 export const KanbanCard = ({ task, tabs, aiRef }: any) => {
     const [todo, setTodo] = useState<object[]>([])
@@ -26,7 +31,24 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
     // const [review, setReview] = useState<object[]>()
     const [completed, setCompleted] = useState<object[]>()
 
-    const setTask = () => {
+    // MARK: Actors
+    const [taskActor, setTaskActor] = useState<any>(null);
+    const [projectActor, setProjectActor] = useState<any>(null)
+
+    const initActors = async (): Promise<{ tActor: any; pActor: any }> => {
+        const tActor = await initActor("task");
+        const pActor = await initActor("project");
+
+        setTaskActor(tActor);
+        setProjectActor(pActor);
+
+        return { tActor, pActor };
+    };
+
+    // Request task date due
+    const [dueDate, setDueDate] = useState<Date>()
+
+    const setTask = async (tActor: any) => {
         const todoData = []
         const ongoingData = []
         const doneData = []
@@ -35,6 +57,13 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
             task[obj].id = Number(task[obj].id)
             task[obj].projectId = Number(task[obj].projectId)
             task[obj].dueDateText = formatDate(task[obj].dueDate)
+            task[obj].history = []
+
+            // Get task history
+            const { ok } = await tActor.getTaskHistory(parseFloat(task[obj].id))
+            if (typeof ok !== 'undefined') {
+                task[obj].history = ok
+            }
 
             console.log(task[obj]);
 
@@ -225,20 +254,15 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
     };
 
     useEffect(() => {
-        setTask()
-    }, [task])
+        const init = async () => {
+            const { tActor, pActor } = await initActors();
 
-    const data: ITable[] = Array.from({ length: 20 }, (_, i) => ({
-        id: `${200250 + i}`,
-        receptionist: {
-            image: '/images/avatar.svg',
-            name: `User ${i + 1}`,
-        },
-        sales_id: `#${200250 + i}`,
-        amount: `$${(Math.random() * 1000).toFixed(2)}`,
-        due_date: `Mar ${25 + i}, 2024`,
-        status: i % 2 === 0 ? 'done' : 'pending',
-    }));
+            const id: any = localStorage.getItem('project_id');
+            setTask(tActor);
+        };
+
+        init();
+    }, [task])
 
     return (
         <div className="overflow-x-auto pb-2 mt-5">
@@ -396,7 +420,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                                             {[1, 2, 3, 4].map((team: any, i: number) => {
                                                                 const rand = Math.floor(Math.random() * 4) + 1; // hasil 1,2,3,4
                                                                 return (
-                                                                    <TooltipProvider>
+                                                                    <TooltipProvider key={i}>
                                                                         <Tooltip>
                                                                             <TooltipTrigger asChild>
                                                                                 <Image
@@ -406,7 +430,6 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                                                                     width={30}
                                                                                     height={30}
                                                                                     className={`size-[30px] rounded-full ${i < 2 ? "hidden xl:block" : ""}`}
-                                                                                    title={"asd"}
                                                                                 />
                                                                             </TooltipTrigger>
                                                                             <TooltipContent>
@@ -431,14 +454,12 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                                                 </p>
                                                                 <Button type="button" variant={'ghost'} className="pr-0">
                                                                     <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                                    15
                                                                 </Button>
 
                                                                 <Drawer.Root>
-                                                                    <Drawer.Trigger>
-                                                                        <Button type="button" variant={'ghost'}>
+                                                                    <Drawer.Trigger asChild>
+                                                                        <Button type="button" variant={'ghost'} className='pr-0'>
                                                                             <History className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                                            15
                                                                         </Button>
                                                                     </Drawer.Trigger>
                                                                     <Drawer.Portal>
@@ -456,9 +477,9 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                                                                 </CardHeader>
                                                                                 <CardContent className="overflow-y-auto max-h-[375px]">
                                                                                     <DataTable
-                                                                                        columns={dashboardcolumns}
-                                                                                        data={data}
-                                                                                        filterField={'sales_id'}
+                                                                                        columns={historyColumns}
+                                                                                        data={item.history}
+                                                                                        filterField={'id'}
                                                                                         isRemovePagination={false}
                                                                                     />
                                                                                 </CardContent>

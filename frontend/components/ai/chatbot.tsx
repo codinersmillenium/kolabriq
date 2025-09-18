@@ -50,14 +50,14 @@ export const AnalysisButton = ({ onTrigger }: TriggerButtonProps) => {
     );
 };
 
-export type AIProjectGeneratorRef = {
+export type ChatbotRef = {
     triggerContext: (task: string) => void;
     triggerAnalysis: (projectId: number) => void;
     triggerGamified: (task: string) => void;
     triggerDailyStandUp: (projectId: number) => void;
 };
 
-const AIProjectGenerator = forwardRef<AIProjectGeneratorRef>((_, ref) => {
+const Chatbot = forwardRef<ChatbotRef>((_, ref) => {
     const [taskContext, setTaskContext] = useState<string>();
     const [isOpen, setIsOpen] = useState(false);
     const [chat, setChat] = useState<LlmChat[]>([
@@ -421,4 +421,4 @@ const AIProjectGenerator = forwardRef<AIProjectGeneratorRef>((_, ref) => {
     );
 })
 
-export default AIProjectGenerator;
+export default Chatbot;

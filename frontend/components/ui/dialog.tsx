@@ -15,9 +15,9 @@ const DialogUi: React.FC<DialogProps> = ({ open, onOpenChange, title, content })
         <Dialog.Overlay
           style={{
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
-	        position: 'fixed',
-	        inset: 0,
-	        animation: 'overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
+            position: 'fixed',
+            inset: 0,
+            animation: 'overlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
             zIndex: 99
           }}
         />
@@ -30,16 +30,16 @@ const DialogUi: React.FC<DialogProps> = ({ open, onOpenChange, title, content })
             left: '50%',
             transform: 'translate(-50%, -50%)',
             width: '90vw',
-            maxWidth: '500px',           
+            maxWidth: '500px',
             padding: '25px',
             animation: 'contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
             borderRadius: '10px',
             zIndex: 100
           }}
         >
-          <Dialog.Title style={{ marginBottom: '10px', fontWeight: 'bold'}}>{ title }</Dialog.Title>
-          <Dialog.Description>
-            { content }            
+          <Dialog.Title style={{ marginBottom: '10px', fontWeight: 'bold' }}>{title}</Dialog.Title>
+          <Dialog.Description asChild>
+            {content}
           </Dialog.Description>
         </Dialog.Content>
       </Dialog.Portal>
