@@ -1,6 +1,6 @@
 'use client'
 
-import { authClient, callbackSignIn, ensureClient, getPrincipal, identity, initActor, signOut } from '@/lib/canisters'
+import { authClient, callbackSignIn, callWithRetry, ensureClient, getPrincipal, identity, initActor, signOut } from '@/lib/canisters'
 import { AuthClient } from '@dfinity/auth-client'
 import { Principal } from '@dfinity/principal'
 import { useRouter } from 'next/navigation'
@@ -32,8 +32,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else if (!sign) {
       router.replace('/register')
     } else {
-      const actor_ = await initActor()
-      const { ok }: any = await actor_.getUserDetail(identity.getPrincipal())
+      const actor = await initActor()
+      const { ok }: any = await callWithRetry(actor, "getUserDetail", identity.getPrincipal())
+
+      // const { ok }: any = await actor_.getUserDetail(identity.getPrincipal())
       setUser(ok)
     }
 

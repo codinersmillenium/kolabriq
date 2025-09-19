@@ -26,8 +26,6 @@ export const initClient = async () => {
             identity: identity
         }
     }
-
-    console.log("InitClient Principal:", identity.getPrincipal().toString());
 }
 
 // Ensure auth client always ready
@@ -37,7 +35,9 @@ export const ensureClient = async () => {
     }
 }
 
-export const initActor = async (canister: string = 'user') => {
+type ActorName = 'user' | 'project' | 'task' | 'ai' | 'token';
+
+export const initActor = async (canister: ActorName = 'user') => {
     await ensureClient();
 
     var canisterBlog: any = null
@@ -76,7 +76,9 @@ export const callbackSignIn = async () => {
     const principal: any = getPrincipal()
     const actor = await initActor()
 
-    const { ok }: any = await actor.getUserDetail(principal[1])
+    const { ok }: any = await callWithRetry(actor, "getUserDetail", principal[1])
+
+    // const { ok }: any = await actor.getUserDetail(principal[1])
     if (typeof ok === 'undefined') return false
 
     return true
@@ -98,3 +100,55 @@ export const signOut = async () => {
     await authClient!.logout();
     await initActor()
 }
+
+export const callWithRetry = async <T = any>(
+    actor: any,
+    functionName: string,
+    ...params: any[]
+): Promise<T> => {
+    const MAX_RETRIES = 3;
+    const BASE_DELAY = 1000;
+    let lastError: Error;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            // Type-safe function call
+            if (!actor || typeof actor[functionName] !== 'function') {
+                throw new Error(`Function ${functionName} not found actor`);
+            }
+
+            const result: T = await actor[functionName](...params);
+            return result;
+
+        } catch (error: any) {
+            lastError = error;
+            console.log(`Attempt ${attempt + 1} failed call ${functionName}:`, error.message);
+
+            // If it's the last attempt, don't retry
+            if (attempt === MAX_RETRIES) {
+                break;
+            }
+
+            // Only retry on specific errors
+            const shouldRetry = error.message.includes('signature verification') ||
+                error.message.includes('certificate') ||
+                error.message.includes('Invalid certificate') ||
+                error.message.includes('network error');
+
+            if (shouldRetry) {
+                // Reset auth client on auth errors
+                authClient = null;
+
+                // Exponential backoff delay
+                const delay = BASE_DELAY * Math.pow(2, attempt);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                // Don't retry on other types of errors
+                break;
+            }
+        }
+    }
+
+    // If we reach here, all retries failed
+    throw lastError!;
+};

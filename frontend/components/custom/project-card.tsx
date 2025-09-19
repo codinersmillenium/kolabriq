@@ -1,5 +1,5 @@
 'use client'
-import { initActor } from '@/lib/canisters';
+import { callWithRetry, initActor } from '@/lib/canisters';
 import { Clipboard, ClipboardList, Coins, History, LucideDollarSign, LucideEllipsisVertical, LucideIdCard, LucideUsers, SquarePen, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -29,17 +29,15 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
   }
 
   const getProject = async () => {
-    const actor_ = await initActor('project')
     var param = {
       status: filter.status ? [{ [filter.status]: null }] : [],
       projectType: filter.type ? [{ [filter.type]: null }] : [],
       tags: [],
       keyword: [],
     }
-    const { ok }: any = await actor_.getOwnedProjectList(param)
-    const user = await initActor()
-    const data = await user.checkPrincipal()
-    console.log(ok, data.toString());
+
+    const actor = await initActor('project')
+    const { ok }: any = await callWithRetry(actor, "getOwnedProjectList", param)
 
     if (page.role === 'admin') {
       for (let obj in ok) {
@@ -82,10 +80,12 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
   const [isOpenDialogPM, setOpenDialogPM] = useState(false)
 
   const assignPM = async (id: string) => {
-    const actor_ = await initActor('project')
     const { value }: any = document.querySelector('#user_id')
     const principal = [Principal.fromText(value)]
-    await actor_.assignProjectTeam(id, principal)
+
+    const actor = await initActor('project')
+    await callWithRetry(actor, "assignProjectTeam", id, principal)
+
     alert('Success Assign User')
     setTimeout(() => {
       window.location.href = '/' + page.path

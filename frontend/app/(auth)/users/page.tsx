@@ -25,7 +25,7 @@ import DialogUI from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Search } from 'lucide-react'
-import { getPrincipal, initActor } from '@/lib/canisters'
+import { callWithRetry, getPrincipal, initActor } from '@/lib/canisters'
 import { Principal } from '@dfinity/principal'
 import { Badge } from '@/components/ui/badge'
 
@@ -37,14 +37,20 @@ const Table = () => {
     const [code, setCode] = useState([''])
 
     const findUser = async (id: any) => {
-        const actor_ = await initActor()
-        const { ok }: any = await actor_.getUserDetail(id)
+        const actor = await initActor()
+        const { ok }: any = await callWithRetry(actor, "getUserDetail", id)
         setCode([ok.personalRefCode])
     }
 
     const getUsers = async () => {
-        const actor_ = await initActor()
-        const { ok }: any = await actor_.getUsers()
+        let param = {
+            tags: [],
+            keyword: [],
+            roles: [],
+        }
+        const actor = await initActor()
+        const { ok }: any = await callWithRetry(actor, "getUserList", param)
+
         if (ok && ok.length > 0) {
             var data = []
             for (let obj in ok) {
