@@ -181,7 +181,7 @@ persistent actor {
         var results: [TypUser.UserProfile] = [];
         for(userId in userIds.vals()) {
             switch (user.getCurrentUserState(userId)) {
-                case (null)  { return #err("Invalid icp identity"); };
+                case (null)  { };
                 case (?data) { results := Array.append(results, [data]) };
             };
         };

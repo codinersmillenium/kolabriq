@@ -3,7 +3,7 @@
 
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
-import { Star, Settings, FilePlus2, Share2, LucideSearch, LucideListFilter } from 'lucide-react'
+import { Star, Settings, FilePlus2, Share2, LucideSearch, LucideListFilter, Coins, Copy, ClipboardList, ClipboardX, Clipboard } from 'lucide-react'
 import { useEffect, useState, useRef, FormEvent, Dispatch, SetStateAction } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -23,6 +23,12 @@ import {
 } from '@/components/custom/table/dashboard-columns'
 import { ProjectBlock } from '@/types/task'
 import { historyColumns, IBlockHistory } from '@/components/custom/table/block-history-columns'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { format } from 'date-fns'
+import { e8sToStr, nowStr, toE8s } from '@/lib/utils'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const Table = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -39,28 +45,32 @@ const Table = () => {
   // MARK: Actors
   const [taskActor, setTaskActor] = useState<any>(null);
   const [projectActor, setProjectActor] = useState<any>(null)
+  const [userActor, setUserActor] = useState<any>(null)
 
-  const initActors = async (): Promise<{ tActor: any; pActor: any }> => {
+  const initActors = async (): Promise<{ tActor: any; pActor: any, uActor: any }> => {
     const tActor = await initActor("task");
     const pActor = await initActor("project");
+    const uActor = await initActor("user");
 
     setTaskActor(tActor);
     setProjectActor(pActor);
+    setUserActor(uActor);
 
-    return { tActor, pActor };
+    return {
+      tActor,
+      pActor,
+      uActor,
+    };
   };
 
 
   const getProject = async (id: any, pActor: any) => {
-    setIdProject(id)
-
     const { ok } = await pActor.getProjectDetail(parseFloat(id))
-    if (typeof ok !== 'undefined') {
-      setProject(ok)
-      return
-    }
+    if (typeof ok == 'undefined') return alert("project not found");
 
-    alert("project not found")
+    setIdProject(id)
+    setProject(ok)
+    setProjectReward(Number(ok.reward))
   }
 
   const getTask = async (id: any, tActor: any) => {
@@ -70,10 +80,27 @@ const Table = () => {
       tag: [],
     };
 
-    const { ok } = await tActor.getTaskList(parseFloat(id), [param])
-    if (typeof ok !== 'undefined') {
-      setTask(ok)
-    }
+    const tasks = await tActor.getTaskList(parseFloat(id), [param])
+    if (typeof tasks.ok == 'undefined') return;
+
+    setTask(tasks.ok)
+  }
+
+  // MARK: Project teams
+
+  const [projectTeams, setProjectTeams] = useState([])
+
+  const getProjectTeams = async (id: any, actors: any) => {
+    const teamsPrincipal = await actors.pActor.getProjectTeam(parseFloat(id))
+    console.log(teamsPrincipal);
+
+    if (typeof teamsPrincipal.ok == 'undefined') return;
+
+    const teams = await actors.uActor.getUsersByIds(teamsPrincipal.ok)
+    console.log(teams);
+    if (typeof teams.ok == 'undefined') return;
+
+    setProjectTeams(teams.ok)
   }
 
   const getTaskByid = async (id: any) => {
@@ -87,15 +114,16 @@ const Table = () => {
 
   useEffect(() => {
     const init = async () => {
-      const { tActor, pActor } = await initActors();
-
       const id: any = localStorage.getItem('project_id');
-      setIdProject(id);
+      const actors = await initActors();
 
-      getProject(id, pActor);
-      getTask(id, tActor);
+      setIdProject(id);
+      getProjectTeams(id, actors)
+
+      getProject(id, actors.pActor);
+      getTask(id, actors.tActor);
       getTaskByid(id);
-      getProjectHistory(id, pActor);
+      getProjectHistory(id, actors.pActor);
 
       // aiRef.current?.triggerDailyStandUp(id);
     };
@@ -110,27 +138,23 @@ const Table = () => {
   };
 
   const handlePushProject = async (status: string) => {
+    const idTask = parseFloat(idProject);
+
     switch (status) {
       case "new":
-      case "in_progress":
         const reqStatus = {
           "new": "in_progress",
-          "in_progress": "review",
         };
 
-        const actorProject_ = await initActor('project')
-        const resProject = await actorProject_.updateStatus(parseFloat(idProject), { [reqStatus[status]]: null })
-        if (resProject) {
-          getProject(parseFloat(idProject), projectActor)
-          return alert("success push project")
-        }
+        const resProject = await projectActor.updateProjectStatus(idTask, { [reqStatus[status]]: null })
+        if (!resProject) return alert("Failed push project");
 
-        return alert("failed push project");
+        getProject(idTask, projectActor)
+        return alert("Success push project")
 
-      case "review":
+      case "in_progress":
         if (overview.length == 0) {
-          const actorTask_ = await initActor('task')
-          const resTask = await actorTask_.getUserOverview(parseFloat(idProject))
+          const resTask = await taskActor.getUserOverview(idTask)
           if (!resTask) return alert(resTask.err)
 
           setOverview(resTask.ok)
@@ -144,14 +168,13 @@ const Table = () => {
 
   const isDisabledBtnProject = () => {
     if (task.length == 0) return false;
-    return task.some((t: any) => Object.keys(t.status)[0] !== "done");
+    return task.some((t: any) => Object.keys(t.status)[0] !== "done") && Object.keys(project.status)[0] !== "new";
   };
 
   const labelBtnProject = () => {
-    const label: Record<"new" | "in_progress" | "review" | "done", string> = {
+    const label: Record<"new" | "in_progress" | "done", string> = {
       new: "Project In Progress",
-      in_progress: "Set to Review",
-      review: "Payout",
+      in_progress: "Payout",
       done: "Complete",
     };
 
@@ -161,7 +184,16 @@ const Table = () => {
     return label[key] ?? label["new"];
   };
 
+  // MARK: Payout
+
+  const [projectReward, setProjectReward] = useState(0)
+
   const handleChangePayout = (userId: string, value: string) => {
+    let e8sReward = toE8s(Number(value))
+    if (e8sReward > projectReward) {
+      alert("Payout exceeds remaining project reward")
+    }
+
     setFormPayout((prev) => ({
       ...prev,
       [userId]: Number(value)
@@ -170,6 +202,12 @@ const Table = () => {
 
   const handlePayout = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    console.log(formPayout);
+
+    // TODO: LAST HERE SEND TOKEN
+    // { "u73il-qowyh-xzxns-n53oq-epmgv-6af74-tc4mr-7p56f-w5kxu-44hna-bae": 0.2653 } TYPE
+    return
 
     try {
       let totalToken = 0;
@@ -206,11 +244,52 @@ const Table = () => {
     setOpenDialCreateTask(true);
   }
 
-  const handleSubmit = async (e: any) => {
-    console.log(e);
+  const [dueDate, setDueDate] = useState<Date>()
+  const [taskFormData, setTaskFormData]: any = useState({
+    title: '',
+    taskTag: [],
+    desc: '',
+    assignees_: ''
+  })
+
+  const handleFormTaskChange = (e: any) => {
+    const { name, value } = e.target
+    setTaskFormData({
+      ...taskFormData,
+      [name]: value
+    })
   }
 
-  // TODO: LAST HERE
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    try {
+      const id: any = localStorage.getItem('project_id');
+      taskFormData.projectId = parseFloat(id)
+
+      const tag: any = document.querySelectorAll('[name="tags"]')
+      taskFormData.taskTag = {}
+      for (let i = 0; i < tag.length; i++) {
+        if (tag[i].checked) {
+          taskFormData.tag = { [tag[i].value]: null }
+          break
+        }
+      }
+
+      taskFormData.dueDate = Math.floor(dueDate!.getTime() / 1000)
+      taskFormData.assignees = [Principal.fromText(taskFormData.assignees_)]
+      console.log(taskFormData, dueDate);
+
+      await taskActor.createTask(taskFormData)
+      alert('Success Create Task')
+
+      setTimeout(() => {
+        window.location.reload()
+      }, 100);
+    } catch (error) {
+      console.error(error)
+      alert('Failed Create Task');
+    }
+  }
 
   const DialogCreateTask = () => (
     <DialogUi open={openDialCreateTask} onOpenChange={setOpenDialCreateTask} title="Add Task" content={
@@ -218,7 +297,7 @@ const Table = () => {
         <span className="h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50" />
         <div className='pt-4'>
           <form className="px-[3px]" onSubmit={handleSubmit}>
-            <div className='space-y-5 max-h-[350px] overflow-y-scroll ps-[2px] pr-[10px]'>
+            <div className='space-y-5 max-h-[450px] overflow-y-scroll ps-[2px] pr-[10px]'>
               <div className="space-y-2.5">
                 <label className="block font-semibold leading-tight text-black">
                   Task Name
@@ -227,7 +306,7 @@ const Table = () => {
                   type="text"
                   placeholder="e.g., Implement login page"
                   name='title'
-                  // onChange={handleChange}
+                  onChange={handleFormTaskChange}
                   required
                 />
               </div>
@@ -238,23 +317,68 @@ const Table = () => {
                 <Textarea
                   placeholder="Describe the task in detail, including requirements or notes..."
                   name='desc'
-                  // onChange={handleChange}
+                  onChange={handleFormTaskChange}
                   required
                 />
+              </div>
+              <div className="space-y-2.5">
+                <label className="block font-semibold leading-tight text-black">
+                  Task Assigne
+                </label>
+                <Select
+                  onValueChange={(e) => {
+                    setTaskFormData({
+                      ...taskFormData,
+                      ["assignees_"]: e
+                    })
+                  }}
+                >
+                  <SelectTrigger className="py-2 text-black shadow-sm ring-1 ring-gray-300" title='Task Assigne'>
+                    <SelectValue placeholder="Task Assigne" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div className="space-y-1.5">
+                      {projectTeams.map((team: any, i: any) => {
+                        const roleColor: Record<string, "red" | "purple" | "grey"> = {
+                          admin: "red",
+                          developer: "purple",
+                          maintainer: "grey",
+                        }
+
+                        const roleName = Object.keys(team.role || {})[0] || ""
+
+                        return (
+                          <SelectItem
+                            key={i}
+                            value={team.id}
+                            textValue={`${team.firstName} ${team.lastName}`}
+                          >
+                            <Badge variant={roleColor[roleName] || "secondary"}>
+                              {roleName.toUpperCase()}
+                            </Badge>
+                            <span className='ms-1'>{`${team.firstName} ${team.lastName}`}</span>
+                          </SelectItem>
+                        )
+                      })}
+                    </div>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2.5">
                 <label className="block font-semibold leading-tight text-black">
                   Task Deadline
                 </label>
                 <Popover>
-                  <PopoverTrigger>
-                    {dueDate ? (
-                      format(dueDate, 'PP')
-                    ) : (
-                      <span>
-                        {nowStr()}
-                      </span>
-                    )}{' '}
+                  <PopoverTrigger className='w-full'>
+                    <div className='text-sm/[8px] relative w-full shadow-3xl placeholder:text-gray placeholder:font-medium text-black font-medium px-3.5 py-4 rounded-lg disabled:pointer-events-none disabled:opacity-30 focus:ring-1 outline-hidden focus:ring-black text-start'>
+                      {dueDate ? (
+                        format(dueDate, 'MMM dd, yyyy')
+                      ) : (
+                        <span>
+                          {nowStr()}
+                        </span>
+                      )}{' '}
+                    </div>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto! p-0">
                     <Calendar
@@ -265,31 +389,31 @@ const Table = () => {
                   </PopoverContent>
                 </Popover>
               </div>
-              <div className='relative space-y-1'>
-                <fieldset className="border border-gray-300 p-4 rounded-md">
-                  <legend className="text-sm font-medium text-gray-700 mb-2">Tags</legend>
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2">
-                      <input type="radio" name="tags" value="frontend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
-                      <span className="text-sm text-gray-700">Frontend Developer</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="radio" name="tags" value="backend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
-                      <span className="text-sm text-gray-700">Backend Developer</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="radio" name="tags" value="ui" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
-                      <span className="text-sm text-gray-700">UI/UX Design</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="radio" name="tags" value="bussines_analist" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
-                      <span className="text-sm text-gray-700">Bussiness Analyst</span>
-                    </label>
-                  </div>
-                </fieldset>
+              <div className="space-y-2.5">
+                <label className="block font-semibold leading-tight text-black">
+                  Tag
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input type="radio" name="tags" value="frontend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleFormTaskChange} />
+                    <span className="text-sm text-gray-700">Frontend Developer</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input type="radio" name="tags" value="backend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleFormTaskChange} />
+                    <span className="text-sm text-gray-700">Backend Developer</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input type="radio" name="tags" value="ui" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleFormTaskChange} />
+                    <span className="text-sm text-gray-700">UI/UX Design</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input type="radio" name="tags" value="bussines_analist" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleFormTaskChange} />
+                    <span className="text-sm text-gray-700">Bussiness Analyst</span>
+                  </label>
+                </div>
               </div>
             </div>
-            <span className="h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50 mb-4" />
+            <span className="h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50 mb-4 mt-4" />
             <Button
               type="submit"
               variant={'black'}
@@ -546,80 +670,153 @@ const Table = () => {
           <Chatbot ref={aiRef} />
         </div>
         {DialogCreateTask()}
-        <DialogUi open={isDialogOpen} onOpenChange={setDialogOpen} title=''
-          content={
-            <Card>
-              <CardHeader className="space-y-1.5 rounded-t-lg border-b border-gray-300 bg-gray-100 px-5 py-4 text-base/5 font-semibold text-black">
-                <h3>Payout Team</h3>
-                <p className="text-sm/tight font-medium text-gray-700">
-                  Project Reward: {project ? project.reward : 0}
-                </p>
-              </CardHeader>
-              <CardContent className='max-h-[60vh] overflow-auto'>
-                <form className="space-y-5 p-3" onSubmit={handlePayout}>
-                  {overview.map((o: any, i: any) => {
-                    return (
-                      <div className="space-y-2.5">
-                        <div className='font-bold'>
-                          <div>{`User #${i + 1}:`}</div>
-                          <div className='text-xs'>{o.userId.toString()}</div>
+        {/* MARK: Payout */}
+        <DialogUi open={isDialogOpen} onOpenChange={setDialogOpen} title='Payout Team' content={
+          <div>
+            <div className='flex items-center gap-1.5'>
+              <Coins size={18} />
+              <span className='text-xs font-bold'>{e8sToStr(projectReward)}</span>
+            </div>
+            <span className="hidden h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50 my-3" />
+            <form className="space-y-5" onSubmit={handlePayout}>
+              {/* TODO: LAST HERE */}
+              {overview.map((o: any, i: any) => {
+                console.log(project);
+
+                return (
+                  <div className="space-y-1">
+                    <div className='font-bold flex justify-between gap-2'>
+                      <div className='flex gap-2'>
+                        <div>{`User #${i + 1}:`}</div>
+                        <div className='flex flex-1 items-center text-xs gap-1'>
+                          <Copy size={16} />
+                          u73il-qowyh-...
                         </div>
-                        <fieldset className="border border-gray-300 p-4 rounded-md">
-                          <legend className="text-sm font-medium text-gray-700 mb-2">
-                            {`Payout #${i + 1}`}
-                          </legend>
-                          <div className="space-y-2">
-                            <div className='grid grid-cols-3'>
-                              <div className="text-sm text-gray-700">
-                                <h5 className='font-bold'>Total Task: </h5>
-                                <p>{o.totalTask}</p>
-                              </div>
-                              <div className="text-sm text-gray-700">
-                                <h5 className='font-bold'>Total Done: </h5>
-                                <p>{o.totalDone}</p>
-                              </div>
-                              <div className="text-sm text-gray-700">
-                                <h5 className='font-bold'>Total Overdue: </h5>
-                                <p>{o.totalOverdue}</p>
-                              </div>
-                            </div>
-                          </div>
-                          <hr className='mt-2.5' />
-                          <div className="space-y-2.5 mt-2.5">
-                            <label className="block font-semibold leading-tight text-black">
-                              Pay
-                            </label>
-                            <Input
-                              type="number"
-                              onChange={(e) => handleChangePayout(o.userId.toString(), e.target.value)}
-                              required
-                            />
-                          </div>
-                        </fieldset>
                       </div>
-                    )
-                  })}
-                  <div className="flex items-center justify-between gap-4">
-                    <Button
-                      variant={'outline-general'}
-                      size={'large'}
-                      onClick={() => setDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      variant={'black'}
-                      size={'large'}
-                    >
-                      Save
-                    </Button>
+                      <div className='flex gap-2'>
+                        <div className='flex flex-1 items-center text-xs gap-1'>
+                          <ClipboardList size={16} />
+                          12
+                        </div>
+                        <div className='flex flex-1 items-center text-xs gap-1'>
+                          <ClipboardX size={16} />
+                          2
+                        </div>
+                      </div>
+                      {/* <div className='text-xs'>
+                        <Copy />
+                        u73il-qowyh-xzxns-n53oq-epmgv</div> */}
+                      {/* <div className='text-xs'>{o.userId.toString()}</div> */}
+                    </div>
+                    <div className="space-y-2.5 mt-2.5">
+                      <div className="relative w-full">
+                        <Input
+                          autoFocus
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="Total"
+                          name="reward"
+                          className="w-full pr-12"
+                          onChange={(e) => handleChangePayout(o.userId.toString(), e.target.value)}
+                        />
+                        <span className="absolute inset-y-0 right-3 flex items-center text-black text-sm">
+                          ICP
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </form>
-              </CardContent>
-            </Card>
-          }
-        />
+                )
+              })}
+              <div className="flex items-center justify-between gap-4">
+                <Button
+                  variant={'outline-general'}
+                  size={'large'}
+                  onClick={() => setDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant={'black'}
+                  size={'large'}
+                >
+                  Save
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          // <Card>
+          //   <CardHeader className="space-y-1.5 rounded-t-lg border-b border-gray-300 bg-gray-100 px-5 py-4 text-base/5 font-semibold text-black">
+          //     <h3>Payout Team</h3>
+          //     <p className="text-sm/tight font-medium text-gray-700">
+          //       Project Reward: {project ? toE8s(project.reward) : 0}
+          //     </p>
+          //   </CardHeader>
+          //   <CardContent className='max-h-[60vh] overflow-auto'>
+          //     <form className="space-y-5 p-3" onSubmit={handlePayout}>
+          //       {overview.map((o: any, i: any) => {
+          //         return (
+          //           <div className="space-y-2.5">
+          //             <div className='font-bold'>
+          //               <div>{`User #${i + 1}:`}</div>
+          //               <div className='text-xs'>{o.userId.toString()}</div>
+          //             </div>
+          //             <fieldset className="border border-gray-300 p-4 rounded-md">
+          //               <legend className="text-sm font-medium text-gray-700 mb-2">
+          //                 {`Payout #${i + 1}`}
+          //               </legend>
+          //               <div className="space-y-2">
+          //                 <div className='grid grid-cols-3'>
+          //                   <div className="text-sm text-gray-700">
+          //                     <h5 className='font-bold'>Total Task: </h5>
+          //                     <p>{o.totalTask}</p>
+          //                   </div>
+          //                   <div className="text-sm text-gray-700">
+          //                     <h5 className='font-bold'>Total Done: </h5>
+          //                     <p>{o.totalDone}</p>
+          //                   </div>
+          //                   <div className="text-sm text-gray-700">
+          //                     <h5 className='font-bold'>Total Overdue: </h5>
+          //                     <p>{o.totalOverdue}</p>
+          //                   </div>
+          //                 </div>
+          //               </div>
+          //               <hr className='mt-2.5' />
+          //               <div className="space-y-2.5 mt-2.5">
+          //                 <label className="block font-semibold leading-tight text-black">
+          //                   Pay
+          //                 </label>
+          //                 <Input
+          //                   type="number"
+          //                   onChange={(e) => handleChangePayout(o.userId.toString(), e.target.value)}
+          //                   required
+          //                 />
+          //               </div>
+          //             </fieldset>
+          //           </div>
+          //         )
+          //       })}
+          //       <div className="flex items-center justify-between gap-4">
+          //         <Button
+          //           variant={'outline-general'}
+          //           size={'large'}
+          //           onClick={() => setDialogOpen(false)}
+          //         >
+          //           Cancel
+          //         </Button>
+          //         <Button
+          //           type="submit"
+          //           variant={'black'}
+          //           size={'large'}
+          //         >
+          //           Save
+          //         </Button>
+          //       </div>
+          //     </form>
+          //   </CardContent>
+          // </Card>
+        } />
       </div>
     </div>
   )

@@ -36,12 +36,6 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
       tags: [],
       keyword: [],
     }
-    // var param = {
-    //   status: {[filter.status]: null},
-    //   projectType: {[filter.status]: null},
-    //   tags: [],
-    //   keyword: ''
-    // }
     const { ok }: any = await actor_.getOwnedProjectList(param)
     const user = await initActor()
     const data = await user.checkPrincipal()

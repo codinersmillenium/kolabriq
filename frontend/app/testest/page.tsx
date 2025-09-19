@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image';
 import { task } from '@/declarations/task';
-import AIProjectGenerator, { AIProjectGeneratorRef, AskButton, AnalysisButton } from '@/components/ai/chatbot';
+import Chatbot, { ChatbotRef, AskButton, AnalysisButton } from '@/components/ai/chatbot';
 import DialogUi from '@/components/ui/dialog';
 import ProjectPlanner from '@/components/ai/project-planner';
 
@@ -31,7 +31,7 @@ export default function Chatbot() {
         setIsDialogOpen(false); // tutup dialog setelah submit
     };
 
-    const aiRef = useRef<AIProjectGeneratorRef>(null);
+    const aiRef = useRef<ChatbotRef>(null);
 
     const handleTriggerAsk = (taskTitle: string) => {
         aiRef.current?.triggerContext(taskTitle);
@@ -52,21 +52,21 @@ export default function Chatbot() {
 
     return (
         <>
-            <AskButton onTrigger={() => handleTriggerAsk("Create beautiful landing")}/>
-            <AnalysisButton onTrigger={() => handleTriggerAnalysis(2)}/>
+            <AskButton onTrigger={() => handleTriggerAsk("Create beautiful landing")} />
+            <AnalysisButton onTrigger={() => handleTriggerAnalysis(2)} />
             {/* <div className="space-y-6">
                 <div className="flex gap-3">
                     <TriggerButton onTrigger={handleTriggerA} label="E-commerce Context" />
                 </div>
 
             </div> */}
-                <AIProjectGenerator ref={aiRef} />
+            <Chatbot ref={aiRef} />
 
-            <ProjectPlanner/>
+            <ProjectPlanner />
 
             <div className='mt-6'>
                 <button
-                    id="generate-project-trigger" 
+                    id="generate-project-trigger"
                     data-aria-hidden="false"
                     aria-hidden="false"
                     onClick={() => setTaskContext("test")}

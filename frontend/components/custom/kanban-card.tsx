@@ -13,7 +13,7 @@ import { Textarea } from '../ui/textarea'
 import { initActor } from '@/lib/canisters'
 import { Principal } from '@dfinity/principal'
 import { AskButton } from '../ai/chatbot'
-import { formatDate, nowStr } from '@/lib/utils'
+import { formatDate, isOverdue, nowStr } from '@/lib/utils'
 import Image from 'next/image'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { Drawer } from 'vaul'
@@ -24,6 +24,7 @@ import { historyColumns } from './table/block-history-columns'
 import DialogUi from '../ui/dialog'
 import { Calendar } from '../ui/calendar'
 import { format } from 'date-fns'
+import { log } from 'console'
 
 export const KanbanCard = ({ task, tabs, aiRef }: any) => {
     const [todo, setTodo] = useState<object[]>([])
@@ -34,21 +35,25 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
     // MARK: Actors
     const [taskActor, setTaskActor] = useState<any>(null);
     const [projectActor, setProjectActor] = useState<any>(null)
+    const [userActor, setUserActor] = useState<any>(null)
 
-    const initActors = async (): Promise<{ tActor: any; pActor: any }> => {
+    const initActors = async (): Promise<{ tActor: any; pActor: any; uActor: any }> => {
         const tActor = await initActor("task");
         const pActor = await initActor("project");
+        const uActor = await initActor("user");
 
         setTaskActor(tActor);
         setProjectActor(pActor);
+        setUserActor(uActor);
 
-        return { tActor, pActor };
+        return {
+            tActor,
+            pActor,
+            uActor,
+        };
     };
 
-    // Request task date due
-    const [dueDate, setDueDate] = useState<Date>()
-
-    const setTask = async (tActor: any) => {
+    const setTask = async (actors: any) => {
         const todoData = []
         const ongoingData = []
         const doneData = []
@@ -56,24 +61,31 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
             const typeTask: string = Object.keys(task[obj].status).toString()
             task[obj].id = Number(task[obj].id)
             task[obj].projectId = Number(task[obj].projectId)
+            task[obj].dueDate = Number(task[obj].dueDate)
             task[obj].dueDateText = formatDate(task[obj].dueDate)
-            task[obj].history = []
 
             // Get task history
-            const { ok } = await tActor.getTaskHistory(parseFloat(task[obj].id))
-            if (typeof ok !== 'undefined') {
-                task[obj].history = ok
+            task[obj].history = []
+            const history = await actors.tActor.getTaskHistory(parseFloat(task[obj].id))
+            if (typeof history.ok !== 'undefined') {
+                // Naturalize big int
+                task[obj].history = history.ok.map((h: any) => {
+                    return {
+                        hash: h.hash,
+                        id: Number(h.id),
+                        timestamp: Number(h.timestamp),
+                    }
+                })
+            }
+            console.log("history", task[obj].history);
+
+            // Get user assignees
+            const user = await actors.uActor.getUserDetail(task[obj].assignees[0])
+            task[obj].assignees = []
+            if (typeof user.ok !== 'undefined') {
+                task[obj].assignees = [user.ok]
             }
 
-            console.log(task[obj]);
-
-
-            var assign = ''
-            for (let i in task[obj].assignees) {
-                task[obj].assignees[i].createdAt = Number(task[obj].assignees[i].createdAt)
-                assign += task[obj].assignees[i].firstName + ' ' + task[obj].assignees[i].lastName + '\n'
-            }
-            task[obj].name = assign
             switch (typeTask) {
                 case 'todo':
                     todoData.push(task[obj])
@@ -102,6 +114,8 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
 
     const handleOnDrop = async (e: DragEvent, kanban: string) => {
         const item = JSON.parse(e.dataTransfer.getData("item"))
+
+        // MARK: Reset kanban card
         const resetCard = (flow: any = []) => {
             if (flow.indexOf('todo') !== -1) {
                 todo?.forEach((task: any) => {
@@ -143,11 +157,13 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                 })
             }
         }
+
+        // MARK: Update status task
+        let taskId = parseFloat(item.id)
         switch (kanban) {
             case 'todo':
                 if (todo) {
-                    const actorTask_ = await initActor('task')
-                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), { ["todo"]: null })
+                    const resTask = await taskActor.updateTaskStatus(taskId, { ["todo"]: null })
                     if (resTask.err) {
                         return alert(resTask.err)
                     }
@@ -165,8 +181,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                 break;
             case 'ongoing':
                 if (ongoing) {
-                    const actorTask_ = await initActor('task')
-                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), { ["in_progress"]: null })
+                    const resTask = await taskActor.updateTaskStatus(taskId, { ["in_progress"]: null })
                     if (resTask.err) {
                         return alert(resTask.err)
                     }
@@ -184,12 +199,10 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                 break;
             case 'completed':
                 if (completed) {
-                    const actorTask_ = await initActor('task')
-                    const resTask = await actorTask_.updateStatus(parseFloat(item.id), { ["done"]: null })
+                    const resTask = await taskActor.updateTaskStatus(taskId, { ["done"]: null })
                     if (resTask.err) {
                         return alert(resTask.err)
                     }
-                    aiRef.current?.triggerGamified(item.title);
                     setCompleted([
                         ...completed.filter(
                             (obj: any) =>
@@ -255,14 +268,139 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
 
     useEffect(() => {
         const init = async () => {
-            const { tActor, pActor } = await initActors();
+            const actors = await initActors();
 
             const id: any = localStorage.getItem('project_id');
-            setTask(tActor);
+            setTask(actors);
         };
 
         init();
     }, [task])
+
+    // MARK: Task item
+    const taskItem = (item: any, key: any) => {
+        return (
+            <div
+                className='mb-3'
+                draggable
+                key={key}
+                onDragStart={(e) => handleOnDrag(e, item)}
+            >
+                <Card key={key}>
+                    <CardContent>
+                        <div className="space-y-4 p-3">
+                            <div>
+                                {isOverdue(item.dueDate) && (
+                                    <Badge variant="danger" size="small" className="font-bold text-xs mb-2">
+                                        Overdue
+                                    </Badge>
+                                )}
+                                <h4 className="font-bold leading-tight text-black dark:text-white">
+                                    {item.title}
+                                </h4>
+                            </div>
+                            <span className="hidden h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50" />
+                            <p className="line-clamp-5 text-xs/5 font-medium overflow-auto">
+                                {item.desc}
+                            </p>
+                            <div className="inline-flex items-center gap-1">
+                                {item.assignees.map((team: any, i: number) => {
+                                    const rand = Math.floor(Math.random() * 4) + 1; // Random 1-4
+                                    return (
+                                        <>
+                                            <Image
+                                                key={key}
+                                                src={`/images/kanban-avatar${rand}.svg`}
+                                                alt="avatar"
+                                                width={28}
+                                                height={28}
+                                                className={`size-[28px] rounded-full ${i < 2 ? "hidden xl:block" : ""}`}
+                                            />
+                                            <span className='text-xs'>{team.firstName} {team.lastName}</span>
+                                        </>
+                                    )
+                                })}
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center">
+                                    <p className="text-xs/tight font-medium ltr:ml-0 ltr:mr-auto rtl:ml-auto rtl:mr-0">
+                                        {item.dueDateText}
+                                    </p>
+                                    <Button type="button" variant={'ghost'} className="pr-0">
+                                        <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
+                                    </Button>
+
+                                    <Drawer.Root>
+                                        <Drawer.Trigger asChild>
+                                            <Button type="button" variant={'ghost'} className='pr-0'>
+                                                <History className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
+                                            </Button>
+                                        </Drawer.Trigger>
+                                        <Drawer.Portal>
+                                            <Drawer.Overlay className="fixed inset-0 bg-black/40" />
+                                            <Drawer.Title />
+                                            <Drawer.Content className="bg-gray-100 h-fit w-[calc(100%-260px)] fixed bottom-0 right-0 outline-none">
+                                                <Card className="grow overflow-x-auto shadow-sm">
+                                                    <CardHeader className="flex items-center justify-between px-5 py-3.5">
+                                                        <h2 className="whitespace-nowrap text-base/5 font-semibold text-black">
+                                                            Task History
+                                                        </h2>
+                                                        <div className="flex items-center gap-2 sm:gap-4">
+                                                            <div id="search-table" hidden></div>
+                                                        </div>
+                                                    </CardHeader>
+                                                    <CardContent className="overflow-y-auto max-h-[375px]">
+                                                        <DataTable
+                                                            columns={historyColumns}
+                                                            data={item.history}
+                                                            filterField={'id'}
+                                                            isRemovePagination={false}
+                                                        />
+                                                    </CardContent>
+                                                </Card>
+                                            </Drawer.Content>
+                                        </Drawer.Portal>
+                                    </Drawer.Root>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => console.log("asd")}
+                                        className="flex-grow text-xs p-2 py-2 bg-linear-to-r from-danger/80 to-warning/50 text-white rounded flex items-center justify-center gap-1 rounded-md"
+                                    >
+                                        <WandSparkles size={16} />
+                                        Ask for Details
+                                    </button>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline-general">
+                                                <LucideEllipsis size={16} />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto! p-0" align="start">
+                                            <Card>
+                                                <CardContent className='p-2'>
+                                                    <Button
+                                                        type="button"
+                                                        variant={'ghost'}
+                                                        className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
+                                                    >Edit</Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant={'ghost'}
+                                                        className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
+                                                    >Delete</Button>
+                                                </CardContent>
+                                            </Card>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
 
     return (
         <div className="overflow-x-auto pb-2 mt-5">
@@ -274,90 +412,6 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                 <span className="size-1.5 rounded-full bg-primary"></span>
                                 <h3 className="text-xs/tight font-bold lowercase text-black first-letter:uppercase dark:text-white">to do</h3>
                             </div>
-                            <div className="inline-flex items-center">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button type="button" variant={'ghost'}>
-                                            <LucidePlus className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="min-w-lg p-3">
-                                        <Card>
-                                            <CardContent className='max-h-[300px] p-2 overflow-auto'>
-                                                <form className="space-y-[30px]" onSubmit={handleSubmit}>
-                                                    <div className="relative space-y-1">
-                                                        <Input
-                                                            name='title'
-                                                            type="text"
-                                                            variant={'input-form'}
-                                                            placeholder="Enter title..."
-                                                            onChange={handleChange}
-                                                        />
-                                                    </div>
-                                                    <div className="relative space-y-1">
-                                                        <Textarea
-                                                            name='desc'
-                                                            placeholder='Enter description...'
-                                                            onChange={handleChange}
-                                                        />
-                                                    </div>
-                                                    <div className="relative space-y-1 flex align-items-center">
-                                                        <label className="block font-semibold leading-none text-black">
-                                                            Task Deadline
-                                                        </label>
-                                                        <input type="date"
-                                                            id="due_date"
-                                                            name='dueDate_'
-                                                            className='ms-3 border'
-                                                            onChange={handleChange}
-                                                        />
-                                                    </div>
-                                                    <div className="relative space-y-1">
-                                                        <Input
-                                                            name='assignees_'
-                                                            type="text"
-                                                            variant={'input-form'}
-                                                            placeholder="Enter id to assign task..."
-                                                            onChange={handleChange}
-                                                        />
-                                                    </div>
-                                                    <div className='relative space-y-1'>
-                                                        <fieldset className="border border-gray-300 p-4 rounded-md">
-                                                            <legend className="text-sm font-medium text-gray-700 mb-2">Tags</legend>
-                                                            <div className="space-y-2">
-                                                                <label className="flex items-center space-x-2">
-                                                                    <input type="radio" name="tags" value="frontend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
-                                                                    <span className="text-sm text-gray-700">Frontend Developer</span>
-                                                                </label>
-                                                                <label className="flex items-center space-x-2">
-                                                                    <input type="radio" name="tags" value="backend" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
-                                                                    <span className="text-sm text-gray-700">Backend Developer</span>
-                                                                </label>
-                                                                <label className="flex items-center space-x-2">
-                                                                    <input type="radio" name="tags" value="ui" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
-                                                                    <span className="text-sm text-gray-700">UI/UX Design</span>
-                                                                </label>
-                                                                <label className="flex items-center space-x-2">
-                                                                    <input type="radio" name="tags" value="bussines_analist" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
-                                                                    <span className="text-sm text-gray-700">Bussiness Analyst</span>
-                                                                </label>
-                                                            </div>
-                                                        </fieldset>
-                                                    </div>
-                                                    <Button
-                                                        type="submit"
-                                                        variant={'black'}
-                                                        size={'large'}
-                                                        className="w-full"
-                                                    >
-                                                        Add Task
-                                                    </Button>
-                                                </form>
-                                            </CardContent>
-                                        </Card>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -366,171 +420,9 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                             onDragOver={handleOnDragOver}
                             onDrop={(e) => { handleOnDrop(e, 'todo') }}
                         >
-                            {todo &&
-                                todo.map((item: any, i) => {
-                                    return (
-                                        <div
-                                            className='mb-3'
-                                            draggable
-                                            key={i}
-                                            onDragStart={(e) => {
-                                                handleOnDrag(e, item);
-                                            }}
-                                        >
-                                            <Card key={i}>
-                                                <CardContent>
-                                                    <div className="space-y-4 p-3">
-                                                        {/* <AskButton onTrigger={() => handleTriggerAsk(item.title)} /> */}
-                                                        <div className='flex justify-between'>
-                                                            <h4 className="font-bold leading-tight text-black dark:text-white">{item.title}</h4>
-                                                            {/* <Badge variant="blue" size='icon' className='font-bold rounded-sm text-sm'>{item.title}</Badge> */}
-                                                            {/* <div>
-                                                                <Popover>
-                                                                    <div className='flex items-center gap-2'>
-                                                                        <PopoverTrigger asChild>
-                                                                            <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
-                                                                                <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                                            </button>
-                                                                        </PopoverTrigger>
-                                                                    </div>
-                                                                    <PopoverContent className="w-auto! p-0">
-                                                                        <Card>
-                                                                            <CardContent className='p-2'>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant={'ghost'}
-                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                                >Edit</Button>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant={'ghost'}
-                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                                >Delete</Button>
-                                                                            </CardContent>
-                                                                        </Card>
-                                                                    </PopoverContent>
-                                                                </Popover>
-                                                            </div> */}
-                                                        </div>
-                                                        <span className="hidden h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50" />
-                                                        <p className="line-clamp-5 text-xs/5 font-medium overflow-auto">
-                                                            {item.desc}
-                                                        </p>
-                                                        <div className="inline-flex items-center gap-2 -space-x-4.5">
-                                                            {[1, 2, 3, 4].map((team: any, i: number) => {
-                                                                const rand = Math.floor(Math.random() * 4) + 1; // hasil 1,2,3,4
-                                                                return (
-                                                                    <TooltipProvider key={i}>
-                                                                        <Tooltip>
-                                                                            <TooltipTrigger asChild>
-                                                                                <Image
-                                                                                    key={i}
-                                                                                    src={`/images/kanban-avatar${rand}.svg`}
-                                                                                    alt="avatar"
-                                                                                    width={30}
-                                                                                    height={30}
-                                                                                    className={`size-[30px] rounded-full ${i < 2 ? "hidden xl:block" : ""}`}
-                                                                                />
-                                                                            </TooltipTrigger>
-                                                                            <TooltipContent>
-                                                                                {`team ${team}`}
-                                                                            </TooltipContent>
-                                                                        </Tooltip>
-                                                                    </TooltipProvider>
-
-                                                                )
-                                                            })}
-                                                            <Button
-                                                                type="button"
-                                                                className="grid h-[30px] min-w-[30px] shrink-0 place-content-center rounded-full border-2 border-white bg-gray-300 px-1 text-[11px]/none font-bold text-black shadow-sm"
-                                                            >
-                                                                +5
-                                                            </Button>
-                                                        </div>
-                                                        <div className="flex flex-col gap-2">
-                                                            <div className="flex items-center">
-                                                                <p className="text-xs/tight font-medium ltr:ml-0 ltr:mr-auto rtl:ml-auto rtl:mr-0">
-                                                                    {item.dueDateText}
-                                                                </p>
-                                                                <Button type="button" variant={'ghost'} className="pr-0">
-                                                                    <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                                </Button>
-
-                                                                <Drawer.Root>
-                                                                    <Drawer.Trigger asChild>
-                                                                        <Button type="button" variant={'ghost'} className='pr-0'>
-                                                                            <History className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                                        </Button>
-                                                                    </Drawer.Trigger>
-                                                                    <Drawer.Portal>
-                                                                        <Drawer.Overlay className="fixed inset-0 bg-black/40" />
-                                                                        <Drawer.Title />
-                                                                        <Drawer.Content className="bg-gray-100 h-fit w-[calc(100%-260px)] fixed bottom-0 right-0 outline-none">
-                                                                            <Card className="grow overflow-x-auto shadow-sm">
-                                                                                <CardHeader className="flex items-center justify-between px-5 py-3.5">
-                                                                                    <h2 className="whitespace-nowrap text-base/5 font-semibold text-black">
-                                                                                        Task History
-                                                                                    </h2>
-                                                                                    <div className="flex items-center gap-2 sm:gap-4">
-                                                                                        <div id="search-table" hidden></div>
-                                                                                    </div>
-                                                                                </CardHeader>
-                                                                                <CardContent className="overflow-y-auto max-h-[375px]">
-                                                                                    <DataTable
-                                                                                        columns={historyColumns}
-                                                                                        data={item.history}
-                                                                                        filterField={'id'}
-                                                                                        isRemovePagination={false}
-                                                                                    />
-                                                                                </CardContent>
-                                                                            </Card>
-                                                                        </Drawer.Content>
-                                                                    </Drawer.Portal>
-                                                                </Drawer.Root>
-                                                            </div>
-                                                            <div className="flex gap-2">
-                                                                <button
-                                                                    onClick={() => console.log("asd")}
-                                                                    className="flex-grow text-xs p-2 py-2 bg-linear-to-r from-danger/80 to-warning/50 text-white rounded flex items-center justify-center gap-1 rounded-md"
-                                                                >
-                                                                    <WandSparkles size={16} />
-                                                                    Ask for Details
-                                                                </button>
-                                                                <Popover>
-                                                                    <PopoverTrigger asChild>
-                                                                        <Button
-                                                                            variant="outline-general"
-                                                                            onClick={() => console.log("asd")}
-                                                                        >
-                                                                            <LucideEllipsis size={16} />
-                                                                        </Button>
-                                                                    </PopoverTrigger>
-                                                                    <PopoverContent className="w-auto! p-0" align="start">
-                                                                        <Card>
-                                                                            <CardContent className='p-2'>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant={'ghost'}
-                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                                >Edit</Button>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant={'ghost'}
-                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                                >Delete</Button>
-                                                                            </CardContent>
-                                                                        </Card>
-                                                                    </PopoverContent>
-                                                                </Popover>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                    )
-                                })
-                            }
+                            {todo && todo.map((item: any, i) => {
+                                return taskItem(item, i)
+                            })}
                         </div>
                     </CardContent>
                 </Card>
@@ -549,76 +441,9 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                             onDragOver={handleOnDragOver}
                             onDrop={(e) => { handleOnDrop(e, 'ongoing') }}
                         >
-                            {ongoing &&
-                                ongoing.map((item: any, i) => {
-                                    return (
-                                        <div
-                                            className='mb-3'
-                                            draggable
-                                            key={i}
-                                            onDragStart={(e) => {
-                                                handleOnDrag(e, item);
-                                            }}
-                                        >
-                                            <Card key={i}>
-                                                <CardContent>
-                                                    <div className="space-y-4 p-3">
-                                                        <div className='flex justify-between'>
-                                                            <AskButton onTrigger={() => handleTriggerAsk(item.title)} />
-                                                            <Badge variant="grey-300" radius='full' size='icon' className='font-bold'>{item.title}</Badge>
-                                                            <div>
-                                                                <Popover>
-                                                                    <div className='flex items-center gap-2'>
-                                                                        <PopoverTrigger asChild>
-                                                                            <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
-                                                                                <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                                            </button>
-                                                                        </PopoverTrigger>
-                                                                    </div>
-                                                                    <PopoverContent className="w-auto! p-0">
-                                                                        <Card>
-                                                                            <CardContent className='p-2'>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant={'ghost'}
-                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                                >Edit</Button>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant={'ghost'}
-                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                                >Delete</Button>
-                                                                            </CardContent>
-                                                                        </Card>
-                                                                    </PopoverContent>
-                                                                </Popover>
-                                                            </div>
-                                                        </div>
-                                                        <p className="line-clamp-5 text-xs/5 font-medium overflow-auto">
-                                                            {item.desc}
-                                                        </p>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="size-6 shrink-0 overflow-hidden rounded-lg">
-                                                                <LucideUser />
-                                                            </div>
-                                                            <span className="text-xs/tight font-medium text-black dark:text-white">{
-                                                                item.name
-                                                            }</span>
-                                                        </div>
-                                                        <div className="flex items-center">
-                                                            <p className="text-xs/tight font-medium ltr:ml-0 ltr:mr-auto rtl:ml-auto rtl:mr-0">{item.dueDateText}</p>
-                                                            <Button type="button" variant={'ghost'}>
-                                                                <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                                15
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                    )
-                                })
-                            }
+                            {ongoing && ongoing.map((item: any, i) => {
+                                return taskItem(item, i)
+                            })}
                         </div>
                     </CardContent>
                 </Card>
@@ -637,76 +462,9 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                             onDragOver={handleOnDragOver}
                             onDrop={(e) => { handleOnDrop(e, 'completed') }}
                         >
-                            {completed &&
-                                completed.map((item: any, i) => {
-                                    return (
-                                        <div
-                                            className='mb-3'
-                                            draggable
-                                            key={i}
-                                            onDragStart={(e) => {
-                                                handleOnDrag(e, item);
-                                            }}
-                                        >
-                                            <Card key={i}>
-                                                <CardContent>
-                                                    <div className="space-y-4 p-3">
-                                                        <div className='flex justify-between'>
-                                                            <AskButton onTrigger={() => handleTriggerAsk(item.title)} />
-                                                            <Badge variant="green" radius='full' size='icon' className='font-bold'>{item.title}</Badge>
-                                                            <div>
-                                                                <Popover>
-                                                                    <div className='flex items-center gap-2'>
-                                                                        <PopoverTrigger asChild>
-                                                                            <button type="button" className='outline rounded-[2px] outline-offset-2 outline-sky-500 focus:outline-1'>
-                                                                                <LucideEllipsis className='size-[18px] text-black transition hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                                            </button>
-                                                                        </PopoverTrigger>
-                                                                    </div>
-                                                                    <PopoverContent className="w-auto! p-0">
-                                                                        <Card>
-                                                                            <CardContent className='p-2'>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant={'ghost'}
-                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                                >Edit</Button>
-                                                                                <Button
-                                                                                    type="button"
-                                                                                    variant={'ghost'}
-                                                                                    className="block w-full rounded-lg px-2.5 py-1.5 text-xs/tight font-medium text-black outline-hidden hover:bg-light-theme ltr:text-left rtl:text-right dark:text-gray-500 dark:hover:bg-gray-200/10 dark:hover:text-white"
-                                                                                >Delete</Button>
-                                                                            </CardContent>
-                                                                        </Card>
-                                                                    </PopoverContent>
-                                                                </Popover>
-                                                            </div>
-                                                        </div>
-                                                        <p className="line-clamp-5 text-xs/5 font-medium overflow-auto">
-                                                            {item.desc}
-                                                        </p>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="size-6 shrink-0 overflow-hidden rounded-lg">
-                                                                <LucideUser />
-                                                            </div>
-                                                            <span className="text-xs/tight font-medium text-black dark:text-white">{
-                                                                item.name
-                                                            }</span>
-                                                        </div>
-                                                        <div className="flex items-center">
-                                                            <p className="text-xs/tight font-medium ltr:ml-0 ltr:mr-auto rtl:ml-auto rtl:mr-0">{item.dueDateText}</p>
-                                                            <Button type="button" variant={'ghost'}>
-                                                                <LucideMessageSquareText className='size-2 text-black hover:text-gray dark:text-white dark:hover:text-gray-500' />
-                                                                15
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                    )
-                                })
-                            }
+                            {completed && completed.map((item: any, i) => {
+                                return taskItem(item, i)
+                            })}
                         </div>
                     </CardContent>
                 </Card>

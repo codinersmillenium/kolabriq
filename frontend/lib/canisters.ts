@@ -5,17 +5,19 @@ import * as decAi from '@/declarations/ai'
 import * as decToken from '@/declarations/token'
 import { AuthClient } from '@dfinity/auth-client'
 import { Principal } from '@dfinity/principal';
-
+import { HttpAgent } from '@dfinity/agent'
 
 const network = process.env.DFX_NETWORK;
 const identityProvider =
     network === 'ic'
         ? 'https://identity.ic0.app' // Mainnet
         : process.env.API_HOST + '?canisterId=' + process.env.CANISTER_ID_INTERNET_IDENTITY
-let authClient: any = null
-let identity: any = null
-let options: any = {}
-const initClient = async () => {
+
+export let authClient: AuthClient | null = null
+export let identity: any = null
+export let options: any = {}
+
+export const initClient = async () => {
     authClient = await AuthClient.create();
     identity = authClient.getIdentity();
     options = {
@@ -24,10 +26,20 @@ const initClient = async () => {
             identity: identity
         }
     }
+
+    console.log("InitClient Principal:", identity.getPrincipal().toString());
 }
-initClient()
+
+// Ensure auth client always ready
+export const ensureClient = async () => {
+    if (!authClient) {
+        await initClient();
+    }
+}
 
 export const initActor = async (canister: string = 'user') => {
+    await ensureClient();
+
     var canisterBlog: any = null
     switch (canister) {
         case 'user':
@@ -54,11 +66,16 @@ export const getPrincipal = () => {
     const principal_ = Principal.fromText(principal)
     return [principal, principal_]
 }
+
 export const callbackSignIn = async () => {
-    const isAuthenticated = await authClient.isAuthenticated();
+    await ensureClient();
+
+    const isAuthenticated = await authClient!.isAuthenticated();
     if (!identity || !isAuthenticated) return 'init'
+
     const principal: any = getPrincipal()
     const actor = await initActor()
+
     const { ok }: any = await actor.getUserDetail(principal[1])
     if (typeof ok === 'undefined') return false
 
@@ -66,7 +83,8 @@ export const callbackSignIn = async () => {
 }
 
 export const signIn = async () => {
-    await authClient.login({
+    await ensureClient();
+    await authClient!.login({
         identityProvider,
         onSuccess: async () => {
             await initActor()
@@ -76,6 +94,7 @@ export const signIn = async () => {
 }
 
 export const signOut = async () => {
-    await authClient.logout();
+    await ensureClient();
+    await authClient!.logout();
     await initActor()
 }

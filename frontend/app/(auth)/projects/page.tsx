@@ -32,6 +32,7 @@ import { useAuth } from '@/context/auth-context'
 import ProjectPlanner from '@/components/ai/project-planner'
 import Chatbot, { ChatbotRef } from '@/components/ai/chatbot'
 import { TeamKey } from '@/types/project'
+import { toE8s } from '@/lib/utils'
 
 const Table = () => {
     const [filter, setFilter] = useState<object>({
@@ -92,6 +93,19 @@ const Table = () => {
             [name]: type === "file" ? files[0] : value
         })
     }
+    const handleChangeReward = (e: any) => {
+        // Only number and decimal
+        let value = e.target.value.replace(/[^0-9.]/g, "");
+
+        // Max 8 decimal (e8s)
+        if (value.includes(".")) {
+            const [int, decimal] = value.split(".");
+            value = int + "." + decimal.slice(0, 8);
+        }
+
+        e.target.value = value;
+        handleChange(e);
+    }
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         try {
@@ -103,7 +117,7 @@ const Table = () => {
             })
 
             formData.projectType = { [formData.projectType_]: null }
-            formData.reward = parseFloat(formData.reward)
+            formData.reward = toE8s(Number(formData.reward) || 0)
 
             // handle file data
             const arrayBuffer = await formData.thumbnail.arrayBuffer();
@@ -287,14 +301,21 @@ const Table = () => {
                                                         </SelectContent>
                                                     </Select>
                                                     {rewards && (
-                                                        <Input
-                                                            autoFocus
-                                                            type="number"
-                                                            placeholder="Total"
-                                                            name="reward"
-                                                            className='max-w-[100px]'
-                                                            onChange={handleChange}
-                                                        />
+                                                        <div className="relative max-w-[200px]">
+                                                            <Input
+                                                                autoFocus
+                                                                type="text"
+                                                                inputMode="decimal"
+                                                                placeholder="Total"
+                                                                name="reward"
+                                                                className="w-full pr-12"
+                                                                onChange={handleChangeReward}
+                                                            />
+                                                            <span className="absolute inset-y-0 right-3 flex items-center text-black text-sm">
+                                                                ICP
+                                                            </span>
+                                                        </div>
+
                                                     )}
                                                 </div>
                                             </div>
