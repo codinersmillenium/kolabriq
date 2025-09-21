@@ -1,33 +1,24 @@
 {
+	"version": 1,
 	"canisters": {
 		"internet_identity": {
+			"type": "custom",
 			"candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
-			"frontend": {},
-			"remote": {
-				"id": {
-					"ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
-				}
-			},
-			"type": "custom",
 			"wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz",
-			"declarations": {
-				"node_compatibility": true,
-				"output": "frontend/declarations/internet_identity"
-			}
+			"frontend": {}
 		},
-		"llm": {
-			"candid": "https://github.com/dfinity/llm/releases/latest/download/llm-canister-ollama.did",
+		"icp_ledger": {
 			"type": "custom",
-			"specified_id": "w36hm-eqaaa-aaaal-qr76a-cai",
+			"candid": "https://raw.githubusercontent.com/dfinity/ic/c25143850963143c9ee6bec77fe8ccf8306a4949/rs/ledger_suite/icp/ledger.did",
+			"wasm": "https://download.dfinity.systems/ic/c25143850963143c9ee6bec77fe8ccf8306a4949/canisters/ledger-canister.wasm.gz",
 			"remote": {
 				"id": {
-					"ic": "w36hm-eqaaa-aaaal-qr76a-cai"
+					"ic": "ryjl3-tyaaa-aaaaa-aaaba-cai"
 				}
 			},
-			"wasm": "https://github.com/dfinity/llm/releases/latest/download/llm-canister-ollama.wasm",
 			"declarations": {
 				"node_compatibility": true,
-				"output": "frontend/declarations/llm"
+				"output": "declarations/icp_ledger"
 			}
 		},
 		"project": {
@@ -35,7 +26,15 @@
 			"main": "backend/project/main.mo",
 			"declarations": {
 				"node_compatibility": true,
-				"output": "frontend/declarations/project"
+				"output": "declarations/project"
+			}
+		},
+		"project_escrow": {
+			"type": "motoko",
+			"main": "backend/project_escrow/main.mo",
+			"declarations": {
+				"node_compatibility": true,
+				"output": "declarations/project_escrow"
 			}
 		},
 		"task": {
@@ -43,15 +42,7 @@
 			"main": "backend/task/main.mo",
 			"declarations": {
 				"node_compatibility": true,
-				"output": "frontend/declarations/task"
-			}
-		},
-		"token": {
-			"type": "motoko",
-			"main": "backend/token/erc20.mo",
-			"declarations": {
-				"node_compatibility": true,
-				"output": "frontend/declarations/token"
+				"output": "declarations/task"
 			}
 		},
 		"user": {
@@ -59,16 +50,15 @@
 			"main": "backend/user/main.mo",
 			"declarations": {
 				"node_compatibility": true,
-				"output": "frontend/declarations/user"
+				"output": "declarations/user"
 			}
 		},
 		"ai": {
-			"dependencies": ["llm"],
 			"main": "backend/ai/main.mo",
 			"type": "motoko",
 			"declarations": {
 				"node_compatibility": true,
-				"output": "frontend/declarations/ai"
+				"output": "declarations/ai"
 			}
 		}
 	},
@@ -78,6 +68,5 @@
 			"packtool": "mops sources"
 		}
 	},
-	"output_env_file": "frontend/.env",
-	"version": 1
+	"output_env_file": ".env"
 }
