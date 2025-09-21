@@ -17,11 +17,12 @@ module {
     private type BlockHashKey    = Blob;
     private type ProjectHashKey  = Blob;
     private type TimelineHashKey = Blob;
+    private type UserTeamRefKey  = Text;
 
     public type StableBlockchain       = (BlockHashKey, TypProject.ProjectBlock);
     public type StableProjectIndex     = (ProjectHashKey, [BlockHashKey]);
     public type StableTimelineIndex    = (TimelineHashKey, [BlockHashKey]);
-    public type StableUserProjectIndex = (TypCommon.UserId, [TypCommon.ProjectId]);
+    public type StableUserProjectIndex = (UserTeamRefKey, [TypCommon.ProjectId]);
     public type StableProjectTeamIndex = (ProjectHashKey, [TypCommon.UserId]);
 
     public class Project(
@@ -39,9 +40,9 @@ module {
         public var nextTimelineId = timelineId;
 
         public var blockchain       = HashMap.HashMap<BlockHashKey, TypProject.ProjectBlock>(dataBlockchain.size(), Blob.equal, Blob.hash);
-        public var projectIndex     = HashMap.HashMap<ProjectHashKey, [BlockHashKey]>(dataProjectIndex.size(), Blob.equal, Blob.hash );
+        public var projectIndex     = HashMap.HashMap<ProjectHashKey, [BlockHashKey]>(dataProjectIndex.size(), Blob.equal, Blob.hash);
         public var timelineIndex    = HashMap.HashMap<TimelineHashKey, [BlockHashKey]>(dataTimelineIndex.size(), Blob.equal, Blob.hash );
-        public var userProjectIndex = HashMap.HashMap<TypCommon.UserId, [TypCommon.ProjectId]>(dataUserProjectIndex.size(), Principal.equal, Principal.hash);
+        public var userProjectIndex = HashMap.HashMap<UserTeamRefKey, [TypCommon.ProjectId]>(dataUserProjectIndex.size(), Text.equal, Text.hash);
         public var projectTeamIndex = HashMap.HashMap<ProjectHashKey, [TypCommon.UserId]>(dataProjectTeamIndex.size(), Blob.equal, Blob.hash);
 
         // MARK: Get previous hash
@@ -101,8 +102,9 @@ module {
         // MARK: Create project
 
         public func createProject(
-            caller  : Principal, 
-            req     : TypProject.ProjectRequest,
+            caller     : Principal, 
+            teamRefKey : UserTeamRefKey, 
+            req        : TypProject.ProjectRequest,
         ) : TypProject.Project {
             let projectData : TypProject.Project = {
                 id          = getProjectPrimaryId();
@@ -137,9 +139,9 @@ module {
             projectIndex.put(blobProjectId, [blobBlockCounter]);
             
             // Add owner to user-project index
-            switch (userProjectIndex.get(caller)) {
-                case (null)      { userProjectIndex.put(caller, [projectData.id]); };
-                case (?projects) { userProjectIndex.put(caller, Array.append(projects, [projectData.id])); };
+            switch (userProjectIndex.get(teamRefKey)) {
+                case (null)      { userProjectIndex.put(teamRefKey, [projectData.id]); };
+                case (?projects) { userProjectIndex.put(teamRefKey, Array.append(projects, [projectData.id])); };
             };
             
             // Initialize project team with owner
@@ -178,6 +180,7 @@ module {
         };
 
         // MARK: Update status
+        
         public func updateStatus(
             caller    : TypCommon.UserId, 
             project   : TypProject.Project, 
@@ -217,12 +220,54 @@ module {
             return projectData;
         };
 
+        // MARK: Update reward
+
+        public func updateReward(
+            caller  : TypCommon.UserId, 
+            project : TypProject.Project, 
+            reward  : Nat,
+        ) : TypProject.Project {
+            let dataProject: TypProject.Project = {
+                project with
+                projectType = #rewarded;
+                action      = #rewardUpdate({
+                    from = project.reward;
+                    to   = reward;
+                });
+            };
+
+            var newBlock: TypProject.ProjectBlock = {
+                id           = blockCounter;
+                timestamp    = UtlDate.now();
+                previousHash = getPreviousHash();
+                data         = #project(dataProject);
+                hash         = "";
+                signature    = Principal.toText(caller) # "_signature";
+                nonce        = 0;
+            };
+
+            // Add to blockchain
+            let blobBlockCounter = Utl.natToBlob(blockCounter);
+            blockchain.put(blobBlockCounter, UtlProject.hashBlock(newBlock));
+
+            // Update indices
+            let blobProjectId = Utl.natToBlob(dataProject.id);
+            switch (projectIndex.get(blobProjectId)) {
+                case (?blocks) { projectIndex.put(blobProjectId, Array.append(blocks, [blobBlockCounter])); };
+                case (null)    { };
+            };
+
+            blockCounter += 1;
+            return dataProject;
+        };
+
         // MARK: Assign user to project
         
         public func assignToTeamProject(
-            caller    : TypCommon.UserId, 
-            projectId : TypCommon.ProjectId, 
-            userIds   : [TypCommon.UserId], 
+            caller     : TypCommon.UserId, 
+            teamRefKey : UserTeamRefKey, 
+            projectId  : TypCommon.ProjectId, 
+            userIds    : [TypCommon.UserId], 
         ) : () {
             for(userId in userIds.vals()) {
                 let teamData: TypProject.TeamAssignment = {
@@ -248,9 +293,9 @@ module {
                 
                 // Update indices
                 let blobProjectId = Utl.natToBlob(projectId);
-                switch (userProjectIndex.get(userId)) {
-                    case (null)      { userProjectIndex.put(userId, [projectId]); };
-                    case (?projects) { userProjectIndex.put(userId, Array.append(projects, [projectId])); };
+                switch (userProjectIndex.get(teamRefKey)) {
+                    case (null)      { userProjectIndex.put(teamRefKey, [projectId]); };
+                    case (?projects) { userProjectIndex.put(teamRefKey, Array.append(projects, [projectId])); };
                 };
                 
                 switch (projectTeamIndex.get(blobProjectId)) {

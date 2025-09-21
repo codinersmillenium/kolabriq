@@ -5,7 +5,7 @@ module {
         #frontend;
         #backend;
         #ui;
-        #bussines_analist;
+        #business_analyst;
     };
     
     public type Role = {
@@ -21,4 +21,9 @@ module {
     public type ReviewId      = Nat;
     public type TaskHistoryId = Nat;
     public type UserId        = Principal;
+
+    public type EscrowId   = Text;
+    public type PayoutId   = Text;
+    public type TransferId = Text;
+
 }

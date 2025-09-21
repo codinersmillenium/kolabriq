@@ -99,7 +99,7 @@ persistent actor {
     // MARK: Get task list
     
     public query func getTaskList(
-        projectId : TypCommon.ProjectId,
+        projectId : Nat,
         filter    : ?TypTask.TaskFilter,
     ) : async Result.Result<[TypTask.Task], ()> {
         switch(task.projectTaskIndex.get(Utl.natToBlob(projectId))) {
@@ -181,10 +181,39 @@ persistent actor {
         return #ok(task.createTask(caller, req));
 	};
 
+    // MARK: Get task by keyword
+
+    public query func getTaskByKeyword(
+        projectId : Nat,
+        keyword   : Text,
+    ) : async Result.Result<TypTask.Task, Text>  {
+        switch (task.projectTaskIndex.get(Utl.natToBlob(projectId))) {
+            case (null)     { return #err("Task not found"); };
+            case (?taskIds) {
+                let lowerKeyword = Text.toLowercase(keyword);
+                for(taskId in taskIds.vals()) {
+                    switch (task.getCurrentTaskState(taskId)) {
+                        case (null)  { };
+                        case (?data) {
+                            if (
+                                Text.contains(Text.toLowercase(data.title), #text lowerKeyword) or
+                                Text.contains(Text.toLowercase(data.desc), #text lowerKeyword) 
+                            ) {
+                                return #ok(data);
+                            }
+                        };
+                    };
+                };
+            };
+        };
+
+        return #err("Task not found");
+    };
+
     // MARK: Get task detail
 
     public query func getTaskDetail(
-        taskId : TypCommon.TaskId,
+        taskId : Nat,
     ) : async Result.Result<TypTask.Task, Text>  {
         switch(task.getCurrentTaskState(taskId)) {
             case(null)  { return #err("Task not found"); };
@@ -195,7 +224,7 @@ persistent actor {
     // MARK: Update metadata
     
     public shared ({caller}) func updateTaskMetadata(
-        taskId : TypCommon.TaskId,
+        taskId : Nat,
         req    : TypTask.TaskRequest,
     ) : async Result.Result<TypTask.Task, Text> {
         if (not task.verifyChainIntegrity()) {
@@ -211,7 +240,7 @@ persistent actor {
     // MARK: Update status
     
     public shared ({caller}) func updateTaskStatus(
-        taskId    : TypCommon.TaskId,
+        taskId    : Nat,
         reqStatus : TypTask.TaskStatus,
     ) : async Result.Result<TypTask.Task, Text> {
         if (not task.verifyChainIntegrity()) {
@@ -227,7 +256,7 @@ persistent actor {
     // MARK: Get riviews task
     
     public query func getTaskReviews(
-        taskId : TypCommon.TaskId,
+        taskId : Nat,
     ) : async Result.Result<[TypTask.Review], Text> {
         switch (task.getCurrentTaskState(taskId)) {
             case (null)  { return #err("Task not found"); };
@@ -250,7 +279,7 @@ persistent actor {
     // MARK: Get task history
 
     public query func getTaskHistory(
-        taskId : TypCommon.TaskId,
+        taskId : Nat,
     ) : async Result.Result<[TypTask.TaskBlock], Text> {
         switch (task.taskIndex.get(Utl.natToBlob(taskId))) {
             case (null)      { #err("Task not found"); };
@@ -283,7 +312,7 @@ persistent actor {
     // MARK: Update review
     
     public shared ({caller}) func updateReview(
-        reviewId : TypCommon.ReviewId,
+        reviewId : Nat,
         req      : TypTask.TaskReviewRequest,
     ) : async Result.Result<TypTask.Review, Text> {
         if (not task.verifyChainIntegrity()) {
@@ -299,7 +328,7 @@ persistent actor {
     // MARK: Mark review fixed
     
     public shared ({caller}) func updateReviewFixed(
-        reviewId : TypCommon.ReviewId,
+        reviewId : Nat,
     ) : async Result.Result<TypTask.Review, Text> {
         if (not task.verifyChainIntegrity()) {
             return #err("Blockchain integrity compromised");
@@ -314,7 +343,7 @@ persistent actor {
     // MARK: Get review history
 
     public query func getReviewHistory(
-        reviewId : TypCommon.ReviewId,
+        reviewId : Nat,
     ) : async Result.Result<[TypTask.TaskBlock], Text> {
         switch (task.reviewIndex.get(Utl.natToBlob(reviewId))) {
             case (null)      { #err("Review not found"); };
@@ -332,7 +361,7 @@ persistent actor {
     // MARK: Get user overview
 
     public query func getUserOverview(
-        projectId : TypCommon.ProjectId, 
+        projectId : Nat, 
     ) : async Result.Result<[TypTask.UserOverview], Text> {
         let (result, error) = task.userOverview(projectId);
         if (error == #found) return #ok(result);
@@ -371,57 +400,6 @@ persistent actor {
     };
 
     /**
-     *  MARK: AI Summary user tasks
-     *
-     *  This function generates a summary of all tasks 
-     *  belonging to the caller for a given project.
-     *  It skips completed tasks (#done).
-     *  The output is a text string that can be used as input for AI prompts.
-     */
-    public query func summaryUserTasks(
-        projectId : TypCommon.ProjectId,
-    ) : async Text {
-        switch(task.projectTaskIndex.get(Utl.natToBlob(projectId))) {
-            case(null)     { return "Project didnt has task" };
-            case(?taskIds) {
-                // Prepare task description from the template
-                let baseTaskQuery  = "Task [index]: [title] | Status: [status] | Due: [dueDate] | Priority: [priority]";
-                var tasksQueryList = "";
-                var idx = 1;
-
-                label loopTask for(taskId in taskIds.vals()) {
-                    switch (task.getCurrentTaskState(taskId)) {
-                        case (null)  {  };
-                        case (?task) {
-                            if (task.status != #done) continue loopTask;
-
-                            let priority = if (task.priority) "yes" else "no";
-                            let status   = switch(task.status) {
-                                case(#in_progress) { "in progress" };
-                                case(_)            { "todo" };
-                            };
-
-                            // Replace placeholders with real values
-                            var tasksQuery = baseTaskQuery;
-                            tasksQuery := Text.replace(tasksQuery, #text "[index]", Int.toText(idx));
-                            tasksQuery := Text.replace(tasksQuery, #text "[title]", task.title);
-                            tasksQuery := Text.replace(tasksQuery, #text "[status]", status);
-                            tasksQuery := Text.replace(tasksQuery, #text "[dueDate]", Int.toText(task.dueDate));
-                            tasksQuery := Text.replace(tasksQuery, #text "[priority]", priority);
-
-                            // Append to the final result string
-                            tasksQueryList := tasksQueryList # tasksQuery # "; ";
-                            idx += 1;
-                        };
-                    };
-                };
-
-                return tasksQueryList;
-            };
-        };
-    };
-
-    /**
      *  MARK: Project Analysis
      *
      *  This function generates a summary of tasks inside a project.
@@ -431,7 +409,8 @@ persistent actor {
      *  - The result is a single text string useful for analysis or AI prompts.
      */
     public query func projectAnalysis(
-        projectId : TypCommon.ProjectId,
+        projectId : Nat, 
+        // projectId : TypCommon.ProjectId,
     ) : async Text {
         switch(task.projectTaskIndex.get(Utl.natToBlob(projectId))) {
             case(null)     { return "Project didnt has task" };
@@ -475,21 +454,27 @@ persistent actor {
     // MARK: Save multiple tasks from llm
 
     public func saveLlmTasks(
-        caller    : TypCommon.UserId,
-        projectId : TypCommon.ProjectId,
+        caller    : Principal,
+        projectId : Nat,
         reqTasks  : [TypTask.TaskRequest],
-    ) : async Result.Result<(), Text> {
+    ) : async Result.Result<[Text], Text> {
         if (not task.verifyChainIntegrity()) {
             return #err("Blockchain integrity compromised");
         };
 
+        var taskSummary : [Text] = [];
         for(req in reqTasks.vals()) {
-            ignore task.createTask(caller, { 
-                req with 
-                projectId = projectId;
-            });
+            // Update appropriate project id
+            let updatedTask = { req with projectId = projectId; };
+            let result = task.createTask(caller, updatedTask);
+            let summary : Text = 
+                "Title: " # result.title # ", " #
+                "Desc: " # result.desc # ", " #
+                "Due: " # Int.toText(result.dueDate);
+
+            taskSummary := Array.append(taskSummary, [summary]);
         };
 
-        return #ok();
+        return #ok(taskSummary);
     };
 }

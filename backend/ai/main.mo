@@ -22,7 +22,7 @@ persistent actor {
 	* Some parameter fill with dummy data, for effecienty resource run llm
 	*/ 
 	public func projectPlanner(
-        caller       : TypCommon.UserId,
+        caller       : Principal,
 		reqProject   : TypProject.ProjectRequest,
         reqTimelines : [TypProject.TimelineRequest],
 		reqTasks     : [TypTask.TaskRequest],
@@ -48,7 +48,5 @@ persistent actor {
 				};
 			};
 		};
-
-		
 	};
 };

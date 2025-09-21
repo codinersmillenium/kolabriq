@@ -13,7 +13,8 @@ module {
         #yearly;
     };
 
-	// Profile
+	// MARK: Profile
+
 	public type UserProfile = {
 		id               : TypCommon.UserId;
 		userName         : Text;

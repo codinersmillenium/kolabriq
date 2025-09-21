@@ -8,7 +8,7 @@ module {
             case("frontend") { #frontend; };
             case("backend")  { #backend; };
             case("ui")       { #ui; };
-            case(_)          { #bussines_analist; };
+            case(_)          { #business_analyst; };
         };
     };
 
@@ -17,7 +17,7 @@ module {
             case(#frontend)         { "frontend"; };
             case(#backend)          { "backend"; };
             case(#ui)               { "ui"; };
-            case(#bussines_analist) { "bussines_analist"; };
+            case(#business_analyst) { "business_analyst"; };
         };
     };
 }

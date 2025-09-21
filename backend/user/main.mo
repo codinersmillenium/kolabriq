@@ -127,6 +127,8 @@ persistent actor {
             switch (user.getCurrentUserState(userId)) {
                 case (null)  { };
                 case (?data) {
+                    // TODO: CEK REF KEY
+                    
                     var matches = true;
                     
                     // Role filter
@@ -173,10 +175,19 @@ persistent actor {
         return #ok(results);
     };
 
+    // MARK: Get team ref code
+
+    public shared query({caller}) func getTeamRefCode() : async Result.Result<Text, Text> {
+        switch (user.getCurrentUserState(caller)) {
+            case (null)  { return #err("Invalid icp identity"); };
+            case (?data) { return #ok(Option.get(data.referrerCode, data.personalRefCode)); };
+        };
+    };
+
     // MARK: Get users by ids
 
     public query func getUsersByIds(
-        userIds : [TypCommon.UserId]
+        userIds : [Principal]
     ) : async Result.Result<[TypUser.UserProfile], Text> {
         var results: [TypUser.UserProfile] = [];
         for(userId in userIds.vals()) {
@@ -192,7 +203,7 @@ persistent actor {
     // MARK: Get user detail
 
     public query func getUserDetail(
-        userId : TypCommon.UserId,
+        userId : Principal,
     ) : async Result.Result<TypUser.UserProfile, Text>  {
         switch(user.getCurrentUserState(userId)) {
             case(null)  { #err("Invalid icp identity"); };
@@ -218,7 +229,7 @@ persistent actor {
     // MARK: Update role
 
     public shared ({caller}) func updateRole(
-        userId  : TypCommon.UserId,
+        userId  : Principal,
         reqRole : TypCommon.Role,
     ) : async Result.Result<TypUser.UserProfile, Text> {
         if (not user.verifyChainIntegrity()) {
@@ -253,7 +264,7 @@ persistent actor {
     // MARK: Get user history
 
     public query func getUserHistory(
-        userId : TypCommon.UserId,
+        userId : Principal,
     ) : async Result.Result<[TypUser.UserBlock], Text> {
         switch (user.userIndex.get(userId)) {
             case (null)      { #err("Invalid icp identity"); };

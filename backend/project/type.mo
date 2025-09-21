@@ -33,6 +33,7 @@ module {
     public type ProjectAction = {
         #create;
         #statusUpdate:   { from: ProjectStatus; to: ProjectStatus };
+        #rewardUpdate:   { from: Nat; to: Nat };
         #metadataUpdate: { field: Text; oldValue: Text; newValue: Text };
     };
 
@@ -50,13 +51,6 @@ module {
         projectType : ProjectType;
         reward      : Nat;
         thumbnail   : Blob;
-    };
-
-    // MARK: Payout
-
-    public type PayoutRequest = {
-        userId : TypCommon.UserId;
-        reward : Nat;
     };
 
     // MARK: Timeline

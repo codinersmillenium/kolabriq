@@ -5,7 +5,6 @@ import Text "mo:base/Text";
 import Iter "mo:base/Iter";
 import HashMap "mo:base/HashMap";
 import Blob "mo:base/Blob";
-import Principal "mo:base/Principal";
 
 import TypCommon "../common/type";
 import TypProject "type";
@@ -15,10 +14,16 @@ import SvcProject "service";
 import UtlCommon "../common/util";
 import Utl "../utils/helper";
 
+import CanUser "canister:user";
+import CanProjectEscrow "canister:project_escrow";
+import CanIcpLedger "canister:icp_ledger";
+
 persistent actor {
+    private type UserTeamRefKey = Text;
+
     private var nextBlockCounter : TypCommon.BlockId    = 0;
-    private var nextProjectId    : TypCommon.ProjectId  = 1;
-    private var nextTimelineId   : TypCommon.TimelineId = 1;
+    private var nextProjectId    : TypCommon.ProjectId  = 0;
+    private var nextTimelineId   : TypCommon.TimelineId = 0;
 
     private var stableBlockchain       : [SvcProject.StableBlockchain]       = [];
     private var stableProjectIndex     : [SvcProject.StableProjectIndex]     = [];
@@ -71,11 +76,11 @@ persistent actor {
             Blob.hash
         );
         
-        project.userProjectIndex := HashMap.fromIter<TypCommon.UserId, [TypCommon.ProjectId]>(
+        project.userProjectIndex := HashMap.fromIter<UserTeamRefKey, [TypCommon.ProjectId]>(
             stableUserProjectIndex.vals(),
             stableUserProjectIndex.size(),
-            Principal.equal,
-            Principal.hash
+            Text.equal,
+            Text.hash
         );
         
         project.projectTeamIndex := HashMap.fromIter<Blob, [TypCommon.UserId]>(
@@ -95,10 +100,11 @@ persistent actor {
 
     // MARK: Get owned project list
 
-    public shared query({caller}) func getOwnedProjectList(
+    public shared query func getOwnedProjectList(
+        refKey : Text,
         filter : TypProject.ProjectFilter
     ) : async Result.Result<[TypProject.Project], ()>  {
-        switch (project.userProjectIndex.get(caller)) {
+        switch (project.userProjectIndex.get(refKey)) {
             case (null)        { return #ok([]); };
             case (?projectIds) {
                 let result = Array.mapFilter<TypCommon.ProjectId, TypProject.Project>(
@@ -163,28 +169,42 @@ persistent actor {
     // MARK: Create project
 
     public shared ({caller}) func createProject(
-        req : TypProject.ProjectRequest,
+        refKey : Text,
+        req    : TypProject.ProjectRequest,
     ) : async Result.Result<TypProject.Project, Text> {
         if (not project.verifyChainIntegrity()) {
             return #err("Blockchain integrity compromised");
         };
 
-        // TODO: Cek token
-        // let balance = await CanToken.balanceOf(caller);
-        // if (req.projectType == #rewarded and balance < req.reward) {
-        //     return #err("Insufficient balances")
-        // };
-        
-        let result = project.createProject(caller, req);
-        // ignore CanToken.updateBalance(caller, balance - req.reward);
+        let isRewarded = req.projectType == #rewarded and req.reward > 0 ;
+        if (isRewarded) {
+            // Balance check
+            let balance      = await CanIcpLedger.icrc1_balance_of({ owner = caller; subaccount = null });
+            let escrowFee    = await CanProjectEscrow.getEscrowFee();
+            let totalRewward = req.reward + escrowFee;
 
-        return #ok(result);
+            if (balance < totalRewward) {
+                return #err("Insufficient ICP balance. Required: " # Nat.toText(totalRewward) # ", Available: " # Nat.toText(balance));
+            };
+        };
+
+        let dataProject = project.createProject(caller, refKey, req);
+
+        if (isRewarded) {
+            let escrow = await CanProjectEscrow.createProjectEscrow(dataProject.id, dataProject.reward, caller);
+            switch(escrow) {
+                case(#err(e)) { return #err(e) };
+                case(#ok(_))  { };
+            };
+        };
+
+        return #ok(dataProject);
 	};
 
     // MARK: Get project detail
 
     public query func getProjectDetail(
-        projectId : TypCommon.ProjectId,
+        projectId : Nat,
     ) : async Result.Result<TypProject.Project, Text>  {
         switch(project.getCurrentProjectState(projectId)) {
             case(null)  { return #err("Project not found"); };
@@ -194,10 +214,39 @@ persistent actor {
         };
     };
 
+    // MARK: Get project by keyword
+
+    public query func getProjectByKeyword(
+        refKey  : Text,
+        keyword : Text,
+    ) : async Result.Result<TypProject.Project, Text>  {
+        switch (project.userProjectIndex.get(refKey)) {
+            case (null)        { return #err("Project not found"); };
+            case (?projectIds) {
+                let lowerKeyword = Text.toLowercase(keyword);
+                for(projectId in projectIds.vals()) {
+                    switch (project.getCurrentProjectState(projectId)) {
+                        case (null)  { };
+                        case (?data) {
+                            if (
+                                Text.contains(Text.toLowercase(data.name), #text lowerKeyword) or
+                                Text.contains(Text.toLowercase(data.desc), #text lowerKeyword) 
+                            ) {
+                                return #ok(data);
+                            }
+                        };
+                    };
+                };
+            };
+        };
+
+        return #err("Project not found");
+    };
+
     // MARK: Update status
 
     public shared ({caller}) func updateProjectStatus(
-        projectId : TypCommon.ProjectId,
+        projectId : Nat,
         reqStatus : TypProject.ProjectStatus,
     ) : async Result.Result<TypProject.Project, Text> {
         if (not project.verifyChainIntegrity()) {
@@ -205,15 +254,46 @@ persistent actor {
         };
         
         switch(project.getCurrentProjectState(projectId)) {
-            case(null)  { return #err("Project not found") };
-            case(?data) { return #ok(project.updateStatus(caller, data, reqStatus)); };
+            case(null)         { return #err("Project not found") };
+            case(?dataProject) { return #ok(project.updateStatus(caller, dataProject, reqStatus)); };
+        };
+    };
+
+    // MARK: Update reward
+
+    public shared ({caller}) func updateProjectReward(
+        projectId : Nat,
+        reward    : Nat,
+    ) : async Result.Result<TypProject.Project, Text> {
+        if (not project.verifyChainIntegrity()) {
+            return #err("Blockchain integrity compromised");
+        };
+        
+        switch(project.getCurrentProjectState(projectId)) {
+            case(null)         { return #err("Project not found") };
+            case(?dataProject) { 
+                // Balance check
+                let balance      = await CanIcpLedger.icrc1_balance_of({ owner = caller; subaccount = null });
+                let escrowFee    = await CanProjectEscrow.getEscrowFee();
+                let totalRewward = reward + escrowFee;
+
+                if (balance < totalRewward) {
+                    return #err("Insufficient ICP balance. Required: " # Nat.toText(totalRewward) # ", Available: " # Nat.toText(balance));
+                };
+
+                let fundResult = await CanProjectEscrow.fundEscrow(dataProject.id, dataProject.reward, caller);
+                switch(fundResult) {
+                    case(#err(e)) { return #err(e) };
+                    case(#ok(_))  { return #ok(project.updateReward(caller, dataProject, reward)); };
+                };
+            };
         };
     };
 
     // MARK: Get project team
     
     public query func getProjectTeam(
-        projectId : TypCommon.ProjectId,
+        projectId : Nat,
     ) : async Result.Result<[TypCommon.UserId], Text> {
         switch(project.getCurrentProjectState(projectId)) {
             case(null)  { return #err("Project not found") };
@@ -229,7 +309,7 @@ persistent actor {
     // MARK: Get project history
 
     public query func getProjectHistory(
-        projectId : TypCommon.ProjectId,
+        projectId : Nat,
     ) : async Result.Result<[TypProject.ProjectBlock], Text> {
         switch (project.projectIndex.get(Utl.natToBlob(projectId))) {
             case (null)      { #err("Project not found"); };
@@ -245,14 +325,15 @@ persistent actor {
 
     // MARK: Assign user to team project
     public shared ({ caller }) func assignProjectTeam(
-        projectId : TypCommon.ProjectId,
-        usersId   : [TypCommon.UserId], 
+        refKey    : Text,
+        projectId : Nat,
+        usersId   : [Principal], 
     ) : async Result.Result<Text, Text> {
         if (not project.verifyChainIntegrity()) {
             return #err("Blockchain integrity compromised");
         };
 
-       project.assignToTeamProject(caller, projectId, usersId);
+       project.assignToTeamProject(caller, refKey, projectId, usersId);
        
         return #ok("Berhasil menugaskan " # Nat.toText(usersId.size()) # " user ke projek.");
     };
@@ -260,7 +341,7 @@ persistent actor {
     // MARK: Get project timelines
 
     public query func getProjectTimelines(
-        projectId : TypCommon.ProjectId,
+        projectId : Nat,
     ) : async Result.Result<[TypProject.Timeline], Text> {
         if (not project.verifyChainIntegrity()) {
             return #err("Blockchain integrity compromised");
@@ -294,7 +375,7 @@ persistent actor {
     // MARK: Create timeline
     
     public shared ({ caller }) func createTimeline(
-        projectId : TypCommon.ProjectId,
+        projectId : Nat,
         req       : TypProject.TimelineRequest,
     ) : async Result.Result<TypProject.Timeline, Text> {
         if (not project.verifyChainIntegrity()) {
@@ -307,7 +388,7 @@ persistent actor {
     // MARK: Get timeline detail
 
     public query func getTimelineDetail(
-        timelineId : TypCommon.TimelineId,
+        timelineId : Nat,
     ) : async Result.Result<TypProject.Timeline, Text>  {
         switch(project.findTimelineById(timelineId)) {
             case(null)  { return #err("Timeline not found") };
@@ -318,7 +399,7 @@ persistent actor {
     // MARK: Update status
 
     public shared ({caller}) func updateTimeline(
-        timelineId : TypCommon.TimelineId,
+        timelineId : Nat,
         req        : TypProject.TimelineRequest,
     ) : async Result.Result<TypProject.Timeline, Text> {
         if (not project.verifyChainIntegrity()) {
@@ -337,7 +418,7 @@ persistent actor {
     // MARK: Get timeline history
 
     public query func getTimelineHistory(
-        timelineId : TypCommon.TimelineId,
+        timelineId : Nat,
     ) : async Result.Result<[TypProject.ProjectBlock], Text> {
         switch (project.timelineIndex.get(Utl.natToBlob(timelineId))) {
             case (null)      { #err("Timeline not found"); };
@@ -384,7 +465,7 @@ persistent actor {
     // MARK: Save project, timelines from llm
     
     public func saveLlmProjectTimelines(
-        caller       : TypCommon.UserId,
+        caller       : Principal,
         reqProject   : TypProject.ProjectRequest,
         reqTimelines : [TypProject.TimelineRequest],
     ) : async Result.Result<TypProject.LLMSaveResponse, Text> {
@@ -392,29 +473,54 @@ persistent actor {
             return #err("Blockchain integrity compromised");
         };
 
-        let resultProject   = project.createProject(caller, reqProject);
-        var startDate : Int = 9999999999;
-        var endDate   : Int = 0;
+        switch(await CanUser.getTeamRefCode()) {
+            case(#err(err))   { return #err(err) };
+            case(#ok(refKey)) {
+                let isRewarded = reqProject.projectType == #rewarded and reqProject.reward > 0 ;
+                if (isRewarded) {
+                    // Balance check
+                    let balance   = await CanIcpLedger.icrc1_balance_of({ owner = caller; subaccount = null });
+                    let escrowFee = await CanProjectEscrow.getEscrowFee();
+                    let totalRewward = reqProject.reward + escrowFee;
 
-        for(reqTimeline in reqTimelines.vals()) {
-            if (startDate > reqTimeline.startDate) {
-                startDate := reqTimeline.startDate
+                    if (balance < totalRewward) {
+                        return #err("Insufficient ICP balance. Required: " # Nat.toText(totalRewward) # ", Available: " # Nat.toText(balance));
+                    };
+                };
+
+                let dataProject = project.createProject(caller, refKey, reqProject);
+                if (isRewarded) {
+                    let escrow = await CanProjectEscrow.createProjectEscrow(dataProject.id, dataProject.reward, caller);
+                    switch(escrow) {
+                        case(#err(e)) { return #err(e) };
+                        case(#ok(_))  { };
+                    };
+                };
+
+                var startDate : Int = 9999999999;
+                var endDate   : Int = 0;
+
+                for(reqTimeline in reqTimelines.vals()) {
+                    if (startDate > reqTimeline.startDate) {
+                        startDate := reqTimeline.startDate
+                    };
+
+                    if (endDate < reqTimeline.endDate) {
+                        endDate := reqTimeline.endDate
+                    };
+
+                    ignore project.createTimeline(caller, dataProject.id, reqTimeline);
+                };
+
+                let result : TypProject.LLMSaveResponse = {
+                    project   = dataProject;
+                    startDate = startDate;
+                    endDate   = endDate;
+                };
+
+                return #ok(result);
             };
-
-            if (endDate < reqTimeline.endDate) {
-                endDate := reqTimeline.endDate
-            };
-
-            ignore project.createTimeline(caller, resultProject.id, reqTimeline);
         };
-
-        let result : TypProject.LLMSaveResponse = {
-            project   = resultProject;
-            startDate = startDate;
-            endDate   = endDate;
-        };
-
-        return #ok(result);
 	};
 
 }

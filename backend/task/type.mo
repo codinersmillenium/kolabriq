@@ -1,4 +1,5 @@
 import TypCommon "../common/type";
+import Principal "mo:base/Principal";
 
 module {
     // MARK: Task status
@@ -41,12 +42,12 @@ module {
 	};
 
     public type TaskRequest = {
-        projectId   : TypCommon.ProjectId;
-		title       : Text;
-		desc        : Text;
-        tag         : TypCommon.Tags;
-        dueDate     : Int;
-        assignees   : [TypCommon.UserId]; 
+        projectId : Nat;
+		title     : Text;
+		desc      : Text;
+        tag       : TypCommon.Tags;
+        dueDate   : Int;
+        assignees : [Principal]; 
 	};
     // MARK: Review
 
@@ -67,7 +68,7 @@ module {
     };
 
     public type TaskReviewRequest = {
-		taskId : TypCommon.TaskId;
+		taskId : Nat;
         review : Text;
     };
 
