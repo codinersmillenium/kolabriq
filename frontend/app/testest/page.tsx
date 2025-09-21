@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image';
 import { task } from '@/declarations/task';
-import Chatbot, { ChatbotRef, AskButton, AnalysisButton } from '@/components/ai/chatbot';
+// import Chatbot, { ChatbotRef, AskButton } from '@/components/ai/chatbot';
 import DialogUi from '@/components/ui/dialog';
 import ProjectPlanner from '@/components/ai/project-planner';
 
@@ -31,41 +31,28 @@ export default function Chatbot() {
         setIsDialogOpen(false); // tutup dialog setelah submit
     };
 
-    const aiRef = useRef<ChatbotRef>(null);
+    // const aiRef = useRef<ChatbotRef>(null);
 
-    const handleTriggerAsk = (taskTitle: string) => {
-        aiRef.current?.triggerContext(taskTitle);
-    };
-
-    const handleTriggerAnalysis = (projectId: number) => {
-        aiRef.current?.triggerAnalysis(projectId);
-    };
-
-    const handleTriggerGamified = (taskTitle: string) => {
-        aiRef.current?.triggerGamified(taskTitle);
-    };
-
-    const handleTriggerDailyStandUp = (projectId: number) => {
-        aiRef.current?.triggerDailyStandUp(projectId);
-    };
-
+    // const handleTriggerAsk = (taskTitle: string) => {
+    //     aiRef.current?.triggerContext(taskTitle);
+    // };
 
     return (
         <>
-            <AskButton onTrigger={() => handleTriggerAsk("Create beautiful landing")} />
-            <AnalysisButton onTrigger={() => handleTriggerAnalysis(2)} />
+            {/* <AskButton onTrigger={() => handleTriggerAsk("Create beautiful landing")} />
+            <AnalysisButton onTrigger={() => handleTriggerAnalysis(2)} /> */}
             {/* <div className="space-y-6">
                 <div className="flex gap-3">
                     <TriggerButton onTrigger={handleTriggerA} label="E-commerce Context" />
                 </div>
 
             </div> */}
-            <Chatbot ref={aiRef} />
+            {/* <Chatbot ref={aiRef} /> */}
 
             <ProjectPlanner />
 
             <div className='mt-6'>
-                <button
+                {/* <button
                     id="generate-project-trigger"
                     data-aria-hidden="false"
                     aria-hidden="false"
@@ -82,7 +69,7 @@ export default function Chatbot() {
                     className="text-xs self-start px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded"
                 >
                     Complete task
-                </button>
+                </button> */}
 
                 {/* <button
                     onClick={() => projectPlanner("simple landing company")}
@@ -91,7 +78,7 @@ export default function Chatbot() {
                     Project planner
                 </button> */}
 
-                <button
+                {/* <button
                     data-aria-hidden="false"
                     aria-hidden="false"
                     onClick={() => setDailyStandUpId(1)}
@@ -107,7 +94,7 @@ export default function Chatbot() {
                     className="text-xs self-start px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded"
                 >
                     Analysis
-                </button>
+                </button> */}
 
                 {/* <ChatBot
                     taskTitle={taskContext}

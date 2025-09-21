@@ -364,8 +364,8 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                 </div>
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => console.log("asd")}
-                                        className="flex-grow text-xs p-2 py-2 bg-linear-to-r from-danger/80 to-warning/50 text-white rounded flex items-center justify-center gap-1 rounded-md"
+                                        onClick={() => handleTriggerAsk(item.title)}
+                                        className="flex-grow text-xs p-2 py-2 bg-linear-to-r from-danger/80 to-warning/50 text-white flex items-center justify-center gap-1 rounded-md"
                                     >
                                         <WandSparkles size={16} />
                                         Ask for Details

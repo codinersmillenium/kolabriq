@@ -190,7 +190,7 @@ export default function Register() {
                                                 <span className="text-sm text-gray-700">UI/UX Design</span>
                                             </label>
                                             <label className="flex items-center space-x-2">
-                                                <input type="checkbox" name="tags[]" value="bussines_analist" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
+                                                <input type="checkbox" name="tags[]" value="business_analyst" className="h-4 w-4 text-blue-600 border-gray-300 rounded" onChange={handleChange} />
                                                 <span className="text-sm text-gray-700">Bussiness Analyst</span>
                                             </label>
                                         </div>

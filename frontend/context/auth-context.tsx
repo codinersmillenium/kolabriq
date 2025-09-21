@@ -34,8 +34,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       const actor = await initActor()
       const { ok }: any = await callWithRetry(actor, "getUserDetail", identity.getPrincipal())
-
-      // const { ok }: any = await actor_.getUserDetail(identity.getPrincipal())
       setUser(ok)
     }
 

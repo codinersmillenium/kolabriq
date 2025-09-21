@@ -74,8 +74,7 @@ const Table = () => {
             }
             setData(data)
         } else {
-            const principal = getPrincipal()
-            findUser(principal[1])
+            findUser(getPrincipal())
         }
     }
     const isAsdCalled = useRef(false);

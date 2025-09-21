@@ -3,6 +3,7 @@ import * as decProject from '@/declarations/project'
 import * as decTask from '@/declarations/task'
 import * as decAi from '@/declarations/ai'
 import * as decToken from '@/declarations/token'
+import * as decIcpLedger from '@/declarations/icp_ledger'
 import { AuthClient } from '@dfinity/auth-client'
 import { Principal } from '@dfinity/principal';
 import { HttpAgent } from '@dfinity/agent'
@@ -11,7 +12,8 @@ const network = process.env.DFX_NETWORK;
 const identityProvider =
     network === 'ic'
         ? 'https://identity.ic0.app' // Mainnet
-        : process.env.API_HOST + '?canisterId=' + process.env.CANISTER_ID_INTERNET_IDENTITY
+        : "http://be2us-64aaa-aaaaa-qaabq-cai.localhost:4943/"
+        // : process.env.API_HOST + '?canisterId=' + process.env.CANISTER_ID_INTERNET_IDENTITY
 
 export let authClient: AuthClient | null = null
 export let identity: any = null
@@ -35,7 +37,7 @@ export const ensureClient = async () => {
     }
 }
 
-type ActorName = 'user' | 'project' | 'task' | 'ai' | 'token';
+type ActorName = 'user' | 'project' | 'task' | 'ai' | 'token' | 'icp_ledger';
 
 export const initActor = async (canister: ActorName = 'user') => {
     await ensureClient();
@@ -57,14 +59,15 @@ export const initActor = async (canister: ActorName = 'user') => {
         case 'token':
             canisterBlog = decToken.createActor(decToken.canisterId, options)
             break;
+        case 'icp_ledger':
+            canisterBlog = decIcpLedger.createActor(decIcpLedger.canisterId, options)
+            break;
     }
     return canisterBlog
 }
 
 export const getPrincipal = () => {
-    const principal = identity.getPrincipal().toString()
-    const principal_ = Principal.fromText(principal)
-    return [principal, principal_]
+    return identity.getPrincipal()
 }
 
 export const callbackSignIn = async () => {
@@ -73,12 +76,8 @@ export const callbackSignIn = async () => {
     const isAuthenticated = await authClient!.isAuthenticated();
     if (!identity || !isAuthenticated) return 'init'
 
-    const principal: any = getPrincipal()
     const actor = await initActor()
-
-    const { ok }: any = await callWithRetry(actor, "getUserDetail", principal[1])
-
-    // const { ok }: any = await actor.getUserDetail(principal[1])
+    const { ok }: any = await callWithRetry(actor, "getUserDetail", getPrincipal())
     if (typeof ok === 'undefined') return false
 
     return true

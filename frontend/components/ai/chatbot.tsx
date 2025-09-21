@@ -1,6 +1,7 @@
 'use client';
 
-import { initActor } from '@/lib/canisters';
+import * as decProjectEscrow from '@/declarations/project_escrow'
+import { callWithRetry, getPrincipal, initActor } from '@/lib/canisters';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import ReactMarkdown from "react-markdown";
@@ -15,6 +16,7 @@ import {
     Maximize2,
 } from 'lucide-react'
 import Image from 'next/image';
+import { log } from 'console';
 
 type LlmChat =
     | { system: { content: string }; user?: never }
@@ -37,33 +39,40 @@ export const AskButton = ({ onTrigger }: TriggerButtonProps) => {
     );
 };
 
-// MARK: Anaylis project
-export const AnalysisButton = ({ onTrigger }: TriggerButtonProps) => {
-    return (
-        <button
-            onClick={onTrigger}
-            className="text-xs p-2 py-2 bg-linear-to-r from-success/80 to-primary/50 text-white rounded-lg flex items-center gap-1 font-bold"
-        >
-            <ChartNoAxesCombined size={18} />
-            Analysis
-        </button>
-    );
-};
-
 export type ChatbotRef = {
     triggerContext: (task: string) => void;
-    triggerAnalysis: (projectId: number) => void;
-    triggerGamified: (task: string) => void;
-    triggerDailyStandUp: (projectId: number) => void;
 };
 
 const Chatbot = forwardRef<ChatbotRef>((_, ref) => {
+    let baseMessage = `
+Hello! I am **Briqi**, your intelligent assistant designed to help you manage projects and digital assets efficiently.
+
+## Digital Asset Management
+- **Retrieve ICP Address** – Get your ICP wallet address.
+- **Check ICP Balance** – View your current ICP balance.
+- **Transfer ICP** – Send ICP securely to another address.
+
+## Project Management
+- **Task Analyzer** – Analyze tasks and provide actionable insights.
+- **Project Details** – Access detailed information about your projects.
+- **Create Project** – Quickly set up new projects.
+- **Generate Project Tasks** – Automatically create tasks for your projects.
+
+## Team Operations
+- **Task Breakdown** – Break down tasks into actionable steps.
+- **Task Overview** – Get a summary of task progress.
+- **Team Payouts** – Manage team payouts efficiently.
+
+---\n
+✨ Just type what you need in plain English, and I’ll handle it for you.
+    `
+
     const [taskContext, setTaskContext] = useState<string>();
     const [isOpen, setIsOpen] = useState(false);
     const [chat, setChat] = useState<LlmChat[]>([
         {
             system: {
-                content: `Hi! I'm **Briqi**, your AI assistant from Kolabriq.\n\nI can:\n-Plan projects from your ideas\n-Track tasks & suggest priorities\n-Understand context when you're stuck\n-Cheer you on like an RPG coach\n-Analyze project timelines & give smart tips.\n\nJust ask me anything about your tasks — I'm here to help. 💼✨`
+                content: baseMessage,
             }
         }
     ]);
@@ -73,15 +82,11 @@ const Chatbot = forwardRef<ChatbotRef>((_, ref) => {
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // useImperativeHandle(ref, () => ({
-    //     triggerContext: (task: string) => {
-    //         setTaskContext(task);
-    //         addUnread();
-    //     },
-    //     triggerAnalysis: (projectId: number) => projectAnalysis(projectId),
-    //     triggerGamified: (task: string) => gamifiedAi(task),
-    //     triggerDailyStandUp: (projectId: number) => dailyStandUp(projectId),
-    // }));
+    useImperativeHandle(ref, () => ({
+        triggerContext: (task: string) => {
+            setTaskContext(task);
+        },
+    }));
 
     // MARK: Toogle fullscreen
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -99,76 +104,13 @@ const Chatbot = forwardRef<ChatbotRef>((_, ref) => {
         return style
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
+    // MARK: Style chat handler
     const addUnread = () => {
         if (!isOpen) {
             const totalUnreadMessage = unreadMessage + 1;
             setUnreadMessage(totalUnreadMessage);
         }
     }
-
-    const addPreResponse = (message: string): LlmChat => {
-        const userMessage = {
-            user: {
-                content: message,
-                task: "",
-            }
-        };
-
-        const thinkingMessage = {
-            system: { content: 'Thinking...' }
-        };
-
-        setChat((prevChat) => [...prevChat, userMessage, thinkingMessage]);
-
-        return userMessage;
-    }
-
-    const error = (prevChat: LlmChat[]): LlmChat[] => {
-        const newChat = [...prevChat];
-        newChat.pop(); // Remove Briqi thinking..
-        newChat.push({
-            system: {
-                content: "Uh-oh! Looks like your resources are a bit too potato for this one 🥔\nI couldn’t process the request. Try again later, or maybe give your machine a little break 🤭",
-            },
-        });
-
-        return newChat;
-    }
-
-    const askAgent = async (messages: LlmChat) => {
-        try {
-
-            // const actor_ = await initActor("ai");
-            // const response = await actor_.chat([messages], [taskContext]);
-
-            setTaskContext("");
-            addUnread();
-
-            setChat((prevChat) => {
-                const newChat = [...prevChat];
-                newChat.pop();
-                newChat.push({ system: { content: "hii" } });
-                return newChat;
-            });
-        } catch (e) {
-            console.error(e);
-            setChat(error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({
@@ -177,101 +119,210 @@ const Chatbot = forwardRef<ChatbotRef>((_, ref) => {
         });
     };
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!inputValue.trim() || isLoading) return;
-
-        let userMsg = addPreResponse(inputValue);
-        userMsg = {
+    // MARK: Response
+    const addPreResponse = (message: string): LlmChat => {
+        const userMessage = {
             user: {
-                content: userMsg.user?.content ?? "",
+                content: message,
                 task: taskContext ?? "",
             }
         };
 
-        setInputValue('');
-        setIsLoading(true);
-        askAgent(userMsg);
+        const thinkingMessage = {
+            system: { content: 'Thinking..' }
+        };
 
-        setTimeout(() => {
-            scrollToBottom();
-        }, 100);
-    };
+        setChat((prevChat) => [...prevChat, userMessage, thinkingMessage]);
 
-    const gamifiedAi = async (taskCompleted: string) => {
-        const message = `I have been completed task ${taskCompleted}`;
-        addPreResponse(message);
-        setIsLoading(true);
+        return userMessage;
+    }
 
+    const errorMessage = `
+Sorry, there was an unexpected error while processing your request. Please try again.\n
+Type **help** if you want to see what I can do 💡
+    `;
+
+    // MARK: Main func
+    const askAgent = async (messages: string) => {
+        console.log(messages);
+        
         try {
-            const actor_ = await initActor("ai");
-            const response = await actor_.gamifiedCoach(taskCompleted);
+            const response = await fetch("http://localhost:8001/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    text: messages,
+                    sender: getPrincipal().toString(),
+                }),
+            });
+
+            const data = await response.json();
+
+
+            setTaskContext("");
             addUnread();
 
             setChat((prevChat) => {
                 const newChat = [...prevChat];
-                newChat.pop(); // Remove Briqi thinking..
-                newChat.push({ system: { content: response } });
+                newChat.pop();
+                newChat.push({ system: { content: data.response } });
                 return newChat;
             });
         } catch (e) {
             console.error(e);
-            setChat(error);
+            setChat((prevChat) => {
+                const newChat = [...prevChat];
+                newChat.pop();
+                newChat.push({ system: { content: errorMessage } });
+                return newChat;
+            });
+            throw e;
         } finally {
             setIsLoading(false);
         }
     };
 
-    const dailyStandUp = async (projectId: number) => {
-        console.log(projectId);
-
-        const message = "Review my tasks for today";
-        addPreResponse(message);
-        setIsLoading(true);
+    // MARK: Submit
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!inputValue.trim() || isLoading) return;
 
         try {
-            const actor_ = await initActor("ai");
-            const response = await actor_.dailyStandUp(0);
-            addUnread();
-
+            let userMsg = addPreResponse(inputValue);
+    
+            if (handlePreTransactionRequest(inputValue)) return;
+            userMsg = await handlePostTransactionRequest(inputValue)
+    
+            const userContent = userMsg.user ? userMsg.user.content : ""
+            const formattedMsg = taskContext
+                ? `Please describe the task '${taskContext}',\n${userContent}`
+                : userContent;
+    
+            setInputValue('');
+            setIsLoading(true);
+            await askAgent(formattedMsg);
+    
+            setTimeout(() => {
+                scrollToBottom();
+            }, 100);
+        } catch {
             setChat((prevChat) => {
                 const newChat = [...prevChat];
-                newChat.pop(); // Remove Briqi thinking..
-                newChat.push({ system: { content: response } });
+                newChat.pop();
+                newChat.push({ system: { content: errorMessage } });
                 return newChat;
             });
-        } catch (e) {
-            console.error(e);
-            setChat(error);
-        } finally {
-            setIsLoading(false);
         }
     };
 
-    const projectAnalysis = async (projectId: number) => {
-        const message = "Analysis my current project";
-        setIsOpen(true);
-        addPreResponse(message);
-        setIsLoading(true);
+    // MARK: Transaction message
+    const [pendingTrx, setPendingTrx] = useState({
+        message: "",
+        amount: 0,
+    })
 
-        try {
-            const actor_ = await initActor("ai");
-            const response = await actor_.projectAnalysis(0);
-            addUnread();
+    const handlePreTransactionRequest = (message: string) => {
+        const trxKeyword = ["transfer", "payout", "generate project"];
+        const keyword = trxKeyword.find((word) => message.toLowerCase().includes(word));
 
-            setChat((prevChat) => {
-                const newChat = [...prevChat];
-                newChat.pop(); // Remove Briqi thinking..
-                newChat.push({ system: { content: response } });
-                return newChat;
-            });
-        } catch (e) {
-            console.error(e);
-            setChat(error);
+        if (!keyword) { return false };
 
-        } finally {
-            setIsLoading(false);
+        switch (keyword) {
+            case "generate project":
+                const match = message.match(/(\d+)\s*ICP/i);
+                if (!match) {
+                    return false
+                }
+                setPendingTrx({
+                    message: message,
+                    amount: Number(match[1]),
+                })
+                break;
+        
+            default:
+                const matches = message.match(/=\s*([\d.]+)/g);
+                let total = 0;
+                if (!matches) {
+                    return false
+                }
+                
+                total = matches
+                    .map((m) => parseFloat(m.replace("=", "").trim()))
+                    .reduce((acc, val) => acc + val, 0);
+
+                setPendingTrx({
+                    message: message,
+                    amount: total,
+                })
+                break;
         }
+
+        const confirmations = `
+            We have prepared the following ICP transfers for you:\n\n
+            💰 **Total Transfer: ${pendingTrx.amount} ICP**\n\n
+            ⚠️ Once confirmed, the transfer cannot be reversed.\n
+            - Network: Internet Computer (ICP)
+            - Estimated confirmations: ~3 blocks (~20–30 seconds)
+            - Network fee: 0 ICP per transaction (deducted automatically)\n\n
+            To proceed, type 'yes'. To cancel, type anything else.
+        `.trim()
+
+        setChat((prevChat) => {
+            const newChat = [...prevChat];
+            newChat.pop();
+            newChat.push({ system: { content: confirmations } });
+            return newChat;
+        });
+
+        return true
+    };
+
+    const handlePostTransactionRequest = async (message: string): Promise<LlmChat> => {
+        if (message.toLowerCase().includes("yes") && pendingTrx.amount) {
+            const actor = await initActor('icp_ledger')
+            try {
+                await callWithRetry(actor, "icrc2_approve", {
+                    from_subaccount: [],
+                    spender: {
+                        owner: decProjectEscrow.canisterId,
+                        subaccount: [],
+                    },
+                    amount: pendingTrx.amount,
+                    expected_allowance: [],
+                    expires_at: [],
+                    fee: [],
+                    memo: [],
+                    created_at_time: [],
+                })
+
+                return {
+                    user: {
+                        content: pendingTrx.message,
+                        task: "",
+                    }
+                };
+            } catch (error) {
+                setPendingTrx({
+                    message: "",
+                    amount: 0,
+                })
+                throw error;
+            }
+        };
+    
+        setPendingTrx({
+            message: "",
+            amount: 0,
+        })
+
+        return {
+            user: {
+                content: message,
+                task: "",
+            }
+        };
     };
 
     return (
@@ -336,7 +387,8 @@ const Chatbot = forwardRef<ChatbotRef>((_, ref) => {
                                 title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                             >
                                 {isFullscreen
-                                    ? <button type="button" className="bg-gray-200 shadow flex items-center gap-1 px-5 h-6 text-[10px] rounded-lg">
+                                    ? 
+                                    <button type="button" className="bg-gray-200 shadow flex items-center gap-1 px-5 h-6 text-[10px] rounded-lg">
                                         <Minimize2 size={10} />
                                         Minimize
                                     </button>
@@ -344,7 +396,8 @@ const Chatbot = forwardRef<ChatbotRef>((_, ref) => {
                                     <button type="button" className="bg-gray-200 shadow flex items-center gap-1 px-5 h-6 text-[10px] rounded-lg">
                                         <Maximize2 size={10} />
                                         Maximize
-                                    </button>}
+                                    </button>
+                                }
                             </button>
                         </div>
                     </Drawer.Title>
@@ -371,7 +424,7 @@ const Chatbot = forwardRef<ChatbotRef>((_, ref) => {
                                         <div className={`text-[13px] py-2 px-4 rounded-lg drop-shadow-md max-w-[80%] whitespace-pre-line ${isUser
                                             ? "bg-linear-to-b from-primary/5 to-success-light/20 text-gray"
                                             : "bg-gray-100 text-gray-700"
-                                            }`}>
+                                        }`}>
                                             <ReactMarkdown>{text}</ReactMarkdown>
                                         </div>
                                     </div>

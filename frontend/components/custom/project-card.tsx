@@ -24,10 +24,6 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
     status: false
   })
 
-  const getUsers = async () => {
-
-  }
-
   const getProject = async () => {
     var param = {
       status: filter.status ? [{ [filter.status]: null }] : [],
@@ -36,8 +32,9 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
       keyword: [],
     }
 
-    const actor = await initActor('project')
-    const { ok }: any = await callWithRetry(actor, "getOwnedProjectList", param)
+    const { code }: any = await callWithRetry(actorUser, "getTeamRefCode")
+    const actorProject = await initActor('project')
+    const { ok }: any = await callWithRetry(actorProject, "getOwnedProjectList", code, param)
 
     if (page.role === 'admin') {
       for (let obj in ok) {
