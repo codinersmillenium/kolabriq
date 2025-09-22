@@ -11,7 +11,7 @@ import { HttpAgent } from '@dfinity/agent'
 const network = process.env.DFX_NETWORK;
 const identityProvider =
     network === 'ic'
-        ? 'https://identity.ic0.app' // Mainnet
+        ? ' https://ymjx5-jqaaa-aaaac-qb47a-cai.icp0.io' // Mainnet
         : "http://localhost:4943/"
         // : process.env.API_HOST + '?canisterId=' + process.env.CANISTER_ID_INTERNET_IDENTITY
 
