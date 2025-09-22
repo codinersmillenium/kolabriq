@@ -1,3 +1,3 @@
 # Kolabriq – Decentralized AI-Powered Project Management
 
-## description in main branch....
+## [https://github.com/codinersmillenium/kolabriq/tree/main/README.md](description in main branch....)
