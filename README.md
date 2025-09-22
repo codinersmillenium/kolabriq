@@ -56,7 +56,7 @@ Kolabriq integrates **Fetch.ai AI Agents (uAgents in Python)** for conversationa
 - [App 1](https://drive.google.com/file/d/1sjMfUOQCHjMWGP2Hieac6OMJ3OdjrArc/view?usp=sharing)
 - [App 2](https://drive.google.com/file/d/1ST241O0ERshlartHE1vCqki6Quw_9yH9/view?usp=sharing)
 - [App 3](https://drive.google.com/file/d/1jr8FHzz4U8vmAgMkuaOzeAWHKb-23r4f/view?usp=sharing)
-- [AI Assistant](https://drive.google.com/file/d/1pUQRZnw52XSuEKTXPC471ONNByyuwraD/view?usp=sharing)
+- [Project Tools & AI Assistant](https://youtu.be/qnklYb2gIzM)
 
 
 
