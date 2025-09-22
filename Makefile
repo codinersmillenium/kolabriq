@@ -61,7 +61,7 @@ setup-ledger:
 						}; \
 					}; \
 					send_whitelist = vec {}; \
-					transfer_fee = opt record { e8s = 0 : nat64 }; \
+					transfer_fee = opt record { e8s = 10_000 : nat64 }; \
 					token_symbol = opt \"LICP\"; \
 					token_name = opt \"Local ICP\"; \
 				} \
@@ -80,7 +80,7 @@ transfer:
 			memo = null; \
 			from_subaccount = null; \
 			created_at_time = null; \
-			amount = 1000000; \
+			amount = 100000; \
 		} \
 	)";
 
@@ -137,9 +137,9 @@ FRONTEND_DECLARATIONS = frontend/declarations
 ROOT_DECLARATIONS = declarations
 
 copy-declarations:
-	@echo "Update frontend .env file"
-	@rm -f $(FRONTEND_DECLARATIONS)
-	@cp $(ROOT_DECLARATIONS) $(FRONTEND_DECLARATIONS)
+	@echo "Update frontend declarations dir"
+	@rm -rf $(FRONTEND_DECLARATIONS)
+	@cp -r $(ROOT_DECLARATIONS) $(FRONTEND_DECLARATIONS)
 
 # -------------------------------------------------------------
 # Target: Full setup pipeline
@@ -148,5 +148,5 @@ copy-declarations:
 #   2. Deploy project canisters
 #   3. Generate frontend bindings
 # -------------------------------------------------------------
-project: clean setup-ledger transfer deploy generate copy-env copy-declarations
+dfx-deploy: clean setup-ledger deploy generate copy-env copy-declarations
 	@echo "Setup done!"
