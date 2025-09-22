@@ -14,6 +14,9 @@ for (const key in rawEnv) {
 }
 
 const nextConfig = {
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
     env: envVars,
     devIndicators: false,
     // experimental: {

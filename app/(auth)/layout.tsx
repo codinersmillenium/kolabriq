@@ -1,5 +1,4 @@
 import Header from '@/components/layout/header'
-import { Middleware } from '@/components/layout/middleware'
 import Sidebar from '@/components/layout/sidebar'
 import { AuthProvider } from '@/context/auth-context'
 

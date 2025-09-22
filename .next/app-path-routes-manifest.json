@@ -1,0 +1,18 @@
+{
+  "/icon.ico/route": "/icon.ico",
+  "/_not-found/page": "/_not-found",
+  "/(auth)/checkbox/page": "/checkbox",
+  "/(auth)/contact-us/page": "/contact-us",
+  "/(auth)/form/page": "/form",
+  "/(auth)/board-task/page": "/board-task",
+  "/(auth)/projects/page": "/projects",
+  "/(auth)/page": "/",
+  "/(auth)/setting/page": "/setting",
+  "/(auth)/users/page": "/users",
+  "/(noauth)/register/page": "/register",
+  "/(auth)/task-detail/page": "/task-detail",
+  "/(noauth)/forgot/page": "/forgot",
+  "/(noauth)/login/page": "/login",
+  "/(auth)/chart/page": "/chart",
+  "/(noauth)/password/page": "/password"
+}

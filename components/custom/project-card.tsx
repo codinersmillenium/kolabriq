@@ -32,6 +32,7 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
       keyword: [],
     }
 
+    const actorUser = await initActor("user");
     const { code }: any = await callWithRetry(actorUser, "getTeamRefCode")
     const actorProject = await initActor('project')
     const { ok }: any = await callWithRetry(actorProject, "getOwnedProjectList", code, param)

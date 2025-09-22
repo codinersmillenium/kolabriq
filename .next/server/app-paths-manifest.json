@@ -1,0 +1,18 @@
+{
+  "/icon.ico/route": "app/icon.ico/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/(auth)/checkbox/page": "app/(auth)/checkbox/page.js",
+  "/(auth)/contact-us/page": "app/(auth)/contact-us/page.js",
+  "/(auth)/form/page": "app/(auth)/form/page.js",
+  "/(auth)/board-task/page": "app/(auth)/board-task/page.js",
+  "/(auth)/projects/page": "app/(auth)/projects/page.js",
+  "/(auth)/page": "app/(auth)/page.js",
+  "/(auth)/setting/page": "app/(auth)/setting/page.js",
+  "/(auth)/users/page": "app/(auth)/users/page.js",
+  "/(noauth)/register/page": "app/(noauth)/register/page.js",
+  "/(auth)/task-detail/page": "app/(auth)/task-detail/page.js",
+  "/(noauth)/forgot/page": "app/(noauth)/forgot/page.js",
+  "/(noauth)/login/page": "app/(noauth)/login/page.js",
+  "/(auth)/chart/page": "app/(auth)/chart/page.js",
+  "/(noauth)/password/page": "app/(noauth)/password/page.js"
+}
