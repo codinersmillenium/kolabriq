@@ -169,6 +169,7 @@ who had helped provide and develop these application
 - [fetchAi](https://fetch.ai)
 - [netlify](https://netlify.com)
 - [railway](https://railway.com)
+- [nexadash](https://next.nexadash.demo.sbthemes.com)
 
 ## Developer
 - [https://github.com/codinersmillenium]
