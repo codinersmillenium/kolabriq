@@ -49,6 +49,8 @@ Kolabriq integrates **Fetch.ai AI Agents (uAgents in Python)** for conversationa
 
 ## 📝 Documentation Videos
 
+- [Introduction](https://youtu.be/5HLSUoMf1v0)
+- [Pitch](https://youtu.be/dQQ_Bji3Dmw)
 - [Landing Prolog](https://drive.google.com/file/d/122R_cEsvz0U9HTxy03PWzUPUfbToJ8ZC/view?usp=sharing)
 - [Register Admin](https://drive.google.com/file/d/1_IVVJFA8whsYkkkvlXC7CxMNvjib9zGX/view?usp=sharing)
 - [Register Dev](https://drive.google.com/file/d/1dvknF3RbWgZVSwbTDMU4wo46nPPMgvtN/view?usp=sharing)
