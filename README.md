@@ -13,6 +13,39 @@ Kolabriq integrates **Fetch.ai AI Agents (uAgents in Python)** for conversationa
   - Installation Frontend
     - Change directory `cd {frontend}`
     - Install dependencies `npm install`
+  - Installation Agent AI
+    # 🐍 uAgents Setup Guide
+      ## 📦 Prerequisites
+        - Python **3.9+**
+        - `pip3` (Python package manager)
+      ## 🔧 Installation Steps
+      ### 1. Change Directory
+      ```bash
+      change directory {fetchai}
+      ```
+      ### 2. Create Virtual Environment
+      ```bash
+      python3 -m venv venv
+      ```
+      ### 3. Activate Virtual Environment
+      - On **Linux / macOS**:
+        ```bash
+        source venv/bin/activate
+        ```
+      - On **Windows (PowerShell)**:
+        ```powershell
+        .\venv\Scripts\activate
+        ```
+      
+      ### 4. Install Dependencies
+      ```bash
+      pip3 install -r requirements.txt
+      ```
+      
+      2. Run with:
+         ```bash
+         python3 agent.py
+         ```
 
 ## 📝 Documentation Videos
 
