@@ -1,0 +1,7 @@
+// Version: 1.0.0
+type StableToken__468162494 = (Principal, Nat);
+actor {
+  stable var stableToken : [StableToken__468162494];
+  stable tokenName : Text;
+  stable tokenSymbol : Text
+};
