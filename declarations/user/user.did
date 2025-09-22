@@ -1,0 +1,133 @@
+type UserRequest = 
+ record {
+   firstName: text;
+   lastName: text;
+   referrerCode: opt text;
+   role: Role;
+   tags: vec Tags;
+   userName: text;
+ };
+type UserProfileAction = 
+ variant {
+   authentication: record {
+                     action: AuthAction;
+                     loginTime: int;
+                   };
+   planUpgrade: record {
+                  newPlan: Plan;
+                  oldPlan: Plan;
+                };
+   registration;
+   updateName:
+    record {
+      newFirst: text;
+      newLast: text;
+      oldFirst: text;
+      oldLast: text;
+    };
+   updateRole: record {
+                 newRole: Role;
+                 oldRole: Role;
+               };
+ };
+type UserProfile = 
+ record {
+   action: UserProfileAction;
+   firstName: text;
+   id: UserId;
+   lastName: text;
+   personalRefCode: text;
+   plan_type: Plan;
+   referrerCode: opt text;
+   role: Role;
+   tags: vec Tags;
+   userName: text;
+ };
+type UserId = principal;
+type UserFilter = 
+ record {
+   keyword: opt text;
+   roles: opt vec Role;
+   tags: opt vec Tags;
+ };
+type UserBlock = 
+ record {
+   data: UserProfile;
+   hash: text;
+   id: BlockId;
+   nonce: nat;
+   previousHash: text;
+   signature: text;
+   timestamp: int;
+ };
+type Tags = 
+ variant {
+   backend;
+   business_analyst;
+   frontend;
+   ui;
+ };
+type Role = 
+ variant {
+   admin;
+   developer;
+   maintainer;
+ };
+type Result_4 = 
+ variant {
+   err: text;
+   ok: text;
+ };
+type Result_3 = 
+ variant {
+   err: text;
+   ok: vec UserBlock;
+ };
+type Result_2 = 
+ variant {
+   err;
+   ok: vec UserProfile;
+ };
+type Result_1 = 
+ variant {
+   err: text;
+   ok: vec UserProfile;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: UserProfile;
+ };
+type Plan = 
+ variant {
+   basic;
+   pro;
+ };
+type BlockId = nat;
+type AuthAction = 
+ variant {
+   login;
+   logout;
+   sessionExpired;
+ };
+service : {
+  checkPrincipal: () -> (principal) query;
+  getTeamRefCode: () -> (Result_4) query;
+  getUserDetail: (userId: principal) -> (Result) query;
+  getUserHistory: (userId: principal) -> (Result_3) query;
+  getUserList: (filter: UserFilter) -> (Result_2) query;
+  getUsersByIds: (userIds: vec principal) -> (Result_1) query;
+  healthCheck: () ->
+   (record {
+      chainIntegrity: bool;
+      lastBlockHash: text;
+      totalBlocks: nat;
+      totalUsers: nat;
+    }) query;
+  login: () -> (Result);
+  logout: () -> (Result);
+  registerUser: (req: UserRequest) -> (Result);
+  updateRole: (userId: principal, reqRole: Role) -> (Result);
+  updateUser: (req: UserRequest) -> (Result);
+  upgradePlan: (req: Plan) -> (Result);
+}

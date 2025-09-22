@@ -1,0 +1,203 @@
+type UserId = principal;
+type TimelineRequest = 
+ record {
+   endDate: int;
+   startDate: int;
+   title: text;
+ };
+type TimelineId = nat;
+type TimelineAction = 
+ variant {
+   create;
+   dateUpdate: record {
+                 field: text;
+                 newValue: int;
+                 oldValue: int;
+               };
+   metadataUpdate: record {
+                     field: text;
+                     newValue: text;
+                     oldValue: text;
+                   };
+ };
+type Timeline = 
+ record {
+   action: TimelineAction;
+   createdBy: UserId;
+   endDate: int;
+   id: TimelineId;
+   projectId: ProjectId;
+   startDate: int;
+   title: text;
+ };
+type TeamAssignment = 
+ record {
+   action: TeamAction;
+   assignedBy: UserId;
+   projectId: ProjectId;
+   userId: UserId;
+ };
+type TeamAction = 
+ variant {
+   assign;
+   unassign;
+ };
+type Tags = 
+ variant {
+   backend;
+   business_analyst;
+   frontend;
+   ui;
+ };
+type Result_7 = 
+ variant {
+   err: text;
+   ok: text;
+ };
+type Result_6 = 
+ variant {
+   err;
+   ok: vec Project;
+ };
+type Result_5 = 
+ variant {
+   err: text;
+   ok: vec UserId;
+ };
+type Result_4 = 
+ variant {
+   err: text;
+   ok: vec Timeline;
+ };
+type Result_3 = 
+ variant {
+   err: text;
+   ok: vec ProjectBlock;
+ };
+type Result_2 = 
+ variant {
+   err: text;
+   ok: LLMSaveResponse;
+ };
+type Result_1 = 
+ variant {
+   err: text;
+   ok: Project;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: Timeline;
+ };
+type ProjectType = 
+ variant {
+   free;
+   rewarded;
+ };
+type ProjectStatus = 
+ variant {
+   done;
+   in_progress;
+   new;
+   review;
+ };
+type ProjectRequest = 
+ record {
+   desc: text;
+   name: text;
+   projectType: ProjectType;
+   reward: nat;
+   tags: vec Tags;
+   thumbnail: blob;
+ };
+type ProjectId = nat;
+type ProjectFilter = 
+ record {
+   keyword: opt text;
+   projectType: opt ProjectType;
+   status: opt ProjectStatus;
+   tags: opt vec Tags;
+ };
+type ProjectBlockData = 
+ variant {
+   project: Project;
+   teamAssignment: TeamAssignment;
+   timeline: Timeline;
+ };
+type ProjectBlock = 
+ record {
+   data: ProjectBlockData;
+   hash: text;
+   id: BlockId;
+   nonce: nat;
+   previousHash: text;
+   signature: text;
+   timestamp: int;
+ };
+type ProjectAction = 
+ variant {
+   create;
+   metadataUpdate: record {
+                     field: text;
+                     newValue: text;
+                     oldValue: text;
+                   };
+   rewardUpdate: record {
+                   from: nat;
+                   to: nat;
+                 };
+   statusUpdate: record {
+                   from: ProjectStatus;
+                   to: ProjectStatus;
+                 };
+ };
+type Project = 
+ record {
+   action: ProjectAction;
+   createdBy: UserId;
+   desc: text;
+   id: ProjectId;
+   name: text;
+   ownerId: UserId;
+   projectType: ProjectType;
+   reward: nat;
+   status: ProjectStatus;
+   tags: vec Tags;
+   thumbnail: blob;
+ };
+type LLMSaveResponse = 
+ record {
+   endDate: int;
+   project: Project;
+   startDate: int;
+ };
+type BlockId = nat;
+service : {
+  assignProjectTeam: (refKey: text, projectId: nat, usersId:
+   vec principal) -> (Result_7);
+  createProject: (refKey: text, req: ProjectRequest) -> (Result_1);
+  createTimeline: (projectId: nat, req: TimelineRequest) -> (Result);
+  getOwnedProjectList: (refKey: text, filter: ProjectFilter) ->
+   (Result_6) query;
+  getProjectByKeyword: (refKey: text, keyword: text) -> (Result_1) query;
+  getProjectDetail: (projectId: nat) -> (Result_1) query;
+  getProjectHistory: (projectId: nat) -> (Result_3) query;
+  getProjectTeam: (projectId: nat) -> (Result_5) query;
+  getProjectTimelines: (projectId: nat) -> (Result_4) query;
+  getTimelineDetail: (timelineId: nat) -> (Result) query;
+  getTimelineHistory: (timelineId: nat) -> (Result_3) query;
+  healthCheck: () ->
+   (record {
+      chainIntegrity: bool;
+      lastBlockHash: text;
+      totalBlocks: nat;
+      totalProjects: nat;
+      totalTimelines: nat;
+    }) query;
+  saveLlmProjectTimelines: (caller: principal, reqProject: ProjectRequest,
+   reqTimelines: vec TimelineRequest) -> (Result_2);
+  updateProjectReward: (projectId: nat, reward: nat) -> (Result_1);
+  updateProjectStatus: (projectId: nat, reqStatus: ProjectStatus) ->
+   (Result_1);
+  updateTimeline: (timelineId: nat, req: TimelineRequest) -> (Result);
+}

@@ -1,0 +1,179 @@
+type UserOverview = 
+ record {
+   totalDone: nat;
+   totalOverdue: nat;
+   totalTask: nat;
+   userId: UserId;
+ };
+type UserId = principal;
+type TaskStatus = 
+ variant {
+   done;
+   in_progress;
+   todo;
+ };
+type TaskReviewRequest = 
+ record {
+   review: text;
+   taskId: nat;
+ };
+type TaskRequest = 
+ record {
+   assignees: vec principal;
+   desc: text;
+   dueDate: int;
+   projectId: nat;
+   tag: Tags;
+   title: text;
+ };
+type TaskId = nat;
+type TaskFilter = 
+ record {
+   keyword: opt text;
+   status: opt vec TaskStatus;
+   tag: opt vec Tags;
+ };
+type TaskBlockData = 
+ variant {
+   review: Review;
+   task: Task;
+ };
+type TaskBlock = 
+ record {
+   data: TaskBlockData;
+   hash: text;
+   id: nat;
+   nonce: nat;
+   previousHash: text;
+   signature: text;
+   timestamp: int;
+ };
+type TaskAction = 
+ variant {
+   assigneeUpdate: record {
+                     added: vec UserId;
+                     removed: vec UserId;
+                   };
+   create;
+   metadataUpdate: record {
+                     field: text;
+                     newValue: text;
+                     oldValue: text;
+                   };
+   statusUpdate: record {
+                   from: TaskStatus;
+                   to: TaskStatus;
+                 };
+ };
+type Task = 
+ record {
+   action: TaskAction;
+   assignees: vec UserId;
+   createdById: UserId;
+   desc: text;
+   doneAt: opt int;
+   doneById: opt UserId;
+   dueDate: int;
+   id: TaskId;
+   priority: bool;
+   projectId: ProjectId;
+   status: TaskStatus;
+   tag: Tags;
+   title: text;
+ };
+type Tags = 
+ variant {
+   backend;
+   business_analyst;
+   frontend;
+   ui;
+ };
+type ReviewId = nat;
+type ReviewAction = 
+ variant {
+   create;
+   fix: record {fixedBy: UserId;};
+   update: record {
+             newReview: text;
+             oldReview: text;
+           };
+ };
+type Review = 
+ record {
+   action: ReviewAction;
+   fixedAt: opt int;
+   fixedById: opt UserId;
+   id: ReviewId;
+   review: text;
+   reviewerId: UserId;
+   taskId: TaskId;
+ };
+type Result_6 = 
+ variant {
+   err: text;
+   ok: vec TaskBlock;
+ };
+type Result_5 = 
+ variant {
+   err;
+   ok: vec Task;
+ };
+type Result_4 = 
+ variant {
+   err: text;
+   ok: vec Review;
+ };
+type Result_3 = 
+ variant {
+   err: text;
+   ok: vec UserOverview;
+ };
+type Result_2 = 
+ variant {
+   err: text;
+   ok: vec text;
+ };
+type Result_1 = 
+ variant {
+   err: text;
+   ok: Review;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: Task;
+ };
+type ProjectId = nat;
+service : {
+  addReview: (req: TaskReviewRequest) -> (Result_1);
+  createTask: (req: TaskRequest) -> (Result);
+  getReviewHistory: (reviewId: nat) -> (Result_6) query;
+  getTaskByKeyword: (projectId: nat, keyword: text) -> (Result) query;
+  getTaskDetail: (taskId: nat) -> (Result) query;
+  getTaskHistory: (taskId: nat) -> (Result_6) query;
+  getTaskList: (projectId: nat, filter: opt TaskFilter) -> (Result_5) query;
+  getTaskReviews: (taskId: nat) -> (Result_4) query;
+  getUserOverview: (projectId: nat) -> (Result_3) query;
+  healthCheck: () ->
+   (record {
+      chainIntegrity: bool;
+      lastBlockHash: text;
+      totalBlocks: nat;
+      totalReviews: nat;
+      totalTasks: nat;
+    }) query;
+  /// *  MARK: Project Analysis
+  ///      *
+  ///      *  This function generates a summary of tasks inside a project.
+  ///      *  - It fetches all tasks by project ID.
+  ///      *  - It skips completed tasks (#done).
+  ///      *  - For each task, it lists title, status, due date, priority, and assignees.
+  ///      *  - The result is a single text string useful for analysis or AI prompts.
+  projectAnalysis: (projectId: nat) -> (text) query;
+  saveLlmTasks: (caller: principal, projectId: nat, reqTasks:
+   vec TaskRequest) -> (Result_2);
+  updateReview: (reviewId: nat, req: TaskReviewRequest) -> (Result_1);
+  updateReviewFixed: (reviewId: nat) -> (Result_1);
+  updateTaskMetadata: (taskId: nat, req: TaskRequest) -> (Result);
+  updateTaskStatus: (taskId: nat, reqStatus: TaskStatus) -> (Result);
+}

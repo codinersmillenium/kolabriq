@@ -1,0 +1,55 @@
+type TimelineRequest = 
+ record {
+   endDate: int;
+   startDate: int;
+   title: text;
+ };
+type TaskRequest = 
+ record {
+   assignees: vec principal;
+   desc: text;
+   dueDate: int;
+   projectId: nat;
+   tag: Tags;
+   title: text;
+ };
+type Tags = 
+ variant {
+   backend;
+   business_analyst;
+   frontend;
+   ui;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: ResponseProjectPlanner;
+ };
+type ResponseProjectPlanner = 
+ record {
+   message: text;
+   projectId: opt ProjectId;
+ };
+type ProjectType = 
+ variant {
+   free;
+   rewarded;
+ };
+type ProjectRequest = 
+ record {
+   desc: text;
+   name: text;
+   projectType: ProjectType;
+   reward: nat;
+   tags: vec Tags;
+   thumbnail: blob;
+ };
+type ProjectId = nat;
+service : {
+  /// * MARK: Project planner
+  /// 	* 
+  /// 	* Some parameter fill with dummy data, for effecienty resource run llm
+  projectPlanner: (caller: principal, reqProject: ProjectRequest,
+   reqTimelines: vec TimelineRequest, reqTasks: vec TaskRequest) -> (
+   Result);
+}

@@ -1,0 +1,14 @@
+type UserId = principal;
+type PayoutTeam = 
+ record {
+   token: nat;
+   userId: UserId;
+ };
+service : {
+  balanceOf: (owner: principal) -> (nat) query;
+  buyIn: (amount: nat) -> (nat);
+  name: () -> (text) query;
+  symbol: () -> (text) query;
+  teamPayout: (payouts: vec PayoutTeam) -> (bool);
+  updateBalance: (owner: principal, value: nat) -> ();
+}

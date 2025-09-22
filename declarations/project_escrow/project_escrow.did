@@ -1,0 +1,110 @@
+type UserId = principal;
+type TransferStatus = 
+ variant {
+   completed;
+   failed;
+   pending;
+   retrying;
+ };
+type TransferRecord = 
+ record {
+   amount: Tokens;
+   escrowId: EscrowId;
+   icpTransactionId: opt nat;
+   initiatedBy: UserId;
+   projectId: ProjectId;
+   recipient: UserId;
+   status: TransferStatus;
+   timestamp: int;
+   transferId: TransferId;
+ };
+type TransferId = text;
+type Tokens = nat;
+type TeamPayout = 
+ record {
+   amount: nat;
+   recipient: UserId;
+ };
+type Result_3 = 
+ variant {
+   err: text;
+   ok: TransferRecord;
+ };
+type Result_2 = 
+ variant {
+   err: text;
+   ok: BatchPayoutRecord;
+ };
+type Result_1 = 
+ variant {
+   err: text;
+   ok: Tokens;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: ProjectEscrow;
+ };
+type ProjectId = nat;
+type ProjectEscrow = 
+ record {
+   admin: UserId;
+   availableAmount: Tokens;
+   createdAt: int;
+   escrowAccount: Account;
+   id: EscrowId;
+   lockTransactionId: opt nat;
+   projectId: ProjectId;
+   status: EscrowStatus;
+   totalAmount: Tokens;
+ };
+type PayoutId = text;
+type EscrowStatus = 
+ variant {
+   active;
+   created;
+   depleted;
+   funded;
+   refunded;
+ };
+type EscrowId = text;
+type BatchPayoutRecord = 
+ record {
+   escrowId: EscrowId;
+   failedTransfers: nat;
+   initiatedBy: UserId;
+   payoutId: PayoutId;
+   projectId: ProjectId;
+   successfulTransfers: nat;
+   timestamp: int;
+   totalAmount: Tokens;
+   totalRecipients: nat;
+   transfers: vec TransferId;
+ };
+type Account = 
+ record {
+   owner: principal;
+   subaccount: opt blob;
+ };
+service : {
+  createProjectEscrow: (projectId: nat, totalAmount: nat, admin:
+   principal) -> (Result);
+  emergencyRefund: (escrowId: text, authorizedBy: principal) -> (Result_3);
+  executeTeamPayout: (projectId: nat, teamPayouts: vec TeamPayout,
+   initiatedBy: principal) -> (Result_2);
+  fundEscrow: (projectId: nat, totalAmount: nat, admin: principal) ->
+   (Result);
+  getBatchPayoutDetails: (payoutId: PayoutId) ->
+   (opt record {
+          batch: BatchPayoutRecord;
+          transfers: vec TransferRecord;
+        }) query;
+  getEscrowBalance: (escrowId: EscrowId) -> (Result_1);
+  getEscrowBatchHistory: (escrowId: EscrowId) ->
+   (vec BatchPayoutRecord) query;
+  getEscrowDetail: (escrowId: EscrowId) -> (opt ProjectEscrow) query;
+  getEscrowFee: () -> (Tokens) query;
+  getEscrowTransferHistory: (escrowId: EscrowId) ->
+   (vec TransferRecord) query;
+  getProjectEscrow: (projectId: nat) -> (Result) query;
+}
