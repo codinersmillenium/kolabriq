@@ -1,6 +1,7 @@
 .dfx
 *.Identifier
 .mops
+node_modules
 
 # DFX
 declarations/
