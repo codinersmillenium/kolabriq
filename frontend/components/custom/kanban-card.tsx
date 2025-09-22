@@ -10,7 +10,7 @@ import { LucideMessageSquareText, LucidePlus, LucideUser, LucideEllipsis, WandSp
 import { useState, DragEvent, useEffect } from 'react'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
-import { initActor } from '@/lib/canisters'
+import { callWithRetry, initActor } from '@/lib/canisters'
 import { Principal } from '@dfinity/principal'
 import { AskButton } from '../ai/chatbot'
 import { formatDate, isOverdue, nowStr } from '@/lib/utils'
@@ -58,6 +58,8 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
         const ongoingData = []
         const doneData = []
         for (let obj in task) {
+            delete task[obj].doneAt;
+
             const typeTask: string = Object.keys(task[obj].status).toString()
             task[obj].id = Number(task[obj].id)
             task[obj].projectId = Number(task[obj].projectId)
@@ -66,7 +68,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
 
             // Get task history
             task[obj].history = []
-            const history = await actors.tActor.getTaskHistory(parseFloat(task[obj].id))
+            const history = await callWithRetry(actors.tActor, "getTaskHistory", parseFloat(task[obj].id))
             if (typeof history.ok !== 'undefined') {
                 // Naturalize big int
                 task[obj].history = history.ok.map((h: any) => {
@@ -77,10 +79,9 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                     }
                 })
             }
-            console.log("history", task[obj].history);
 
             // Get user assignees
-            const user = await actors.uActor.getUserDetail(task[obj].assignees[0])
+            const user = await callWithRetry(actors.uActor, "getUserDetail", task[obj].assignees[0])
             task[obj].assignees = []
             if (typeof user.ok !== 'undefined') {
                 task[obj].assignees = [user.ok]
@@ -163,7 +164,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
         switch (kanban) {
             case 'todo':
                 if (todo) {
-                    const resTask = await taskActor.updateTaskStatus(taskId, { ["todo"]: null })
+                    const resTask = await callWithRetry(taskActor, "updateTaskStatus", taskId, { ["todo"]: null })
                     if (resTask.err) {
                         return alert(resTask.err)
                     }
@@ -181,7 +182,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                 break;
             case 'ongoing':
                 if (ongoing) {
-                    const resTask = await taskActor.updateTaskStatus(taskId, { ["in_progress"]: null })
+                    const resTask = await callWithRetry(taskActor, "updateTaskStatus", taskId, { ["in_progress"]: null })
                     if (resTask.err) {
                         return alert(resTask.err)
                     }
@@ -199,7 +200,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                 break;
             case 'completed':
                 if (completed) {
-                    const resTask = await taskActor.updateTaskStatus(taskId, { ["done"]: null })
+                    const resTask = await callWithRetry(taskActor, "updateTaskStatus", taskId, { ["done"]: null })
                     if (resTask.err) {
                         return alert(resTask.err)
                     }
@@ -262,8 +263,8 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
         }
     }
 
-    const handleTriggerAsk = (taskTitle: string) => {
-        aiRef.current?.triggerContext(taskTitle);
+    const handleTriggerAsk = (taskTitle: string, taskDesc: string) => {
+        aiRef.current?.triggerContext(taskTitle, taskDesc);
     };
 
     useEffect(() => {
@@ -307,9 +308,8 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                 {item.assignees.map((team: any, i: number) => {
                                     const rand = Math.floor(Math.random() * 4) + 1; // Random 1-4
                                     return (
-                                        <>
+                                        <div key={i} className='flex items-center gap-1'>
                                             <Image
-                                                key={key}
                                                 src={`/images/kanban-avatar${rand}.svg`}
                                                 alt="avatar"
                                                 width={28}
@@ -317,7 +317,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                                 className={`size-[28px] rounded-full ${i < 2 ? "hidden xl:block" : ""}`}
                                             />
                                             <span className='text-xs'>{team.firstName} {team.lastName}</span>
-                                        </>
+                                        </div>
                                     )
                                 })}
                             </div>
@@ -364,7 +364,7 @@ export const KanbanCard = ({ task, tabs, aiRef }: any) => {
                                 </div>
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => handleTriggerAsk(item.title)}
+                                        onClick={() => handleTriggerAsk(item.title, item.desc)}
                                         className="flex-grow text-xs p-2 py-2 bg-linear-to-r from-danger/80 to-warning/50 text-white flex items-center justify-center gap-1 rounded-md"
                                     >
                                         <WandSparkles size={16} />

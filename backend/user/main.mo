@@ -121,14 +121,12 @@ persistent actor {
 
     public shared query func getUserList(
         filter : TypUser.UserFilter
-    ) : async Result.Result<[TypUser.UserProfile], ()> {
+    ) : async Result.Result<[TypUser.UserProfile], Text> {
         var results: [TypUser.UserProfile] = [];
         for ((userId, blockIds) in user.userIndex.entries()) {
             switch (user.getCurrentUserState(userId)) {
                 case (null)  { };
-                case (?data) {
-                    // TODO: CEK REF KEY
-                    
+                case (?dataCurr) {
                     var matches = true;
                     
                     // Role filter
@@ -136,7 +134,7 @@ persistent actor {
                         case (null)   { };
                         case (?roles) {
                             if (roles.size() > 0) {
-                                let roleCheck = Array.find<TypCommon.Role>(roles, func r = r == data.role);
+                                let roleCheck = Array.find<TypCommon.Role>(roles, func r = r == dataCurr.role);
                                 matches := matches and Option.isSome(roleCheck);
                             };
                         };
@@ -147,7 +145,7 @@ persistent actor {
                         case (null)  { };
                         case (?tags) {
                             if (tags.size() > 0) {
-                                matches := matches and Utl.hasAnyTag(data.tags, tags);
+                                matches := matches and Utl.hasAnyTag(dataCurr.tags, tags);
                             };
                         };
                     };
@@ -158,26 +156,28 @@ persistent actor {
                         case (?keyword) {
                             if (keyword != "") {
                                 let lowerKeyword    = Text.toLowercase(keyword);
-                                let matchesName     = Text.contains(Text.toLowercase(data.firstName # " " # data.lastName), #text lowerKeyword);
-                                let matchesUsername = Text.contains(Text.toLowercase(data.userName), #text lowerKeyword);
+                                let matchesName     = Text.contains(Text.toLowercase(dataCurr.firstName # " " # dataCurr.lastName), #text lowerKeyword);
+                                let matchesUsername = Text.contains(Text.toLowercase(dataCurr.userName), #text lowerKeyword);
                                 matches := matches and (matchesName or matchesUsername);
                             };
                         };
                     };
                     
                     if (matches) {
-                        results := Array.append(results, [data]);
+                        results := Array.append(results, [dataCurr]);
                     };
                 };
             };
         };
-        
+
         return #ok(results);
     };
 
     // MARK: Get team ref code
 
     public shared query({caller}) func getTeamRefCode() : async Result.Result<Text, Text> {
+        return #ok("REF-123");
+        
         switch (user.getCurrentUserState(caller)) {
             case (null)  { return #err("Invalid icp identity"); };
             case (?data) { return #ok(Option.get(data.referrerCode, data.personalRefCode)); };

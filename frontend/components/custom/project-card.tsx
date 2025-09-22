@@ -3,17 +3,15 @@ import { callWithRetry, initActor } from '@/lib/canisters';
 import { Clipboard, ClipboardList, Coins, History, LucideDollarSign, LucideEllipsisVertical, LucideIdCard, LucideUsers, SquarePen, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { HTMLAttributes, ReactNode, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Input } from '../ui/input';
 import { Principal } from '@dfinity/principal';
 import { Badge } from '../ui/badge';
 import { useRouter } from 'next/navigation';
 import { ProjectTypeClass, ProjectTypeLabel, StatusColor, StatusLabel } from '@/constants/status';
 import { ProjectType, StatusType } from '@/types/project';
-import { e8sToStr, formatDate } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { e8sToStr } from '@/lib/utils';
 import DialogUi from '../ui/dialog';
 
 export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTitle }: any) {
@@ -24,7 +22,24 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
     status: false
   })
 
-  const getProject = async () => {
+  // MARK: Actors
+  const [projectActor, setProjectActor] = useState<any>(null)
+  const [userActor, setUserActor] = useState<any>(null)
+
+  const initActors = async (): Promise<{ pActor: any, uActor: any }> => {
+    const pActor = await initActor("project");
+    const uActor = await initActor("user");
+
+    setProjectActor(pActor);
+    setUserActor(uActor);
+
+    return {
+      pActor,
+      uActor,
+    };
+  };
+
+  const getProject = async (userActor: any, projectActor: any) => {
     var param = {
       status: filter.status ? [{ [filter.status]: null }] : [],
       projectType: filter.type ? [{ [filter.type]: null }] : [],
@@ -32,18 +47,18 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
       keyword: [],
     }
 
-    const { code }: any = await callWithRetry(actorUser, "getTeamRefCode")
-    const actorProject = await initActor('project')
-    const { ok }: any = await callWithRetry(actorProject, "getOwnedProjectList", code, param)
+    const refCode: any = await callWithRetry(userActor, "getTeamRefCode")
+    const projects: any = await callWithRetry(projectActor, "getOwnedProjectList", refCode.ok, param)
 
+    const list = projects.ok
     if (page.role === 'admin') {
-      for (let obj in ok) {
-        const uint8Array = new Uint8Array(ok[obj].thumbnail);
+      for (let obj in list) {
+        const uint8Array = new Uint8Array(list[obj].thumbnail);
         const blob = new Blob([uint8Array], { type: detectMimeType(uint8Array) });
-        ok[obj].thumbnailUrl = URL.createObjectURL(blob)
+        list[obj].thumbnailUrl = URL.createObjectURL(blob)
 
-        for (let i in ok[obj].teams) {
-          const index = ok[obj].teams[i]
+        for (let i in list[obj].teams) {
+          const index = list[obj].teams[i]
           const role: string = Object.keys(index.role).toString()
           if (role === 'maintainer') {
             setAssign({
@@ -55,7 +70,7 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
         }
       }
     }
-    setItem(ok)
+    setItem(list)
   }
 
   const detectMimeType = (uint8Array: Uint8Array): string => {
@@ -80,13 +95,10 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
     const { value }: any = document.querySelector('#user_id')
     const principal = [Principal.fromText(value)]
 
-    const actor = await initActor('project')
-    await callWithRetry(actor, "assignProjectTeam", id, principal)
+    await callWithRetry(projectActor, "assignProjectTeam", id, principal)
 
     alert('Success Assign User')
-    setTimeout(() => {
-      window.location.href = '/' + page.path
-    }, 100)
+    getProject(userActor, projectActor)
   }
 
   const DialogPM = (id: string): any => {
@@ -125,7 +137,12 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
   }
 
   useEffect(() => {
-    getProject()
+    const init = async () => {
+      const actors = await initActors();
+      getProject(actors.uActor, actors.pActor);
+    };
+
+    init();
   }, [filter, page.role])
 
   return (
@@ -138,7 +155,7 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
           <div className="rounded-[1vw] bg-[#232324] shadow-3xl dark:shadow-sm" key={j}>
             <div className="space-y-4 p-3">
               <Link
-                href="/task-detail/1"
+                href="/task-detail"
                 className={`relative w-full h-[200px] mt-0 block rounded-xl overflow-hidden p-1.5 ring-2 dark:bg-black-dark dark:ring-gray-300/10
                   ${!i.thumbnailUrl ? "bg-gray-200 ring-gray-300" : "ring-gray-300"}`}
                 onClick={() => handleLinkShow(i.id)}
@@ -186,12 +203,10 @@ export default function ProjectCard({ filter, page, dialogProjectOpen, dialogTit
                   className="text-sm/tight font-semibold text-white duration-300 hover:underline inline-flex"
                   onClick={() => handleLinkShow(i.id)}
                 >
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                  {/* {i.name} */}
+                  {i.name}
                 </Link>
                 <p className="line-clamp-3 text-xs/normal font-medium text-white">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Quis optio necessitatibus assumenda, voluptatum sit in dicta? Illum velit officiis numquam perferendis maxime, non in labore.
-                  {/* {i.desc} */}
+                  {i.desc}
                 </p>
               </div>
 

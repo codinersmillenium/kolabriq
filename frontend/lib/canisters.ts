@@ -2,18 +2,16 @@ import * as decUser from '@/declarations/user'
 import * as decProject from '@/declarations/project'
 import * as decTask from '@/declarations/task'
 import * as decAi from '@/declarations/ai'
-import * as decToken from '@/declarations/token'
 import * as decIcpLedger from '@/declarations/icp_ledger'
+import * as decEscrow from '@/declarations/project_escrow'
 import { AuthClient } from '@dfinity/auth-client'
-import { Principal } from '@dfinity/principal';
-import { HttpAgent } from '@dfinity/agent'
 
 const network = process.env.DFX_NETWORK;
 const identityProvider =
     network === 'ic'
         ? 'https://identity.ic0.app' // Mainnet
-        : "http://be2us-64aaa-aaaaa-qaabq-cai.localhost:4943/"
-        // : process.env.API_HOST + '?canisterId=' + process.env.CANISTER_ID_INTERNET_IDENTITY
+        // : "http://be2us-64aaa-aaaaa-qaabq-cai.localhost:4943/"
+        : process.env.API_HOST + '?canisterId=' + process.env.CANISTER_ID_INTERNET_IDENTITY
 
 export let authClient: AuthClient | null = null
 export let identity: any = null
@@ -37,7 +35,7 @@ export const ensureClient = async () => {
     }
 }
 
-type ActorName = 'user' | 'project' | 'task' | 'ai' | 'token' | 'icp_ledger';
+type ActorName = 'user' | 'project' | 'task' | 'ai' | 'icp_ledger' | 'project_escrow';
 
 export const initActor = async (canister: ActorName = 'user') => {
     await ensureClient();
@@ -56,11 +54,11 @@ export const initActor = async (canister: ActorName = 'user') => {
         case 'ai':
             canisterBlog = decAi.createActor(decAi.canisterId, options)
             break;
-        case 'token':
-            canisterBlog = decToken.createActor(decToken.canisterId, options)
-            break;
         case 'icp_ledger':
             canisterBlog = decIcpLedger.createActor(decIcpLedger.canisterId, options)
+            break;
+        case 'project_escrow':
+            canisterBlog = decEscrow.createActor(decEscrow.canisterId, options)
             break;
     }
     return canisterBlog

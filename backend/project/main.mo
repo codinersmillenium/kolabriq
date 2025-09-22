@@ -188,15 +188,15 @@ persistent actor {
             };
         };
 
-        let dataProject = project.createProject(caller, refKey, req);
-
         if (isRewarded) {
-            let escrow = await CanProjectEscrow.createProjectEscrow(dataProject.id, dataProject.reward, caller);
+            let escrow = await CanProjectEscrow.createProjectEscrow(project.nextProjectId, req.reward, caller);
             switch(escrow) {
                 case(#err(e)) { return #err(e) };
                 case(#ok(_))  { };
             };
         };
+
+        let dataProject = project.createProject(caller, refKey, req);
 
         return #ok(dataProject);
 	};

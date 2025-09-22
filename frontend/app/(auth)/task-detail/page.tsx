@@ -3,25 +3,20 @@
 
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
-import { Star, Settings, FilePlus2, Share2, LucideSearch, LucideListFilter, Coins, Copy, ClipboardList, ClipboardX, Clipboard } from 'lucide-react'
-import { useEffect, useState, useRef, FormEvent, Dispatch, SetStateAction } from 'react'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Star, Settings, FilePlus2, Share2, LucideSearch, LucideListFilter, Coins, Copy, ClipboardList, ClipboardX } from 'lucide-react'
+import { useEffect, useState, useRef, FormEvent } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import Image from 'next/image';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScheduleTimeline } from '@/components/custom/schedule-timeline'
 import { KanbanCard } from '@/components/custom/kanban-card'
-import { getPrincipal, initActor } from '@/lib/canisters'
+import { callWithRetry, getPrincipal, initActor } from '@/lib/canisters'
 import { Badge } from '@/components/ui/badge'
 import Chatbot, { ChatbotRef } from '@/components/ai/chatbot'
 import DialogUi from '@/components/ui/dialog'
 import { Principal } from '@dfinity/principal'
 import { DataTable } from '@/components/custom/table/data-table'
-import {
-  dashboardcolumns,
-  ITable,
-} from '@/components/custom/table/dashboard-columns'
-import { ProjectBlock } from '@/types/task'
 import { historyColumns, IBlockHistory } from '@/components/custom/table/block-history-columns'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
@@ -30,15 +25,17 @@ import { e8sToStr, nowStr, toE8s } from '@/lib/utils'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
+import * as decProjectEscrow from '@/declarations/project_escrow'
+
 const Table = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [project, setProject] = useState<any>(null)
+  const [projectTeam, setProjectTeam] = useState([])
   const [task, setTask] = useState<[]>([])
   const [taskId, setTaskId] = useState<any>([])
   const [idProject, setIdProject] = useState<any>(null)
   const [isDialogOpen, setDialogOpen] = useState<boolean>(false)
   const [overview, setOverview] = useState<any>([])
-  const [formPayout, setFormPayout] = useState({});
 
   const [openDialCreateTask, setOpenDialCreateTask] = useState<boolean>(false);
 
@@ -63,14 +60,18 @@ const Table = () => {
     };
   };
 
-
+  // MARK: Init data project, task
   const getProject = async (id: any, pActor: any) => {
-    const { ok } = await pActor.getProjectDetail(parseFloat(id))
-    if (typeof ok == 'undefined') return alert("project not found");
+    const project = await callWithRetry(pActor, "getProjectDetail", parseFloat(id))
+    if (typeof project.ok == 'undefined') return alert("project not found");
+
+    const teams = await callWithRetry(pActor, "getProjectTeam", parseFloat(id))
+    if (typeof teams.ok == 'undefined') return alert("project not found");
 
     setIdProject(id)
-    setProject(ok)
-    setProjectReward(Number(ok.reward))
+    setProject(project.ok)
+    setProjectTeam(teams.ok)
+    setRemainingReward(Number(e8sToStr(project.ok.reward)))
   }
 
   const getTask = async (id: any, tActor: any) => {
@@ -80,10 +81,10 @@ const Table = () => {
       tag: [],
     };
 
-    const tasks = await tActor.getTaskList(parseFloat(id), [param])
-    if (typeof tasks.ok == 'undefined') return;
+    const { ok } = await callWithRetry(tActor, "getTaskList", parseFloat(id), [param])
+    if (typeof ok == 'undefined') return;
 
-    setTask(tasks.ok)
+    setTask(ok)
   }
 
   // MARK: Project teams
@@ -91,25 +92,13 @@ const Table = () => {
   const [projectTeams, setProjectTeams] = useState([])
 
   const getProjectTeams = async (id: any, actors: any) => {
-    const teamsPrincipal = await actors.pActor.getProjectTeam(parseFloat(id))
-    console.log(teamsPrincipal);
-
+    const teamsPrincipal = await callWithRetry(actors.pActor, "getProjectTeam", parseFloat(id))
     if (typeof teamsPrincipal.ok == 'undefined') return;
 
-    const teams = await actors.uActor.getUsersByIds(teamsPrincipal.ok)
-    console.log(teams);
+    const teams = await callWithRetry(actors.uActor, "getUsersByIds", teamsPrincipal.ok)
     if (typeof teams.ok == 'undefined') return;
 
     setProjectTeams(teams.ok)
-  }
-
-  const getTaskByid = async (id: any) => {
-    // const actor_ = await initActor('task')
-    // const { ok } = await actor_.getUserProjectTasks(getPrincipal()[1], parseFloat(id))
-    // if (typeof ok !== 'undefined') {
-    //   setTaskId([ok])
-    // }
-    setTaskId([])
   }
 
   useEffect(() => {
@@ -122,33 +111,41 @@ const Table = () => {
 
       getProject(id, actors.pActor);
       getTask(id, actors.tActor);
-      getTaskByid(id);
       getProjectHistory(id, actors.pActor);
-
-      // aiRef.current?.triggerDailyStandUp(id);
     };
 
     init();
   }, []);
 
-  const handlePushProject = async (status: string) => {
-    const idTask = parseFloat(idProject);
+  // MARK: Project status
 
+  // TODO: 
+  const [disablePushStatus, setDisablePushStatus] = useState(true)
+
+  const handlePushProject = async (status: string) => {
+    const projectId = parseFloat(idProject)
     switch (status) {
       case "new":
-        const reqStatus = {
-          "new": "in_progress",
-        };
-
-        const resProject = await projectActor.updateProjectStatus(idTask, { [reqStatus[status]]: null })
+        const resProject = await callWithRetry(projectActor, "updateProjectStatus", projectId, { ["in_progress"]: null })
         if (!resProject) return alert("Failed push project");
 
-        getProject(idTask, projectActor)
+        getProject(projectId, projectActor)
+        getProjectHistory(projectId, projectActor);
+        isDisabledBtnProject()
         return alert("Success push project")
 
       case "in_progress":
+        if (!project.reward) {
+          const resProject = await callWithRetry(projectActor, "updateProjectStatus", projectId, { ["done"]: null })
+          if (!resProject) return alert("Failed push project");
+
+          getProject(projectId, projectActor)
+          getProjectHistory(projectId, projectActor);
+          return alert("Success push project")
+        }
+
         if (overview.length == 0) {
-          const resTask = await taskActor.getUserOverview(idTask)
+          const resTask = await callWithRetry(taskActor, "getUserOverview", projectId)
           if (!resTask) return alert(resTask.err)
 
           setOverview(resTask.ok)
@@ -180,53 +177,79 @@ const Table = () => {
 
   // MARK: Payout
 
-  const [projectReward, setProjectReward] = useState(0)
+  const [formPayout, setFormPayout] = useState<{ [key: string]: number }>({});
+  const [remainingReward, setRemainingReward] = useState(0)
 
   const handleChangePayout = (userId: string, value: string) => {
-    let e8sReward = toE8s(Number(value))
-    if (e8sReward > projectReward) {
-      alert("Payout exceeds remaining project reward")
+    const newValue = Number(value);
+
+    // Hitung total payout termasuk input baru
+    const totalPayout = Object.entries(formPayout).reduce(
+      (acc, [id, amt]: any) => acc + amt,
+      0
+    ) - (formPayout[userId] || 0) + newValue;
+    // First subtract the old userId value so that it can be updated without double counting.
+
+    const projectReward = Number(e8sToStr(project.reward))
+
+    if (totalPayout > projectReward) {
+      return alert("Total payout exceeds remaining project reward");
     }
 
     setFormPayout((prev) => ({
       ...prev,
-      [userId]: Number(value)
+      [userId]: newValue
     }));
+
+    setRemainingReward(projectReward - totalPayout);
   };
 
   const handlePayout = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    console.log(formPayout);
-
-    // TODO: LAST HERE SEND TOKEN
-    // { "u73il-qowyh-xzxns-n53oq-epmgv-6af74-tc4mr-7p56f-w5kxu-44hna-bae": 0.2653 } TYPE
-    return
-
     try {
-      let totalToken = 0;
-      const payoutList = Object.entries(formPayout).map((p: any) => {
-        totalToken += p[1]
-
+      let totalAmount = 0;
+      const payoutList = Object.entries(formPayout).map(([userId, amount]: any) => {
+        const e8sAmount = toE8s(amount)
+        totalAmount += e8sAmount;
         return {
-          userId: Principal.fromText(p[0]),
-          token: parseFloat(p[1])
-        }
+          recipient: Principal.fromText(userId),
+          amount: e8sAmount,
+        };
       });
 
-      if (totalToken > Number(project.reward)) {
-        return alert("Total token melebihi reward projek")
+      if (totalAmount > Number(project.reward)) {
+        return alert("Total tokens exceed the project reward")
       }
 
-      const actor = await initActor('token')
-      await actor.teamPayout(payoutList)
+      // Process allowace to escrow
+      const actorLedger = await initActor('icp_ledger')
+      await callWithRetry(actorLedger, "icrc2_approve", {
+        from_subaccount: [],
+        spender: {
+          owner: Principal.fromText(decProjectEscrow.canisterId),
+          subaccount: [],
+        },
+        amount: totalAmount,
+        expected_allowance: [],
+        expires_at: [],
+        fee: [],
+        memo: [],
+        created_at_time: [],
+      })
+
+      // Process payout
+      const actorEscrow = await initActor('project_escrow')
+      await callWithRetry(actorEscrow, "executeTeamPayout", parseFloat(idProject), payoutList, getPrincipal())
 
       // update project to done
-      const actorProject_ = await initActor('project')
-      await actorProject_.updateStatus(parseFloat(idProject), { ["done"]: null })
+      await callWithRetry(projectActor, "updateProjectStatus", parseFloat(idProject), { ["done"]: null })
+
+      getProject(idProject, projectActor);
+      getProjectHistory(idProject, projectActor);
     } catch (error) {
       console.error(error)
-      alert('Failed Register User...');
+      alert('Failed to payout');
     }
   }
 
@@ -271,14 +294,11 @@ const Table = () => {
 
       taskFormData.dueDate = Math.floor(dueDate!.getTime() / 1000)
       taskFormData.assignees = [Principal.fromText(taskFormData.assignees_)]
-      console.log(taskFormData, dueDate);
 
-      await taskActor.createTask(taskFormData)
+      await callWithRetry(taskActor, "createTask", taskFormData)
+
       alert('Success Create Task')
-
-      setTimeout(() => {
-        window.location.reload()
-      }, 100);
+      getTask(idProject, taskActor)
     } catch (error) {
       console.error(error)
       alert('Failed Create Task');
@@ -422,16 +442,15 @@ const Table = () => {
     } />
   )
 
-
   // MARK: Project history
 
   const [projectHistory, setProjectHistory] = useState<IBlockHistory[]>([]);
 
   const getProjectHistory = async (id: any, pActor: any) => {
-    const { ok } = await pActor.getProjectHistory(parseFloat(id))
-    if (typeof ok !== 'undefined') {
-      setProjectHistory(ok)
-    }
+    const { ok } = await callWithRetry(pActor, "getProjectHistory", parseFloat(id))
+    if (typeof ok == 'undefined') return;
+
+    setProjectHistory(ok)
   }
 
   return (
@@ -490,26 +509,25 @@ const Table = () => {
           {/* Right Side: Avatars & Actions */}
           <div className="inline-flex flex-wrap items-center gap-2.5 md:justify-end">
             {/* Avatars */}
-            {project && project.teams ? (
+            {project && projectTeam ? (
               <div className="inline-flex items-center -space-x-2">
-                {project.teams.slice(0, 4).map((team: any, i: any) => (
+                {projectTeam.slice(0, 4).map((team: any, i: any) => (
                   <Image
-                    key={team.userName}
+                    key={i}
                     src={`/images/kanban-avatar${i + 1}.svg`}
                     alt="avatar"
                     width={30}
                     height={30}
                     className={`size-[30px] rounded-full ${i < 2 ? "hidden xl:block" : ""}`}
-                    title={team.userName}
                   />
                 ))}
 
-                {project.teams.length > 4 && (
+                {projectTeam.length > 4 && (
                   <Button
                     type="button"
                     className="grid h-[30px] min-w-[30px] shrink-0 place-content-center rounded-full border-2 border-white bg-gray-300 px-1 text-[11px]/none font-bold text-black shadow-sm"
                   >
-                    +{project.teams.length - 4}
+                    +{projectTeam.length - 4}
                   </Button>
                 )}
               </div>
@@ -551,26 +569,17 @@ const Table = () => {
           </div>
         </div>
         <div >
-          <Tabs defaultValue="project-overview">
+          <Tabs defaultValue="project-task">
             <TabsList className="flex items-center justify-between overflow-x-auto rounded-b-lg border-t border-gray-300 bg-white shadow-sm dark:border-gray-700/50 dark:bg-white/6">
               <div className="inline-flex gap-[30px] px-5 text-sm/4 font-semibold sm:px-[30px]">
                 <div className="inline-flex gap-2.5 py-[11px] text-sm/[18px] font-semibold">
-                  <TabsTrigger
-                    value="project-overview"
-                    className="group flex items-center gap-1.5 whitespace-nowrap p-2.5 font-medium transition-all hover:bg-light-theme hover:text-black focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-light-theme data-[state=active]:text-black dark:hover:bg-black dark:hover:text-white dark:data-[state=active]:bg-black dark:data-[state=active]:text-white [&>svg]:size-[18px] [&>svg]:shrink-0 [&[data-state=active]>svg]:text-primary rounded-none border-b-2 border-transparent bg-transparent! px-0 py-4 data-[state=active]:border-primary"
-                  >
-                    Overview
-                    <div className="inline-flex items-center gap-1.5 rounded-lg shrink-0 bg-light-blue text-[10px]/[8px] px-1.5 py-1 font-semibold text-black">
-                      {task.length}
-                    </div>
-                  </TabsTrigger>
                   <TabsTrigger
                     value="project-task"
                     className="group flex items-center gap-1.5 whitespace-nowrap p-2.5 font-medium transition-all hover:bg-light-theme hover:text-black focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-light-theme data-[state=active]:text-black dark:hover:bg-black dark:hover:text-white dark:data-[state=active]:bg-black dark:data-[state=active]:text-white [&>svg]:size-[18px] [&>svg]:shrink-0 [&[data-state=active]>svg]:text-primary rounded-none border-b-2 border-transparent bg-transparent! px-0 py-4 data-[state=active]:border-primary"
                   >
                     Task
-                    <div className="inline-flex items-center gap-1.5 rounded-lg shrink-0 bg-light-purple text-[10px]/[8px] px-1.5 py-1 font-semibold text-black">
-                      {taskId.length}
+                    <div className="inline-flex items-center gap-1.5 rounded-lg shrink-0 bg-light-blue text-[10px]/[8px] px-1.5 py-1 font-semibold text-black">
+                      {task.length}
                     </div>
                   </TabsTrigger>
                   <TabsTrigger
@@ -584,7 +593,7 @@ const Table = () => {
                     className="group flex items-center gap-1.5 whitespace-nowrap p-2.5 font-medium transition-all hover:bg-light-theme hover:text-black focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-light-theme data-[state=active]:text-black dark:hover:bg-black dark:hover:text-white dark:data-[state=active]:bg-black dark:data-[state=active]:text-white [&>svg]:size-[18px] [&>svg]:shrink-0 [&[data-state=active]>svg]:text-primary rounded-none border-b-2 border-transparent bg-transparent! px-0 py-4 data-[state=active]:border-primary"
                   >
                     Project History
-                    <div className="inline-flex items-center gap-1.5 rounded-lg shrink-0 bg-primary text-[10px]/[8px] px-1.5 py-1 font-semibold text-black">
+                    <div className="inline-flex items-center gap-1.5 rounded-lg shrink-0 bg-primary text-[10px]/[8px] text-white px-1.5 py-1 font-semibold text-black">
                       {projectHistory.length}
                     </div>
                   </TabsTrigger>
@@ -622,17 +631,10 @@ const Table = () => {
               </div>
             </TabsList>
             <TabsContent
-              value="project-overview"
-              className="font-medium text-black"
-            >
-              <KanbanCard task={task} tabs={{ id: idProject, tab: 'overview' }} aiRef={aiRef} />
-            </TabsContent>
-
-            <TabsContent
               value="project-task"
               className="font-medium text-black"
             >
-              <KanbanCard task={taskId} tabs={{ id: idProject, tab: 'task' }} aiRef={aiRef} />
+              <KanbanCard task={task} tabs={{ id: idProject, tab: 'task' }} aiRef={aiRef} />
             </TabsContent>
 
             <TabsContent
@@ -668,32 +670,29 @@ const Table = () => {
           <div>
             <div className='flex items-center gap-1.5'>
               <Coins size={18} />
-              <span className='text-xs font-bold'>{e8sToStr(projectReward)}</span>
+              <span className='text-xs font-bold'>{remainingReward}</span>
             </div>
             <span className="hidden h-px w-full rounded-full bg-gray-300 sm:block dark:bg-gray-300/50 my-3" />
             <form className="space-y-5" onSubmit={handlePayout}>
-              {/* TODO: LAST HERE */}
               {overview.map((o: any, i: any) => {
-                console.log(project);
-
                 return (
-                  <div className="space-y-1">
+                  <div className="space-y-1" key={i}>
                     <div className='font-bold flex justify-between gap-2'>
                       <div className='flex gap-2'>
                         <div>{`User #${i + 1}:`}</div>
                         <div className='flex flex-1 items-center text-xs gap-1'>
                           <Copy size={16} />
-                          u73il-qowyh-...
+                          <span className='w-50 overflow-hidden whitespace-nowrap overflow-ellipsis'>{o.userId.toString()}</span>
                         </div>
                       </div>
                       <div className='flex gap-2'>
                         <div className='flex flex-1 items-center text-xs gap-1'>
                           <ClipboardList size={16} />
-                          12
+                          {Number(o.totalDone)}
                         </div>
                         <div className='flex flex-1 items-center text-xs gap-1'>
                           <ClipboardX size={16} />
-                          2
+                          {Number(o.totalOverdue)}
                         </div>
                       </div>
                       {/* <div className='text-xs'>
@@ -738,77 +737,6 @@ const Table = () => {
               </div>
             </form>
           </div>
-
-          // <Card>
-          //   <CardHeader className="space-y-1.5 rounded-t-lg border-b border-gray-300 bg-gray-100 px-5 py-4 text-base/5 font-semibold text-black">
-          //     <h3>Payout Team</h3>
-          //     <p className="text-sm/tight font-medium text-gray-700">
-          //       Project Reward: {project ? toE8s(project.reward) : 0}
-          //     </p>
-          //   </CardHeader>
-          //   <CardContent className='max-h-[60vh] overflow-auto'>
-          //     <form className="space-y-5 p-3" onSubmit={handlePayout}>
-          //       {overview.map((o: any, i: any) => {
-          //         return (
-          //           <div className="space-y-2.5">
-          //             <div className='font-bold'>
-          //               <div>{`User #${i + 1}:`}</div>
-          //               <div className='text-xs'>{o.userId.toString()}</div>
-          //             </div>
-          //             <fieldset className="border border-gray-300 p-4 rounded-md">
-          //               <legend className="text-sm font-medium text-gray-700 mb-2">
-          //                 {`Payout #${i + 1}`}
-          //               </legend>
-          //               <div className="space-y-2">
-          //                 <div className='grid grid-cols-3'>
-          //                   <div className="text-sm text-gray-700">
-          //                     <h5 className='font-bold'>Total Task: </h5>
-          //                     <p>{o.totalTask}</p>
-          //                   </div>
-          //                   <div className="text-sm text-gray-700">
-          //                     <h5 className='font-bold'>Total Done: </h5>
-          //                     <p>{o.totalDone}</p>
-          //                   </div>
-          //                   <div className="text-sm text-gray-700">
-          //                     <h5 className='font-bold'>Total Overdue: </h5>
-          //                     <p>{o.totalOverdue}</p>
-          //                   </div>
-          //                 </div>
-          //               </div>
-          //               <hr className='mt-2.5' />
-          //               <div className="space-y-2.5 mt-2.5">
-          //                 <label className="block font-semibold leading-tight text-black">
-          //                   Pay
-          //                 </label>
-          //                 <Input
-          //                   type="number"
-          //                   onChange={(e) => handleChangePayout(o.userId.toString(), e.target.value)}
-          //                   required
-          //                 />
-          //               </div>
-          //             </fieldset>
-          //           </div>
-          //         )
-          //       })}
-          //       <div className="flex items-center justify-between gap-4">
-          //         <Button
-          //           variant={'outline-general'}
-          //           size={'large'}
-          //           onClick={() => setDialogOpen(false)}
-          //         >
-          //           Cancel
-          //         </Button>
-          //         <Button
-          //           type="submit"
-          //           variant={'black'}
-          //           size={'large'}
-          //         >
-          //           Save
-          //         </Button>
-          //       </div>
-          //     </form>
-          //   </CardContent>
-          // </Card>
         } />
       </div>
     </div>

@@ -1,16 +1,9 @@
 'use client'
 
 
-import { columns, ITable } from '@/components/custom/table/columns'
-import { DataTable } from '@/components/custom/table/data-table'
+import * as decProjectEscrow from '@/declarations/project_escrow'
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover'
 import {
     Select,
     SelectContent,
@@ -18,21 +11,19 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { format } from 'date-fns'
-import { CalendarCheck, Divide, Plus } from 'lucide-react'
-import { HTMLAttributes, use, useEffect, useRef, useState } from 'react'
 import DialogUI from '@/components/ui/dialog'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Search } from 'lucide-react'
 import ProjectCard from '@/components/custom/project-card'
 import { Input } from '@/components/ui/input'
-import { getPrincipal, initActor } from '@/lib/canisters'
+import { callWithRetry, getPrincipal, initActor } from '@/lib/canisters'
 import { useAuth } from '@/context/auth-context'
 import ProjectPlanner from '@/components/ai/project-planner'
 import Chatbot, { ChatbotRef } from '@/components/ai/chatbot'
 import { TeamKey } from '@/types/project'
 import { toE8s } from '@/lib/utils'
+import { useEffect, useRef, useState } from 'react'
+import { Plus } from 'lucide-react'
+import { Principal } from '@dfinity/principal'
 
 const Table = () => {
     const [filter, setFilter] = useState<object>({
@@ -47,7 +38,7 @@ const Table = () => {
         tags_: [],
         projectType_: [],
         reward: 0,
-        thumbnail: null,
+        thumbnail_: null,
     })
     const [rewards, setRewards] = useState(false)
 
@@ -120,16 +111,56 @@ const Table = () => {
             formData.reward = toE8s(Number(formData.reward) || 0)
 
             // handle file data
-            const arrayBuffer = await formData.thumbnail.arrayBuffer();
+            const arrayBuffer = await formData.thumbnail_.arrayBuffer();
             formData.thumbnail = Array.from(new Uint8Array(arrayBuffer));
-            const actor = await initActor('project')
-            const ok = await actor.createProject(formData)
-            alert('Success Create Project...');
+
+            const actorLedger = await initActor('icp_ledger')
+            const balance = await callWithRetry(actorLedger, "icrc1_balance_of", {
+                owner: getPrincipal(),
+                subaccount: [],
+            })
+
+            if (balance < formData.reward) return alert(`Insufficient ICP balance. Required: ${formData.reward}, Available: ${balance}`)
+
+            const approve = await callWithRetry(actorLedger, "icrc2_approve", {
+                from_subaccount: [],
+                spender: {
+                    owner: Principal.fromText(decProjectEscrow.canisterId),
+                    subaccount: [],
+                },
+                amount: formData.reward,
+                expected_allowance: [],
+                expires_at: [],
+                fee: [],
+                memo: [],
+                created_at_time: [],
+            })
+
+            console.log("approve: ", approve);
+
+            // If approve reward sub with icp fee
+            const fee = await callWithRetry(actorLedger, "icrc1_fee")
+            formData.reward -= Number(fee)
+
+            // Create project
+            const userActor = await initActor('user')
+            const projectActor = await initActor('project')
+
+            const refCode: any = await callWithRetry(userActor, "getTeamRefCode")
+            const project: any = await callWithRetry(projectActor, "createProject", refCode.ok, formData)
+
+            if (project.err) {
+                return alert(project.err)
+            }
+
+            alert('Success Create Project');
             setTimeout(() => {
                 window.location.href = '/projects'
             }, 1000);
         } catch (error) {
-            alert('Failed Register User...');
+            console.error(error);
+
+            alert('Failed to create project');
         }
     }
 
@@ -256,7 +287,7 @@ const Table = () => {
                                                 </label>
                                                 <Input
                                                     type="file"
-                                                    name="thumbnail"
+                                                    name="thumbnail_"
                                                     accept="image/*"
                                                     onChange={handleChange}
                                                     required

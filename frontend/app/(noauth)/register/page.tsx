@@ -1,16 +1,12 @@
 'use client'
 
 import DfinityLogo from '@/components/icons/dfinity-logo'
-import IconFacebook from '@/components/icons/icon-facebook'
-import IconGoogle from '@/components/icons/icon-google'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { initActor } from '@/lib/canisters'
-import { AtSign, Key, User } from 'lucide-react'
+import { Key, User } from 'lucide-react'
 import Image from 'next/image'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 export default function Register() {

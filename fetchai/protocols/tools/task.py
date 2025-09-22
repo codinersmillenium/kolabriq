@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import List
 
 from openai import pydantic_function_tool
+from ic.principal import Principal
 
 class Task(BaseModel):
     task_title: str
@@ -27,15 +28,29 @@ def task_tool() -> any:
         )
     )
 
-def mapping_tasks_request(tasks: List[Task]) -> List[dict]:
-    return [
-        {
+def mapping_tasks_request(tasks: List[Task], users: List[dict]) -> List[dict]:
+    mapped = []
+
+    for task in tasks:
+        # Find user based on their tag and not admin
+        assignees = [
+            user["name"]
+            for user in users
+            if "admin" not in user.get("role", {}) 
+            and any(task_tag in tag for tag in user.get("tags", []))
+        ]
+
+        # If not match → fallback to user[0]
+        if not assignees and users:
+            assignees = [Principal.to_str(users[0]["id"])]
+
+        mapped.append({
             "projectId": 0,  # Will be updated with actual project ID
             "title": task["task_title"],
             "desc": task["task_desc"],
-            "tag": { task["task_tag"]: None },
+            "tag": {task["task_tag"]: None},
             "dueDate": int(task["due_date"]),
-            "assignees": []
-        }
-        for task in tasks
-    ]
+            "assignees": assignees
+        })
+
+    return mapped
