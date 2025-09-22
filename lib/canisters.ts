@@ -12,7 +12,7 @@ const network = process.env.DFX_NETWORK;
 const identityProvider =
     network === 'ic'
         ? 'https://identity.ic0.app' // Mainnet
-        : "http://be2us-64aaa-aaaaa-qaabq-cai.localhost:4943/"
+        : "http://localhost:4943/"
         // : process.env.API_HOST + '?canisterId=' + process.env.CANISTER_ID_INTERNET_IDENTITY
 
 export let authClient: AuthClient | null = null

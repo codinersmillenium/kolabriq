@@ -147,7 +147,7 @@ Type **help** if you want to see what I can do 💡
         console.log(messages);
         
         try {
-            const response = await fetch("http://localhost:8001/chat", {
+            const response = await fetch("https://kolabriq.up.railway.app/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -7,7 +7,7 @@ import fs from 'fs';
 const envFile = path.resolve(process.cwd(), '.env');
 const rawEnv = dotenv.parse(fs.readFileSync(envFile));
 const envVars = {
-    API_HOST: 'http://127.0.0.1:4943'
+    API_HOST: 'https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io'
 };
 for (const key in rawEnv) {
     envVars[`${key}`] = rawEnv[key];
