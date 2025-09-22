@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.asymmetric import ed25519, ec
 
 load_dotenv(override=True)
 
-BASE_URL = "http://localhost:4943" if os.getenv("DFX_NETWORK") == "local" else "https://ic0.app"
+BASE_URL = "http://localhost:4943" if os.getenv("DFX_NETWORK") == "local" else "https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io"
 
 client = Client(url=BASE_URL)
 
