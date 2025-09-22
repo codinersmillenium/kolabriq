@@ -2,9 +2,6 @@
 *.Identifier
 .mops
 
-# DFX
-declarations/
-**/declarations/
 
 # Fetch ai
 **/__pycache__/
