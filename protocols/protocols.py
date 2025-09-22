@@ -150,27 +150,27 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
                 transactions = separate_recipient_amount(args["recipientAmount"])
 
                 # Sum amount
-                totalAmount = sum(icp_to_e8s(item["amount"]) for item in transactions)
+                totalAmount = sum(item["amount"] for item in transactions)
 
                 # Check user balance
-                balance = can_result(can_ledger.icrc1_balance_of({ "owner": sender, "subaccount": [] }))
+                principal = get_principal_for_sender(ctx)
+                balance = can_result(can_ledger.icrc1_balance_of({ "owner": principal, "subaccount": [] }))
                 ledgerFee = can_result(can_ledger.icrc1_fee())
                 shouldBeBalance = totalAmount + (ledgerFee * len(transactions))
 
-                
                 if balance < shouldBeBalance:
                     return f"Tell sender balance is Insufficient. Required: {shouldBeBalance}. Available: {balance}. Then tell to add more balance first"
                 
                 results = []
                 for tx in transactions:
-                    address = tx["address"]
+                    recipient = tx["recipient"]
                     amount = icp_to_e8s(tx["amount"])
 
-                    ctx.logger.info(f"Transfer to: {address}, amount: {amount}")
+                    ctx.logger.info(f"Transfer to: {recipient}, amount: {amount}")
 
                     # Transfer coin
                     transfer = can_ledger.icrc1_transfer({
-                        "to": {"owner": address, "subaccount": []},
+                        "to": {"owner": recipient, "subaccount": []},
                         "amount": amount,
                         "fee": [], # from ledger fee
                         "memo": [],
@@ -180,7 +180,7 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
 
                     # Handle response Ok/Err
                     res_raw = {
-                        "address": address,
+                        "recipient": recipient,
                         "amount": amount
                     }
 
@@ -210,7 +210,8 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
             case Tool.TASK_ANALYZER.value:
                 return {
                     "task_title": args["taskTitle"],
-                    "task_desc": args["taskDesc"],
+                    "task_description": args["taskDesc"],
+                    "user_asking": args["userQuestion"],
                     "wants": (
                         "From the provided task title and description, give a clear and concise explanation "
                         "of what the task entails and what needs to be done. "
@@ -221,21 +222,20 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
                 }
 
             # MARK: Project detail
-            # TODO: MAKE TASK SERACH BY KEYWORD
             case Tool.GET_PROJECT_DETAIL.value:
                 MAX_RETRIES = 5
                 for attempt in range(MAX_RETRIES):
                     try:
                         # Get user team key
-                        ref_key = unwrap_candid(can_user.getTeamRefCode())
+                        ref_key = can_result(can_user.getTeamRefCode())
+                        ctx.logger.info("Asdasd")
                         
                         # Get data project
-                        res_project = can_project.getProjectByKeyword(ref_key, args["keyword"])
-                        project = unwrap_candid(res_project)
-
+                        project = can_result(can_project.getProjectByKeyword(ref_key, args["keyword"]))
+                        ctx.logger.info("Asdasd")
                         # Get task review
-                        res_task = can_task.projectAnalysis(project["id"])
-                        task = unwrap_candid(res_task)
+                        task = can_result(can_task.projectAnalysis(project["id"]))
+                        ctx.logger.info("Asdasd")
 
                         ctx.logger.info(next(iter(project["projectType"])))
                         
@@ -408,7 +408,7 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
 
             # MARK: Payout team
             case Tool.PAYOUT_TEAM.value:
-                ref_key = unwrap_candid(can_user.getTeamRefCode())
+                ref_key = can_result(can_user.getTeamRefCode())
                 project = can_result(can_project.getProjectByKeyword(ref_key, args["keyword"]))
 
                 escrow_canister = os.getenv(f"CANISTER_ID_PROJECT_ESCROW")
@@ -425,34 +425,34 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
                             # Check user balance
                             balance = can_result(can_ledger.icrc1_balance_of({ "owner": sender, "subaccount": [] }))
                             escrowFee = can_result(can_project_escrow.getEscrowFee())
-                            totalRewward = totalAmount + escrowFee
+                            totalReward = totalAmount + escrowFee
 
                             ctx.logger.info(f"User balance: {balance}")
-                            ctx.logger.info(f"Total Reward: {totalRewward}")
+                            ctx.logger.info(f"Total Reward: {totalReward}")
 
-                            if balance < totalRewward:
-                                return f"Tell sender balance is Insufficient. Required: {totalRewward}. Available: {balance}. Then tell to add more balance first"
+                            if balance < totalReward:
+                                return f"Tell sender balance is Insufficient. Required: {totalReward}. Available: {balance}. Then tell to add more balance first"
                             
                             MAX_RETRIES = 5
-                            RETRY_STEP = "approve"
+                            RETRY_STEP = "allowed"
 
                         
-                        if "approve" in RETRY_STEP: 
-                            # Make approve
-                            # TODO: Pindahin ke frontend
-                            can_result(can_ledger.icrc2_approve({
-                                "from_subaccount": [],
+                        if "allowed" in RETRY_STEP: 
+                            # Check allowance
+                            allowance = can_result(can_ledger.icrc2_allowance({
+                                "account": {
+                                    "owner": sender, 
+                                    "subaccount": []
+                                },
                                 "spender": {
                                     "owner": escrow_canister, 
                                     "subaccount": []
                                 },
-                                "amount": totalRewward,
-                                "expected_allowance": [],
-                                "expires_at": [],
-                                "fee": [], # Using ICP fee when deploy 
-                                "memo": [],
-                                "created_at_time": [],
                             }))
+
+                            totalAllow = allowance["allowance"]
+                            if totalAllow == 0 or totalAllow < totalAmount:
+                                return f"User has not approved enough allowance. Current allowance: {totalAllow}, required: {totalAmount}"
                             
                             MAX_RETRIES = 5
                             RETRY_STEP = "payout"
@@ -517,7 +517,6 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
 
                 # Ambil hasil dari tool_calls
                 project_raw = res_message["tool_calls"][0]["function"]["arguments"]
-                ctx.logger.info(project_raw)
 
                 # Parse dari string ke dict
                 project: Project = json.loads(project_raw)
@@ -525,9 +524,16 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
                 ctx.logger.info("Mapping data request")
 
                 caller = get_principal_for_sender(ctx)
+                users = can_result(can_user.getUserList({
+                    "roles": [],
+                    "tags": [],
+                    "keyword": [],
+                }))
+                ctx.logger.info("Found users")
+
                 reqProject = mapping_project_request(project)
                 reqTimelines = mapping_timelines_request(project["timelines"])
-                reqTasks = mapping_tasks_request(project["tasks"])
+                reqTasks = mapping_tasks_request(project["tasks"], users)
 
                 ctx.logger.info("Saving project")
 
@@ -541,12 +547,7 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
                             reqTasks,
                         ))
 
-                        ctx.logger.info(response)
-                        projectId = response["projectId"]
-                        result = {
-                            "message": response["message"],
-                            "project_link": f"http://localhost:4349/task-detail/{projectId}",
-                        }
+                        result = response["message"]
                         break
                     except Exception as e:
                         ctx.logger.info(f"Attempt {attempt+1} failed: {e}")
@@ -590,19 +591,34 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
 
                 task: TaskList = json.loads(task_raw)
 
-                ref_key = can_result(can_user.getTeamRefCode())
-                project = can_result(can_project.getProjectByKeyword(ref_key, args["keyword"]))
-                reqTasks = mapping_tasks_request(task["tasks"])
+                ctx.logger.info("Mapping data request")
+
                 caller = get_principal_for_sender(ctx)
+                ref_key = can_result(can_user.getTeamRefCode())
+                ctx.logger.info(f"Ref key: {ref_key}")
+                project = can_result(can_project.getProjectByKeyword(ref_key, args["keyword"]))
+                ctx.logger.info("Found project reward")
+                users = can_result(can_user.getUserList({
+                    "roles": [],
+                    "tags": [],
+                    "keyword": [],
+                }))
+                ctx.logger.info("Found users")
+                reqTasks = mapping_tasks_request(task["tasks"], users)
+
+                ctx.logger.info("Saving task")
 
                 MAX_RETRIES = 5
                 for attempt in range(MAX_RETRIES):
                     try:
+                        ctx.logger.info("Save llm")
                         response = can_result(can_task.saveLlmTasks(
                             caller, 
                             project["id"],
                             reqTasks,
                         ))
+
+                        ctx.logger.info("Return result")
 
                         result = {
                             "task_list": response,
@@ -629,18 +645,6 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
         return result
     except Exception as e:
         raise Exception(f"ICP canister call failed: {str(e)}")
-
-def _set_pending_transfer_for_sender(ctx: Context, pending: dict) -> None:
-    pending_transfers = ctx.storage.get("pending_transfers") or {}
-    pending_transfers[getattr(ctx, "sender", None)] = pending
-    ctx.storage.set("pending_transfers", pending_transfers)
-
-def _reset_pending_transfer(ctx: Context) -> None:
-    pending_transfers = ctx.storage.get("pending_transfers") or {}
-    sender_key = getattr(ctx, "sender", None)
-    if sender_key in pending_transfers:
-        del pending_transfers[sender_key]
-        ctx.storage.set("pending_transfers", pending_transfers)
 
 # MARK: Process query
 
@@ -723,21 +727,21 @@ async def process_query(query: str, ctx: Context) -> str:
 
             ctx.logger.info(f"Goint to tool: `{func_name}`")
 
-            match func_name:
-                # Pending if its transfer tool
-                case Tool.TRANSFER_ICP.value:
-                    _set_pending_step(StepType.TRANSFER_ICP.value ,ctx, {
-                        "func_name": func_name, 
-                        "args": arguments,
-                        "next_call_func": Tool.TRANSFER_ICP.value,
-                    })
+            # match func_name:
+            #     # Pending if its transfer tool
+            #     case Tool.TRANSFER_ICP.value:
+            #         _set_pending_step(StepType.TRANSFER_ICP.value ,ctx, {
+            #             "func_name": func_name, 
+            #             "args": arguments,
+            #             "next_call_func": Tool.TRANSFER_ICP.value,
+            #         })
 
-                    # Prepare data
-                    pvt_key = get_private_key_for_sender(ctx)
-                    canister_ledger = make_canister("icp_ledger", pvt_key)
-                    fee = unwrap_candid(canister_ledger.icrc1_fee())
+            #         # Prepare data
+            #         pvt_key = get_private_key_for_sender(ctx)
+            #         canister_ledger = make_canister("icp_ledger", pvt_key)
+            #         fee = unwrap_candid(canister_ledger.icrc1_fee())
 
-                    return set_confirmation_msg(arguments, e8s_to_icp(fee))
+            #         return set_confirmation_msg(arguments, e8s_to_icp(fee))
 
             # Non-transfer tool: execute immediately
             tool_message = {

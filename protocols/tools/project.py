@@ -32,7 +32,7 @@ class Project(BaseModel):
     project_desc: str
     project_tags: List[ProjectTags]
     project_type: ProjectType
-    reward: int
+    reward: float
     tasks: List[Task]
     timelines: List[Timeline]
 
@@ -49,7 +49,8 @@ def project_tool() -> any:
             "- Add multiple timelines (at least 2) that cover all tasks. "
             "- Timelines must be sequential: first starts at the earliest task due_date, last ends a bit after the latest task due_date (buffer time). "
             "- Each timeline should have a clear milestone name and connect end-to-start without overlapping. "
-            "- If reward = 0 then project_type = free, otherwise project_type = rewarded."
+            "- If reward = 0 then project_type = free, otherwise project_type = rewarded. "
+            "- If project_type is rewarded, reduce the reward by a fee of 0.0001."
         )
     )
 
@@ -98,7 +99,7 @@ def mapping_project_request(project: Project) -> dict:
         "desc": project["project_desc"],
         "tags": [],
         "projectType": { project["project_type"]: None },
-        "reward": project["reward"],
+        "reward": icp_to_e8s(project["reward"]),
         "thumbnail": file_bytes,
     }
 

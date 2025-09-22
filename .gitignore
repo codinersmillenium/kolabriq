@@ -1,7 +1,0 @@
-.dfx
-*.Identifier
-.mops
-
-
-# Fetch ai
-**/__pycache__/

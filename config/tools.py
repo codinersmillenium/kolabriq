@@ -87,9 +87,13 @@ tools = [
                     "taskDesc": {
                         "type": "string",
                         "description": "A detailed description or brief of the task to be analyzed."
+                    },
+                    "userQuestion": {
+                    "type": "string",
+                    "description": "Additional question or comment from the user."
                     }
                 },
-                "required": ["taskTitle", "taskDesc"],
+                "required": ["taskTitle", "taskDesc", "userQuestion"],
                 "additionalProperties": False
             },
             "strict": True
