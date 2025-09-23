@@ -3,4 +3,4 @@ ic-py==1.0.1
 python-dotenv==1.1.1
 cryptography==45.0.6
 openai
-pydantic
+pydantic==2.11.9
