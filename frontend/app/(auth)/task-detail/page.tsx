@@ -38,6 +38,7 @@ const Table = () => {
   const [overview, setOverview] = useState<any>([])
 
   const [openDialCreateTask, setOpenDialCreateTask] = useState<boolean>(false);
+  const [disablePushButton, setDisablePushButton] = useState<boolean>(false);
 
   // MARK: Actors
   const [taskActor, setTaskActor] = useState<any>(null);
@@ -61,17 +62,28 @@ const Table = () => {
   };
 
   // MARK: Init data project, task
-  const getProject = async (id: any, pActor: any) => {
+  const getProject = async (id: any, pActor: any, tActor: any) => {
     const project = await callWithRetry(pActor, "getProjectDetail", parseFloat(id))
     if (typeof project.ok == 'undefined') return alert("project not found");
 
     const teams = await callWithRetry(pActor, "getProjectTeam", parseFloat(id))
     if (typeof teams.ok == 'undefined') return alert("project not found");
 
+    let param = {
+      keyword: [],
+      status: [],
+      tag: [],
+    };
+
+    const { ok } = await callWithRetry(tActor, "getTaskList", parseFloat(id), [param])
+    if (typeof ok == 'undefined') return;
+
     setIdProject(id)
     setProject(project.ok)
     setProjectTeam(teams.ok)
     setRemainingReward(Number(e8sToStr(project.ok.reward)))
+    setTask(ok)
+    setDisablePushButton(task.some((t: any) => Object.keys(t.status)[0] !== "done") && Object.keys(project.status)[0] !== "new")
   }
 
   const getTask = async (id: any, tActor: any) => {
@@ -109,8 +121,7 @@ const Table = () => {
       setIdProject(id);
       getProjectTeams(id, actors)
 
-      getProject(id, actors.pActor);
-      getTask(id, actors.tActor);
+      getProject(id, actors.pActor, actors.tActor);
       getProjectHistory(id, actors.pActor);
     };
 
@@ -119,9 +130,6 @@ const Table = () => {
 
   // MARK: Project status
 
-  // TODO: 
-  const [disablePushStatus, setDisablePushStatus] = useState(true)
-
   const handlePushProject = async (status: string) => {
     const projectId = parseFloat(idProject)
     switch (status) {
@@ -129,9 +137,8 @@ const Table = () => {
         const resProject = await callWithRetry(projectActor, "updateProjectStatus", projectId, { ["in_progress"]: null })
         if (!resProject) return alert("Failed push project");
 
-        getProject(projectId, projectActor)
+        getProject(projectId, projectActor, taskActor)
         getProjectHistory(projectId, projectActor);
-        isDisabledBtnProject()
         return alert("Success push project")
 
       case "in_progress":
@@ -139,7 +146,7 @@ const Table = () => {
           const resProject = await callWithRetry(projectActor, "updateProjectStatus", projectId, { ["done"]: null })
           if (!resProject) return alert("Failed push project");
 
-          getProject(projectId, projectActor)
+          getProject(projectId, projectActor, taskActor)
           getProjectHistory(projectId, projectActor);
           return alert("Success push project")
         }
@@ -156,11 +163,6 @@ const Table = () => {
         return;
     }
   }
-
-  const isDisabledBtnProject = () => {
-    if (task.length == 0) return false;
-    return task.some((t: any) => Object.keys(t.status)[0] !== "done") && Object.keys(project.status)[0] !== "new";
-  };
 
   const labelBtnProject = () => {
     const label: Record<"new" | "in_progress" | "done", string> = {
@@ -245,7 +247,7 @@ const Table = () => {
       // update project to done
       await callWithRetry(projectActor, "updateProjectStatus", parseFloat(idProject), { ["done"]: null })
 
-      getProject(idProject, projectActor);
+      getProject(idProject, projectActor, taskActor)
       getProjectHistory(idProject, projectActor);
     } catch (error) {
       console.error(error)
@@ -548,7 +550,7 @@ const Table = () => {
 
                   return handlePushProject(status)
                 }}
-                disabled={isDisabledBtnProject()}
+                disabled={disablePushButton}
               >
                 <FilePlus2 className="size-4 shrink-0" />
                 {
@@ -593,7 +595,7 @@ const Table = () => {
                     className="group flex items-center gap-1.5 whitespace-nowrap p-2.5 font-medium transition-all hover:bg-light-theme hover:text-black focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-light-theme data-[state=active]:text-black dark:hover:bg-black dark:hover:text-white dark:data-[state=active]:bg-black dark:data-[state=active]:text-white [&>svg]:size-[18px] [&>svg]:shrink-0 [&[data-state=active]>svg]:text-primary rounded-none border-b-2 border-transparent bg-transparent! px-0 py-4 data-[state=active]:border-primary"
                   >
                     Project History
-                    <div className="inline-flex items-center gap-1.5 rounded-lg shrink-0 bg-primary text-[10px]/[8px] text-white px-1.5 py-1 font-semibold text-black">
+                    <div className="inline-flex items-center gap-1.5 rounded-lg shrink-0 bg-primary text-[10px]/[8px] text-white px-1.5 py-1 font-semibold">
                       {projectHistory.length}
                     </div>
                   </TabsTrigger>

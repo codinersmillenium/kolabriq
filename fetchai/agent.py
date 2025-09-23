@@ -1,15 +1,9 @@
-from uuid import uuid4
-from datetime import datetime, timezone
-
 from uagents import Context, Agent, Model
-from uagents_core.contrib.protocols.chat import (
-    ChatMessage,
-    TextContent,
-)
 
 from protocols.protocols import protocol, process_query
  
 from utils.identity import generate_ed25519_identity
+from utils.context import get_agent_principal
 
 ### Example Expert Assistant
  
@@ -28,7 +22,6 @@ agent = Agent(
     port=8001,
     mailbox=True,
     publish_agent_details=True,
-    # endpoint=["http://127.0.0.1:8001/submit"],
 )
 
 class Request(Model):
@@ -36,6 +29,7 @@ class Request(Model):
     text: str
 
 class Response(Model):
+    agent_principal: str
     response: str
 
 @agent.on_rest_post("/chat", Request, Response)
@@ -65,6 +59,7 @@ async def handle_post(ctx: Context, req: Request) -> Response:
     ctx.logger.info(f"Response text: {response_text}")
 
     return Response(
+        agent_principal = get_agent_principal(ctx),
         response = response_text,
     )
  

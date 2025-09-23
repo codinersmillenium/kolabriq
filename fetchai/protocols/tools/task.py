@@ -34,10 +34,10 @@ def mapping_tasks_request(tasks: List[Task], users: List[dict]) -> List[dict]:
     for task in tasks:
         # Find user based on their tag and not admin
         assignees = [
-            user["name"]
+            Principal.to_str(user["id"])
             for user in users
             if "admin" not in user.get("role", {}) 
-            and any(task_tag in tag for tag in user.get("tags", []))
+            and any(task["task_tag"] in tag for tag in user.get("tags", []))
         ]
 
         # If not match → fallback to user[0]

@@ -17,6 +17,7 @@ import {
 import Image from 'next/image';
 import { Principal } from '@dfinity/principal';
 import { e8sToStr, toE8s } from '@/lib/utils';
+import { log } from 'console';
 
 type LlmChat =
     | { system: { content: string }; user?: never }
@@ -97,6 +98,8 @@ Type **help** if you want to see what I can do 💡
         },
     }));
 
+    const [agentPrincipal, setAgentPrincipal] = useState("");
+
     // MARK: Toogle fullscreen
     const [isFullscreen, setIsFullscreen] = useState(false);
     const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
@@ -165,6 +168,7 @@ Type **help** if you want to see what I can do 💡
             setTaskContext("");
             addUnread();
 
+            setAgentPrincipal(data.agent_principal);
             setChat((prevChat) => {
                 const newChat = [...prevChat];
                 newChat.pop();
@@ -217,6 +221,7 @@ Type **help** if you want to see what I can do 💡
 
     // MARK: Transaction message
     const [pendingTrx, setPendingTrx] = useState({
+        keyword: "",
         message: "",
         amount: 0,
     })
@@ -228,21 +233,21 @@ Type **help** if you want to see what I can do 💡
         if (!keyword) { return false };
 
         let totalAmount = 0;
+
+        const actorLedger = await initActor('icp_ledger')
+        const fee = await callWithRetry(actorLedger, "icrc1_fee")
+        const icpFee = e8sToStr(fee);
+
         switch (keyword) {
             case "generate project":
                 const match = message.match(/(\d+(\.\d+)?)/i);
                 if (!match) return false;
 
-                totalAmount = Number(match[1])
-
-                setPendingTrx({
-                    message: message,
-                    amount: Number(match[1]),
-                })
+                totalAmount = Number(match[1]);
                 break;
 
             default:
-                const matches = message.match(/(\d+\.\d+)/g);
+                const matches = message.match(/=\s*\d+\.\d+/g); 
                 if (!matches) return false;
 
                 let total = 0;
@@ -251,27 +256,26 @@ Type **help** if you want to see what I can do 💡
                     .reduce((acc, val) => acc + val, 0);
 
                 totalAmount = total
-
-                setPendingTrx({
-                    message: message,
-                    amount: total,
-                })
                 break;
         }
 
-        const actorLedger = await initActor('icp_ledger')
-        const fee = await callWithRetry(actorLedger, "icrc1_fee")
-        console.log(totalAmount);
+        totalAmount += Number(icpFee)
+
+        setPendingTrx({
+            keyword: keyword,
+            message: message,
+            amount: totalAmount,
+        })
 
         const confirmations = `
 We have prepared the following ICP transfers for you:\n\n
-💰 **Total Transfer: ${totalAmount} ICP**\n\n
+💰 **Total Transfer: ${totalAmount} ICP (+fee ai)**\n\n
 ⚠️ Once confirmed, the transfer cannot be reversed.\n
 - Network: Internet Computer (ICP)
 - Estimated confirmations: ~3 blocks (~20–30 seconds)
-- Network fee: ${e8sToStr(fee)} ICP per transaction (deducted automatically)\n\n
+- Network fee: ${icpFee} ICP per transaction (deducted automatically)\n\n
 To proceed, type 'yes'. To cancel, type anything else.
-        `.trim()
+        `
 
         setChat((prevChat) => {
             const newChat = [...prevChat];
@@ -289,19 +293,55 @@ To proceed, type 'yes'. To cancel, type anything else.
         if (message.toLowerCase().includes("yes") && pendingTrx.amount) {
             const actorLedger = await initActor('icp_ledger')
             try {
-                await callWithRetry(actorLedger, "icrc2_approve", {
-                    from_subaccount: [],
-                    spender: {
-                        owner: Principal.fromText(decProjectEscrow.canisterId),
-                        subaccount: [],
-                    },
-                    amount: toE8s(pendingTrx.amount),
-                    expected_allowance: [],
-                    expires_at: [],
-                    fee: [],
-                    memo: [],
-                    created_at_time: [],
-                })
+                switch (pendingTrx.keyword) {
+                    case "transfer":
+                        let transfer = await callWithRetry(actorLedger, "icrc1_transfer", {
+                            to: {
+                                owner: Principal.fromText(agentPrincipal),
+                                subaccount: [],
+                            },
+                            amount: toE8s(pendingTrx.amount),
+                            fee: [],
+                            memo: [],
+                            from_subaccount: [],
+                            created_at_time: [],
+                        })
+
+                        console.log(transfer, agentPrincipal, pendingTrx.amount);
+                        break
+
+                    default:
+                        let owner = decProjectEscrow.canisterId
+                        let approve = await callWithRetry(actorLedger, "icrc2_approve", {
+                            from_subaccount: [],
+                            spender: {
+                                owner: Principal.fromText(owner),
+                                subaccount: [],
+                            },
+                            amount: toE8s(pendingTrx.amount),
+                            expected_allowance: [],
+                            expires_at: [],
+                            fee: [],
+                            memo: [],
+                            created_at_time: [],
+                        })
+
+                        console.log(approve, owner, pendingTrx.amount);
+
+                        let allowance = await callWithRetry(actorLedger, "icrc2_allowance", {
+                            account: {
+                                owner: getPrincipal(),
+                                subaccount: [],
+                            },
+                            spender: {
+                                owner: Principal.fromText(owner),
+                                subaccount: [],
+                            },
+                        })
+
+                        console.log(allowance, owner, pendingTrx.amount);
+                        break;
+                }
 
                 return {
                     user: {
@@ -310,7 +350,10 @@ To proceed, type 'yes'. To cancel, type anything else.
                     }
                 };
             } catch (error) {
+                console.error(error);
+                
                 setPendingTrx({
+                    keyword: "",
                     message: "",
                     amount: 0,
                 })
@@ -319,6 +362,7 @@ To proceed, type 'yes'. To cancel, type anything else.
         };
 
         setPendingTrx({
+            keyword: "",
             message: "",
             amount: 0,
         })

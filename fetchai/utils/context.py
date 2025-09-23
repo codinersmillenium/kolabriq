@@ -2,26 +2,33 @@ from uagents import Context
 
 from utils.identity import principal_to_account_id
 
-def get_private_key_for_sender(ctx: Context):
+def _list_identities(ctx: Context) -> list:
     identities = ctx.storage.get("identity") or []
     if not isinstance(identities, list):
         identities = [identities]
-    for item in identities:
+
+    return identities
+
+def get_private_key_for_sender(ctx: Context):
+    for item in _list_identities(ctx):
         if isinstance(item, dict) and item.get("sender") == ctx.sender:
             return item.get("private_key")
     return None
 
 def get_principal_for_sender(ctx: Context):
-    identities = ctx.storage.get("identity") or []
-    if not isinstance(identities, list):
-        identities = [identities]
-    for item in identities:
+    for item in _list_identities(ctx):
         identitySender = item.get("sender") 
         if isinstance(item, dict) and identitySender == ctx.sender:
             if "agent" not in identitySender:
                 return identitySender
             else:
                 return item.get("principal")
+    return None
+
+def get_agent_principal(ctx: Context):
+    for item in _list_identities(ctx):
+        if isinstance(item, dict) and item.get("sender") == ctx.sender:
+            return item.get("principal")
     return None
 
 def get_account_id_for_sender(ctx: Context):

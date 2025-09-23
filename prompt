@@ -1,0 +1,42 @@
+<!-- Transfer -->
+I want to transfer ICP tokens to the following addresses with the specified amounts:
+- rj4ls-43jef-bnhwa-lgctd-fu6tf-fbhpn-hwdec-o6cqz-3squp-2wdmt-nae = 0.0008333
+- q2yst-4bhbv-ecgcz-c5fz3-td4sa-qit43-lqowr-pf5ex-v4uqr-4l4fp-nae = 0.0008333
+- w4kms-3s7dq-vh7pl-k3r7a-wiunm-2yef6-lnjyk-w4fzn-ckxqe-zjlda-hae = 0.00125 
+
+<!-- Payout -->
+I want to payout my project 'Landing' to the following addresses with their respective rewards:
+- rj4ls-43jef-bnhwa-lgctd-fu6tf-fbhpn-hwdec-o6cqz-3squp-2wdmt-nae = 0.0467
+- sxnzn-u7au2-4kxh7-w4uwt-zsirp-3bnd4-f5cgo-nazla-gpzdq-kftxo-dqe = 0.0156 
+
+I want to payout my project name 'Government dapp' to the following addresses with their respective rewards:
+- mijjm-apxir-6zayc-pkb5c-bmuzg-tba7n-qidw3-qbrxq-tgkf7-xwejz-7qe = 0.0029
+
+<!-- Task analyzer -->
+Please describe the task 'Make project dokumentation', 
+because I want to fully understand what needs to be done. 
+Provide a clear explanation of the task, and also give practical tips or suggestions to make completing it easier and more efficient.
+
+<!-- Project generator -->
+Please generate project with the following details:
+- Project Name: "Government DApp"
+- Brief: "A decentralized application for government services to improve transparency and efficiency."
+- Reward: 0.003 ICP
+- Start Date: 25-09-2025
+- End Date: 31-12-2025
+
+Please generate project with the following details:
+- Project Name: "Siemens Company Profile"
+- Brief: "Landing company profile for introducing a company, filfull with static content, make until deployed and can access public"
+- Reward: 0.0055 ICP
+- Start Date: 25-09-2025
+- End Date: 31-12-2025
+
+<!-- Task generator -->
+Project Name: Government Services DApp 
+Brief Task (Big Picture): 
+Develop a decentralized application (DApp) that allows citizens to access government services securely on the blockchain. The app should handle identity verification, service requests, and notifications, ensuring  transparency, immutability, and privacy. Integrate with existing government databases where necessary and provide an intuitive user interface for citizens and government staff.
+
+Project Name: NFT Company
+Brief Task (Big Picture):
+Develop a decentralized NFT platform for companies to create, manage, and trade digital assets on the blockchain. The app should enable corporate clients to mint branded NFTs, manage ownership rights, and provide marketplaces for both internal and external stakeholders. Ensure secure wallet integration, transparent transaction history, and compliance with digital asset regulations. The platform should feature intuitive dashboards for companies, employees, and customers, while maintaining scalability, security, and user-friendly design.
