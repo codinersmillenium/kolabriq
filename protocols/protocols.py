@@ -37,7 +37,12 @@ from utils.canister import make_canister
 from utils.coin import icp_to_e8s, e8s_to_icp
 from utils.identity import generate_ed25519_identity
 from utils.candid import unwrap_candid, can_result
-from utils.context import get_private_key_for_sender, get_principal_for_sender, get_account_id_for_sender
+from utils.context import (
+    get_private_key_for_sender, 
+    get_principal_for_sender, 
+    get_account_id_for_sender, 
+    get_agent_principal,
+)
 
 # Config
 from config.prompt import transfer_result
@@ -153,10 +158,11 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
                 totalAmount = sum(item["amount"] for item in transactions)
 
                 # Check user balance
-                principal = get_principal_for_sender(ctx)
+                principal = get_agent_principal(ctx)
                 balance = can_result(can_ledger.icrc1_balance_of({ "owner": principal, "subaccount": [] }))
                 ledgerFee = can_result(can_ledger.icrc1_fee())
                 shouldBeBalance = totalAmount + (ledgerFee * len(transactions))
+                ctx.logger.info(f"Amount: {totalAmount}; balance {balance} len{len(transactions)} transaction {transactions}")
 
                 if balance < shouldBeBalance:
                     return f"Tell sender balance is Insufficient. Required: {shouldBeBalance}. Available: {balance}. Then tell to add more balance first"
@@ -164,19 +170,19 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
                 results = []
                 for tx in transactions:
                     recipient = tx["recipient"]
-                    amount = icp_to_e8s(tx["amount"])
+                    amount = tx["amount"]
 
                     ctx.logger.info(f"Transfer to: {recipient}, amount: {amount}")
 
                     # Transfer coin
-                    transfer = can_ledger.icrc1_transfer({
+                    transfer = can_result(can_ledger.icrc1_transfer({
                         "to": {"owner": recipient, "subaccount": []},
-                        "amount": amount,
-                        "fee": [], # from ledger fee
+                        "amount": amount - ledgerFee,
+                        "fee": [], 
                         "memo": [],
                         "from_subaccount": [],
                         "created_at_time": []
-                    })
+                    }))
 
                     # Handle response Ok/Err
                     res_raw = {
@@ -418,7 +424,7 @@ async def tool_handler(ctx: Context, func_name: str, args: dict):
                 totalAmount = sum(item["amount"] for item in transactions)
 
                 MAX_RETRIES = 5
-                RETRY_STEP = "balance"
+                RETRY_STEP = "payout"
                 for attempt in range(MAX_RETRIES):
                     try:
                         if "balance" in RETRY_STEP: 

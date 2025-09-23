@@ -125,8 +125,6 @@ def separate_recipient_amount(strArgs: str) -> List[Dict[str, Any]]:
     result = []
     for p in parts:
         recipient, amount = p.split("=")
-        print(amount.strip())
-        print(float(amount.strip()))
         result.append({
             "recipient": recipient.strip(),
             "amount": icp_to_e8s(float(amount.strip()))
