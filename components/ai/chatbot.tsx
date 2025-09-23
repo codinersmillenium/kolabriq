@@ -10,12 +10,13 @@ import {
     ChevronRight,
     SendHorizonal,
     X,
-    ChartNoAxesCombined,
     WandSparkles,
     Minimize2,
     Maximize2,
 } from 'lucide-react'
 import Image from 'next/image';
+import { Principal } from '@dfinity/principal';
+import { e8sToStr, toE8s } from '@/lib/utils';
 import { log } from 'console';
 
 type LlmChat =
@@ -40,7 +41,7 @@ export const AskButton = ({ onTrigger }: TriggerButtonProps) => {
 };
 
 export type ChatbotRef = {
-    triggerContext: (task: string) => void;
+    triggerContext: (taskTitle: string, taskDesc: string) => void;
 };
 
 const Chatbot = forwardRef<ChatbotRef>((_, ref) => {
@@ -67,6 +68,11 @@ Hello! I am **Briqi**, your intelligent assistant designed to help you manage pr
 ✨ Just type what you need in plain English, and I’ll handle it for you.
     `
 
+    const errorMessage = `
+Sorry, there was an unexpected error while processing your request. Please try again.\n
+Type **help** if you want to see what I can do 💡
+    `;
+
     const [taskContext, setTaskContext] = useState<string>();
     const [isOpen, setIsOpen] = useState(false);
     const [chat, setChat] = useState<LlmChat[]>([
@@ -82,11 +88,17 @@ Hello! I am **Briqi**, your intelligent assistant designed to help you manage pr
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const [taskDetail, setTaskDetail] = useState<string>();
+
     useImperativeHandle(ref, () => ({
-        triggerContext: (task: string) => {
-            setTaskContext(task);
+        triggerContext: (taskTitle: string, taskDesc: string) => {
+            setIsOpen(true);
+            setTaskContext(taskTitle);
+            setTaskDetail(`Task titled "${taskTitle}". Task description: ${taskDesc}`)
         },
     }));
+
+    const [agentPrincipal, setAgentPrincipal] = useState("");
 
     // MARK: Toogle fullscreen
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -112,12 +124,9 @@ Hello! I am **Briqi**, your intelligent assistant designed to help you manage pr
         }
     }
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'end'
-        });
-    };
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [chat]);
 
     // MARK: Response
     const addPreResponse = (message: string): LlmChat => {
@@ -137,17 +146,12 @@ Hello! I am **Briqi**, your intelligent assistant designed to help you manage pr
         return userMessage;
     }
 
-    const errorMessage = `
-Sorry, there was an unexpected error while processing your request. Please try again.\n
-Type **help** if you want to see what I can do 💡
-    `;
-
     // MARK: Main func
     const askAgent = async (messages: string) => {
         console.log(messages);
-        
+
         try {
-            const response = await fetch("https://kolabriq.up.railway.app/chat", {
+            const response = await fetch("http://localhost:8001/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -164,6 +168,7 @@ Type **help** if you want to see what I can do 💡
             setTaskContext("");
             addUnread();
 
+            setAgentPrincipal(data.agent_principal);
             setChat((prevChat) => {
                 const newChat = [...prevChat];
                 newChat.pop();
@@ -191,22 +196,19 @@ Type **help** if you want to see what I can do 💡
 
         try {
             let userMsg = addPreResponse(inputValue);
-    
-            if (handlePreTransactionRequest(inputValue)) return;
+
+            if (await handlePreTransactionRequest(inputValue)) return;
             userMsg = await handlePostTransactionRequest(inputValue)
-    
+
             const userContent = userMsg.user ? userMsg.user.content : ""
             const formattedMsg = taskContext
-                ? `Please describe the task '${taskContext}',\n${userContent}`
+                ? `This user is asking about the ${taskDetail}. Here is the additional question or comment from the user: ${userContent}`
                 : userContent;
-    
+
+            setTaskContext('');
             setInputValue('');
             setIsLoading(true);
             await askAgent(formattedMsg);
-    
-            setTimeout(() => {
-                scrollToBottom();
-            }, 100);
         } catch {
             setChat((prevChat) => {
                 const newChat = [...prevChat];
@@ -219,55 +221,61 @@ Type **help** if you want to see what I can do 💡
 
     // MARK: Transaction message
     const [pendingTrx, setPendingTrx] = useState({
+        keyword: "",
         message: "",
         amount: 0,
     })
 
-    const handlePreTransactionRequest = (message: string) => {
+    const handlePreTransactionRequest = async (message: string) => {
         const trxKeyword = ["transfer", "payout", "generate project"];
         const keyword = trxKeyword.find((word) => message.toLowerCase().includes(word));
 
         if (!keyword) { return false };
 
+        let totalAmount = 0;
+
+        const actorLedger = await initActor('icp_ledger')
+        const fee = await callWithRetry(actorLedger, "icrc1_fee")
+        const icpFee = e8sToStr(fee);
+
         switch (keyword) {
             case "generate project":
-                const match = message.match(/(\d+)\s*ICP/i);
-                if (!match) {
-                    return false
-                }
-                setPendingTrx({
-                    message: message,
-                    amount: Number(match[1]),
-                })
+                const match = message.match(/(\d+(\.\d+)?)/i);
+                if (!match) return false;
+
+                totalAmount = Number(match[1]);
                 break;
-        
+
             default:
-                const matches = message.match(/=\s*([\d.]+)/g);
+                const matches = message.match(/=\s*\d+\.\d+/g); 
+                if (!matches) return false;
+
                 let total = 0;
-                if (!matches) {
-                    return false
-                }
-                
                 total = matches
                     .map((m) => parseFloat(m.replace("=", "").trim()))
                     .reduce((acc, val) => acc + val, 0);
 
-                setPendingTrx({
-                    message: message,
-                    amount: total,
-                })
+                totalAmount = total
                 break;
         }
 
+        totalAmount += Number(icpFee)
+
+        setPendingTrx({
+            keyword: keyword,
+            message: message,
+            amount: totalAmount,
+        })
+
         const confirmations = `
-            We have prepared the following ICP transfers for you:\n\n
-            💰 **Total Transfer: ${pendingTrx.amount} ICP**\n\n
-            ⚠️ Once confirmed, the transfer cannot be reversed.\n
-            - Network: Internet Computer (ICP)
-            - Estimated confirmations: ~3 blocks (~20–30 seconds)
-            - Network fee: 0 ICP per transaction (deducted automatically)\n\n
-            To proceed, type 'yes'. To cancel, type anything else.
-        `.trim()
+We have prepared the following ICP transfers for you:\n\n
+💰 **Total Transfer: ${totalAmount} ICP (+fee ai)**\n\n
+⚠️ Once confirmed, the transfer cannot be reversed.\n
+- Network: Internet Computer (ICP)
+- Estimated confirmations: ~3 blocks (~20–30 seconds)
+- Network fee: ${icpFee} ICP per transaction (deducted automatically)\n\n
+To proceed, type 'yes'. To cancel, type anything else.
+        `
 
         setChat((prevChat) => {
             const newChat = [...prevChat];
@@ -276,26 +284,64 @@ Type **help** if you want to see what I can do 💡
             return newChat;
         });
 
+        setInputValue("")
+
         return true
     };
 
     const handlePostTransactionRequest = async (message: string): Promise<LlmChat> => {
         if (message.toLowerCase().includes("yes") && pendingTrx.amount) {
-            const actor = await initActor('icp_ledger')
+            const actorLedger = await initActor('icp_ledger')
             try {
-                await callWithRetry(actor, "icrc2_approve", {
-                    from_subaccount: [],
-                    spender: {
-                        owner: decProjectEscrow.canisterId,
-                        subaccount: [],
-                    },
-                    amount: pendingTrx.amount,
-                    expected_allowance: [],
-                    expires_at: [],
-                    fee: [],
-                    memo: [],
-                    created_at_time: [],
-                })
+                switch (pendingTrx.keyword) {
+                    case "transfer":
+                        let transfer = await callWithRetry(actorLedger, "icrc1_transfer", {
+                            to: {
+                                owner: Principal.fromText(agentPrincipal),
+                                subaccount: [],
+                            },
+                            amount: toE8s(pendingTrx.amount),
+                            fee: [],
+                            memo: [],
+                            from_subaccount: [],
+                            created_at_time: [],
+                        })
+
+                        console.log(transfer, agentPrincipal, pendingTrx.amount);
+                        break
+
+                    default:
+                        let owner = decProjectEscrow.canisterId
+                        let approve = await callWithRetry(actorLedger, "icrc2_approve", {
+                            from_subaccount: [],
+                            spender: {
+                                owner: Principal.fromText(owner),
+                                subaccount: [],
+                            },
+                            amount: toE8s(pendingTrx.amount),
+                            expected_allowance: [],
+                            expires_at: [],
+                            fee: [],
+                            memo: [],
+                            created_at_time: [],
+                        })
+
+                        console.log(approve, owner, pendingTrx.amount);
+
+                        let allowance = await callWithRetry(actorLedger, "icrc2_allowance", {
+                            account: {
+                                owner: getPrincipal(),
+                                subaccount: [],
+                            },
+                            spender: {
+                                owner: Principal.fromText(owner),
+                                subaccount: [],
+                            },
+                        })
+
+                        console.log(allowance, owner, pendingTrx.amount);
+                        break;
+                }
 
                 return {
                     user: {
@@ -304,15 +350,19 @@ Type **help** if you want to see what I can do 💡
                     }
                 };
             } catch (error) {
+                console.error(error);
+                
                 setPendingTrx({
+                    keyword: "",
                     message: "",
                     amount: 0,
                 })
                 throw error;
             }
         };
-    
+
         setPendingTrx({
+            keyword: "",
             message: "",
             amount: 0,
         })
@@ -387,16 +437,16 @@ Type **help** if you want to see what I can do 💡
                                 title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                             >
                                 {isFullscreen
-                                    ? 
-                                    <button type="button" className="bg-gray-200 shadow flex items-center gap-1 px-5 h-6 text-[10px] rounded-lg">
+                                    ?
+                                    <div className="bg-gray-200 shadow flex items-center gap-1 px-5 h-6 text-[10px] rounded-lg">
                                         <Minimize2 size={10} />
                                         Minimize
-                                    </button>
+                                    </div>
                                     :
-                                    <button type="button" className="bg-gray-200 shadow flex items-center gap-1 px-5 h-6 text-[10px] rounded-lg">
+                                    <div className="bg-gray-200 shadow flex items-center gap-1 px-5 h-6 text-[10px] rounded-lg">
                                         <Maximize2 size={10} />
                                         Maximize
-                                    </button>
+                                    </div>
                                 }
                             </button>
                         </div>
@@ -411,10 +461,10 @@ Type **help** if you want to see what I can do 💡
                                     : message.system?.content ?? ""
 
                                 return (
-                                    <div key={index} className={`flex flex-col gap-1 px-4  ${isUser ? "items-end justify-end" : "items-start justify-start"}`}>
+                                    <div key={index} className={`flex flex-col gap-1 ${isUser ? "items-end justify-end" : "items-start justify-start"}`} style={{ wordBreak: "break-word" }}>
                                         <span className="text-xs text-gray-700 pr-2">{name}</span>
                                         {message.user?.task &&
-                                            <div className="flex items-center justify-between text-xs text-gray-700 bg-gray-100 px-3 py-2 rounded-lg truncate drop-shadow-sm mb-1">
+                                            <div className="flex items-center justify-between text-xs text-black bg-gray-100 px-3 py-2 rounded-lg truncate drop-shadow-sm mb-1">
                                                 <span className="truncate">
                                                     <span className="font-medium text-gray-800">Task: </span>
                                                     {message.user?.task}
@@ -423,8 +473,8 @@ Type **help** if you want to see what I can do 💡
                                         }
                                         <div className={`text-[13px] py-2 px-4 rounded-lg drop-shadow-md max-w-[80%] whitespace-pre-line ${isUser
                                             ? "bg-linear-to-b from-primary/5 to-success-light/20 text-gray"
-                                            : "bg-gray-100 text-gray-700"
-                                        }`}>
+                                            : "bg-gray-100 text-black"
+                                            }`}>
                                             <ReactMarkdown>{text}</ReactMarkdown>
                                         </div>
                                     </div>
