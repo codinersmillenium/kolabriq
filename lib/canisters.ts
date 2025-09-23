@@ -4,6 +4,7 @@ import * as decTask from '@/declarations/task'
 import * as decAi from '@/declarations/ai'
 import * as decToken from '@/declarations/token'
 import * as decIcpLedger from '@/declarations/icp_ledger'
+import * as decProjectescrow from '@/declarations/project_escrow'
 import { AuthClient } from '@dfinity/auth-client'
 import { Principal } from '@dfinity/principal';
 import { HttpAgent } from '@dfinity/agent'
@@ -37,7 +38,7 @@ export const ensureClient = async () => {
     }
 }
 
-type ActorName = 'user' | 'project' | 'task' | 'ai' | 'token' | 'icp_ledger';
+type ActorName = 'user' | 'project' | 'task' | 'ai' | 'token' | 'icp_ledger' | 'project_escrow';
 
 export const initActor = async (canister: ActorName = 'user') => {
     await ensureClient();
@@ -49,6 +50,9 @@ export const initActor = async (canister: ActorName = 'user') => {
             break;
         case 'project':
             canisterBlog = decProject.createActor(decProject.canisterId, options)
+            break;
+        case 'project_escrow':
+            canisterBlog = decProjectescrow.createActor(decProjectescrow.canisterId, options)
             break;
         case 'task':
             canisterBlog = decTask.createActor(decTask.canisterId, options)
