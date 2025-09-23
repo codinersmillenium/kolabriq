@@ -171,6 +171,7 @@ who had helped provide and develop these application
 - [netlify](https://netlify.com)
 - [railway](https://railway.com)
 - [nexadash](https://next.nexadash.demo.sbthemes.com)
+- [openai](https://openai.com)
 
 ## Developer
 - [https://github.com/codinersmillenium]
