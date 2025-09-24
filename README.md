@@ -149,7 +149,7 @@ AI Agent (Python + uAgents, Fetch.ai)
 
 ## ⚙️ Tech Stack
 - **Frontend**: Next.js + Tailwind CSS
-- **Backend**: ICP Canisters (Motoko/Rust)
+- **Backend**: ICP Canisters (Motoko)
 - **AI Agent**: Python + uAgents (Fetch.ai)
 - **Blockchain**: Internet Computer Protocol (ICP)
 - **Hosting**: 
